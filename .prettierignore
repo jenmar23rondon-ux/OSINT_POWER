@@ -1,4 +1,5 @@
 node_modules/
+.lab/
 package-lock.json
 assets/
 .osint-power/

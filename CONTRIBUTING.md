@@ -14,3 +14,5 @@ npm audit
 Tests must not contact external targets or contain real personal information. Cover scope, malformed inputs, partial results and errors when changing collection/parsing. Preserve stdout as exclusively MCP in the server.
 
 Document implemented behavior, compatibility and validation. Keep planned capabilities distinct. Preserve MIT notices and upstream credits. Documentation, examples, templates and user-facing messages are maintained in English.
+
+For real binary compatibility, run the opt-in checksum-pinned loopback lab: npm run lab:install, then npm run test:lab. Review native-tools.lock.json before updating versions/digests. See [operations](docs/OPERATIONS.md). Do not add external target traffic to CI.

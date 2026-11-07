@@ -1,6 +1,6 @@
 {
   "name": "osint-power",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Evidence-first OSINT workspace with a bounded CLI and MCP server",
   "type": "module",
   "private": true,
@@ -23,7 +23,9 @@
     "test": "node --test",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
-    "schema": "node scripts/schema.js"
+    "schema": "node scripts/schema.js",
+    "lab:install": "node scripts/install-lab.js",
+    "test:lab": "node scripts/native-lab.js"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "2.4.0",

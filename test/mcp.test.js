@@ -34,7 +34,7 @@ test(
     });
     await client.connect(transport);
     const list = await client.listTools();
-    assert.equal(list.tools.length, 9);
+    assert.equal(list.tools.length, 19);
     const call = (name, args = {}) =>
       client.callTool({ name, arguments: args });
     assert.equal(
@@ -53,6 +53,42 @@ test(
     const page = (await call("query_findings", { limit: 1 })).structuredContent
       .result;
     assert.equal(page.items[0].value, "api.example.com");
+    assert.equal(
+      (await call("doctor", { probe: false })).structuredContent.result
+        .network_probe,
+      false,
+    );
+    const queued = (
+      await call("start_workflow", {
+        workflow: "correlation",
+        target: "example.com",
+      })
+    ).structuredContent.result;
+    assert.equal(queued.status, "queued");
+    assert.equal(
+      (await call("get_job", { id: queued.id })).structuredContent.result
+        .status,
+      "queued",
+    );
+    assert.equal(
+      (await call("resume_run", { id: queued.id })).structuredContent.result
+        .status,
+      "completed",
+    );
+    assert.equal(
+      (await call("explain_entity", { entity_id: page.items[0].id }))
+        .structuredContent.result.history.length,
+      1,
+    );
+    assert.equal(
+      (
+        await call("plan_investigation", {
+          workflow: "company",
+          target: "example.com",
+        })
+      ).structuredContent.result.network,
+      false,
+    );
     const workflow = await call("workflow", {
       workflow: "empresa",
       target: "example.com",

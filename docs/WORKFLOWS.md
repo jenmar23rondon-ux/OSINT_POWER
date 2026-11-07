@@ -124,7 +124,7 @@ Strict contracts are exported as [business-context](../schema/business-context.s
 
 Correlation presents professional evidence coverage, company-scoped breach associations and observed services requiring defensive review. It does not rank employees as attack targets or assert an entry point from an alias, breach, MX or open port.
 
-The summary is bounded: up to 100 domain/IP/email samples and 10 defensive review candidates. It is not a full export or calibrated risk score. Use paginated entity/evidence/graph queries to investigate. Workflow findings contain up to 25 normalized domain-context observations.
+The summary is bounded: up to 100 domain/IP/email samples and 10 defensive review candidates. Correlation totals are computed separately from samples. It is not a full export or calibrated risk score. Use paginated entity/evidence/graph queries to investigate. Workflow findings contain up to 25 normalized domain-context observations.
 
 ## MCP
 
@@ -147,3 +147,7 @@ The default is a local plan. Setting execute to true requests configured stages;
 Empty new people defaults preserve the scope fingerprint of v0.1 workspaces. Adding people or changing scope requires a different database, as before. Use `--db` or `OSINT_POWER_DB`.
 
 Tests use mocked sources, external-file contracts and a real MCP session. Verify installed upstream binary versions locally. Import bridges are not equivalent to live API connectors.
+
+## v0.3 execution and snapshots
+
+Execution now creates durable jobs with recoverable steps and sealed snapshot IDs. Resume uses a new per-invocation budget while retaining lifetime and per-step caps. Correlation totals are exact for stored scoped entities; displayed samples remain bounded. See [OPERATIONS.md](OPERATIONS.md) for queue/resume/cancel, provider coordination and immutable run comparisons.

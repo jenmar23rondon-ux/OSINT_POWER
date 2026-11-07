@@ -3,11 +3,22 @@ import { McpServer } from "@modelcontextprotocol/server";
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
 import { z } from "zod";
 import { openEngine } from "./engine.js";
-import { ImportInput, QueryInput, RunInput, WorkflowInput } from "./schema.js";
+import {
+  ImportInput,
+  QueryInput,
+  RunInput,
+  WorkflowInput,
+  JobInput,
+  ResumeInput,
+  JobListInput,
+} from "./schema.js";
+import { CompareInput, compareRuns, explainEntity } from "./state.js";
+import { DoctorInput, doctor } from "./doctor.js";
+import { planInvestigation } from "./planning.js";
 import { report } from "./report.js";
 
 export function createServer(engine) {
-  const server = new McpServer({ name: "osint-power", version: "0.2.0" });
+  const server = new McpServer({ name: "osint-power", version: "0.3.0" });
   const outputSchema = z.object({
     ok: z.boolean(),
     result: z.record(z.string(), z.json()),
@@ -33,12 +44,18 @@ export function createServer(engine) {
           openWorldHint: openWorld,
         },
       },
-      async (input) => {
+      async (input, extra) => {
         let output;
         try {
-          const result = await handler(input);
+          const result = await handler(input, extra.signal);
           output = {
-            ok: !["failed", "partial"].includes(result.status),
+            ok: ![
+              "failed",
+              "partial",
+              "deferred",
+              "cancelled",
+              "interrupted",
+            ].includes(result.status),
             result,
           };
         } catch (error) {
@@ -71,7 +88,7 @@ export function createServer(engine) {
     "collect",
     "Collect ONE in-scope target with a registered adapter. Never changes configuration. Check capabilities first.",
     RunInput,
-    (input) => engine.run(input),
+    (input, signal) => engine.run(input, { signal }),
     false,
     true,
   );
@@ -124,9 +141,78 @@ export function createServer(engine) {
     "workflow",
     "Plan or execute one bounded people/company/places/users/emails/exposures/correlation workflow. Default is a read-only plan. execute=true may collect through configured adapters and persist evidence; missing sources are explicit.",
     WorkflowInput,
-    (input) => engine.workflow(input),
+    (input, signal) => engine.workflow(input, signal),
     false,
     true,
+  );
+  register(
+    "start_workflow",
+    "Create a durable queued workflow without network collection. Resume it explicitly to execute.",
+    WorkflowInput.omit({ execute: true }),
+    (input) => engine.jobs.create(input),
+    false,
+  );
+  register(
+    "resume_run",
+    "Resume a queued, partial or expired-lease workflow using persisted checkpoints. Revalidates scope and configuration.",
+    ResumeInput,
+    (input, signal) => engine.resume(input, signal),
+    false,
+    true,
+  );
+  register(
+    "cancel_run",
+    "Request cancellation of a durable job, including an active collection. Cancelled jobs cannot resume.",
+    JobInput,
+    (input) => engine.jobs.cancel(input),
+    false,
+  );
+  register(
+    "get_job",
+    "Inspect job state, lease and up to 100 checkpoint records.",
+    JobInput,
+    (input) => engine.jobs.inspect(input),
+  );
+  register(
+    "list_jobs",
+    "Read a bounded page of durable jobs; no automatic collection.",
+    JobListInput,
+    (input) => engine.jobs.list(input),
+  );
+  register(
+    "source_health",
+    "Read persisted provider quotas, failures and cooldowns. Does not contact sources or reveal credentials.",
+    z.object({}).strict(),
+    () => engine.providers.health(),
+  );
+  register(
+    "doctor",
+    "Inspect local database/binaries, version/help contracts and credential presence. No target or credential verification.",
+    DoctorInput,
+    (input) => doctor(engine, input),
+  );
+  register(
+    "compare_runs",
+    "Compare immutable captured evidence with pagination and coverage-gap detection. Absence is never proof of removal.",
+    CompareInput,
+    (input) => compareRuns(engine.store, input),
+  );
+  register(
+    "explain_entity",
+    "Read evidence families and provenance without asserting independent corroboration or identity.",
+    z
+      .object({
+        entity_id: z.string().regex(/^[a-f0-9]{64}$/),
+        limit: z.number().int().min(1).max(100).default(10),
+      })
+      .strict(),
+    ({ entity_id, limit }) => explainEntity(engine.store, entity_id, limit),
+  );
+  register(
+    "plan_investigation",
+    "Rank configured actions using missing coverage, previous results, cache and source health; does not execute.",
+    WorkflowInput.omit({ execute: true }),
+    (input) => planInvestigation(engine, input),
   );
   register(
     "get_report",

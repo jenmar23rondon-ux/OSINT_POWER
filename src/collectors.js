@@ -42,10 +42,13 @@ export function rdapBase(ip, bootstrap) {
   return base;
 }
 export async function collectMX(target, config, dependencies = {}) {
+  dependencies.signal?.throwIfAborted();
   const resolver =
     dependencies.resolver ??
     new Resolver({ timeout: config.limits.timeoutMs, tries: 1 });
   const timer = setTimeout(() => resolver.cancel(), config.limits.timeoutMs);
+  const abort = () => resolver.cancel();
+  dependencies.signal?.addEventListener("abort", abort, { once: true });
   try {
     let records;
     let status;
@@ -57,6 +60,7 @@ export async function collectMX(target, config, dependencies = {}) {
           ? "mx_present"
           : "no_explicit_mx";
     } catch (error) {
+      if (dependencies.signal?.aborted) throw dependencies.signal.reason;
       if (!["ENODATA", "ENOTFOUND"].includes(error.code))
         throw new Error("DNS_LOOKUP_FAILED");
       records = [];
@@ -71,6 +75,7 @@ export async function collectMX(target, config, dependencies = {}) {
     });
   } finally {
     clearTimeout(timer);
+    dependencies.signal?.removeEventListener("abort", abort);
   }
 }
 export async function collectExtra(adapter, target, config, dependencies = {}) {

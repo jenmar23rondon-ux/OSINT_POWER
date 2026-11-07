@@ -61,3 +61,7 @@ Do not interpret a DNS MX as mailbox existence or catch-all, an ASN as ownership
 ```
 
 List only calls actually made. Findings need the observation contract and verifiable evidence identifiers. Give a concise decision and checkable basis, not hidden deliberation.
+
+## Recovery and evidence comparisons
+
+Read job state and provider health before retrying. Use resume_run for pending checkpoints, not a new investigation to bypass quotas. Compare sealed snapshot_id values; mutable job IDs are not historical captures. Preserve coverage_gap and not_observed uncertainty. Use plan_investigation for ranked actions and explain_entity for source-family provenance. No score turns alias matches or overlapping source counts into identity confirmation.

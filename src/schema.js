@@ -86,6 +86,15 @@ export const ImportInput = z
     data: z.string().min(1).max(2_000_000),
   })
   .strict();
+const ProviderPolicyBase = z
+  .object({
+    maxRequests: z.number().int().min(1).max(100000),
+    windowMs: z.number().int().min(1000).max(86400000),
+    minIntervalMs: z.number().int().min(0).max(60000),
+    failureThreshold: z.number().int().min(1).max(10),
+    cooldownMs: z.number().int().min(100).max(86400000),
+  })
+  .strict();
 export const Config = z
   .object({
     version: z.literal(1),
@@ -153,9 +162,42 @@ export const Config = z
           .max(20)
           .default([80, 443]),
         requestRate: z.number().int().min(1).max(20).default(2),
+        providers: z
+          .object({
+            defaults: ProviderPolicyBase.prefault({
+              maxRequests: 60,
+              windowMs: 60000,
+              minIntervalMs: 0,
+              failureThreshold: 3,
+              cooldownMs: 30000,
+            }),
+            overrides: z
+              .record(
+                z.string().regex(/^[a-z0-9.:-]{1,100}$/),
+                ProviderPolicyBase.partial(),
+              )
+              .default({
+                "api.github.com": { maxRequests: 60, windowMs: 3600000 },
+                "haveibeenpwned.com": { maxRequests: 10, windowMs: 60000 },
+              }),
+            maxWaitMs: z.number().int().min(0).max(60000).default(5000),
+          })
+          .strict()
+          .prefault({}),
       })
       .strict()
       .prefault({}),
+  })
+  .strict();
+
+export const JobInput = z.object({ id: z.uuid() }).strict();
+export const ResumeInput = JobInput.extend({
+  maxCalls: z.number().int().min(1).max(30).optional(),
+});
+export const JobListInput = z
+  .object({
+    limit: z.number().int().min(1).max(100).default(20),
+    offset: z.number().int().min(0).default(0),
   })
   .strict();
 

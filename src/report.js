@@ -2,11 +2,13 @@ export function report(engine) {
   const findings = engine.store.query({ limit: 50 });
   return {
     project: "OSINT_POWER",
-    version: "0.2.0",
+    version: "0.3.0",
     generated_at: new Date().toISOString(),
     findings,
     graph: engine.store.graph(50),
     runs: engine.store.runs(20),
+    jobs: engine.jobs.list({ limit: 20 }),
+    source_health: engine.providers.health(),
     next_actions: engine.next(),
     limitations: [
       "Source assessments are not verified ownership or identity.",

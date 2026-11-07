@@ -5,6 +5,7 @@ import { dirname } from "node:path";
 import { Observation, QueryInput } from "./schema.js";
 import { normalized } from "./scope.js";
 import { employeeValue } from "./identity.js";
+import { initializeState, capture } from "./state.js";
 
 function canonical(value) {
   if (Array.isArray(value)) return value.map(canonical);
@@ -24,6 +25,10 @@ export class Store {
   constructor(path = ":memory:") {
     if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true });
     this.db = new DatabaseSync(path, { timeout: 5000 });
+    if (this.db.prepare("PRAGMA user_version").get().user_version > 3) {
+      this.db.close();
+      throw new Error("DATABASE_VERSION_TOO_NEW");
+    }
     this.db.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;
       CREATE TABLE IF NOT EXISTS entities(id TEXT PRIMARY KEY, type TEXT NOT NULL, value TEXT NOT NULL, first_seen TEXT NOT NULL, last_seen TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS observations(id TEXT PRIMARY KEY, entity_id TEXT NOT NULL REFERENCES entities(id), source TEXT NOT NULL, confidence REAL NOT NULL, timestamp TEXT NOT NULL, evidence TEXT NOT NULL, first_seen TEXT NOT NULL, last_seen TEXT NOT NULL);
@@ -32,7 +37,8 @@ export class Store {
       CREATE TABLE IF NOT EXISTS cache(key TEXT PRIMARY KEY, expires INTEGER NOT NULL, value TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY, value TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS runs(id TEXT PRIMARY KEY, adapter TEXT NOT NULL, target TEXT NOT NULL, started TEXT NOT NULL, finished TEXT, status TEXT NOT NULL, summary TEXT);
-      PRAGMA user_version=1;`);
+      `);
+    initializeState(this.db);
   }
   bindScope(scope) {
     const fingerprint = hash(scope);
@@ -45,7 +51,7 @@ export class Store {
     )
       throw new Error("SCOPE_DATABASE_MISMATCH");
   }
-  ingest(items) {
+  ingest(items, context = {}) {
     // Validate the entire batch before changing state.
     const observations = items.map((item) =>
       Observation.parse({ ...item, value: normalized(item.type, item.value) }),
@@ -176,6 +182,7 @@ export class Store {
             observationId,
           );
       }
+      capture(this, context.runId, observations, context);
       this.db.exec("COMMIT");
     } catch (error) {
       this.db.exec("ROLLBACK");
@@ -221,12 +228,14 @@ export class Store {
         .map((x) => x.source);
       const best = this.db
         .prepare(
-          "SELECT MAX(confidence) AS confidence, COUNT(*) AS count FROM observations WHERE entity_id=?",
+          "SELECT MAX(confidence) AS confidence, COUNT(*) AS count,COUNT(DISTINCT source) AS source_count FROM observations WHERE entity_id=?",
         )
         .get(row.id);
       return {
         ...row,
         sources,
+        sources_total: best.source_count,
+        sources_truncated: best.source_count > sources.length,
         evidence_count: best.count,
         confidence: best.confidence,
         confidence_basis: "maximum source assessment; sources may overlap",
@@ -234,6 +243,8 @@ export class Store {
     });
     return {
       items,
+      returned: items.length,
+      truncated: more,
       next_cursor: more ? items.at(-1).id : null,
       limit,
       total: this.db
@@ -376,16 +387,27 @@ export class Store {
       .prepare("UPDATE runs SET finished=?, status=?, summary=? WHERE id=?")
       .run(new Date().toISOString(), status, JSON.stringify(summary), id);
   }
-  runs(limit = 20) {
+  runs(limit = 20, offset = 0) {
+    if (
+      !Number.isInteger(limit) ||
+      limit < 1 ||
+      limit > 100 ||
+      !Number.isInteger(offset) ||
+      offset < 0
+    )
+      throw new Error("INVALID_PAGINATION");
     return this.db
-      .prepare("SELECT * FROM runs ORDER BY started DESC LIMIT ?")
-      .all(limit)
+      .prepare("SELECT * FROM runs ORDER BY started DESC,id LIMIT ? OFFSET ?")
+      .all(limit, offset)
       .map((r) => ({
         ...r,
         summary: r.summary ? JSON.parse(r.summary) : null,
       }));
   }
   close() {
-    this.db.close();
+    if (!this.closed) {
+      this.db.close();
+      this.closed = true;
+    }
   }
 }

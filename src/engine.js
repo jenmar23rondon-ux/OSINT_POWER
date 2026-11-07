@@ -1,15 +1,23 @@
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
-import { setTimeout as sleep } from "node:timers/promises";
-import { Config, ImportInput, Observation, RunInput } from "./schema.js";
+import {
+  Config,
+  ImportInput,
+  Observation,
+  RunInput,
+  WorkflowInput,
+} from "./schema.js";
 import { Scope } from "./scope.js";
 import { Store, hash } from "./store.js";
 import { parse } from "./parsers.js";
 import { collect, ADAPTERS } from "./adapters.js";
-import { retry } from "./transport.js";
+import { retry, runProcess } from "./transport.js";
 import { z } from "zod";
 import { isIP } from "node:net";
 import { runWorkflow, WORKFLOWS } from "./workflows.js";
+import { ProviderGate } from "./providers.js";
+import { Jobs } from "./jobs.js";
+import { capture, recordSource, mirrorRun } from "./state.js";
 
 export class Engine {
   constructor(config, store, dependencies = {}) {
@@ -20,7 +28,8 @@ export class Engine {
     this.store.bindScope(people.length ? this.config.scope : legacyScope);
     this.dependencies = dependencies;
     this.tail = Promise.resolve();
-    this.lastCall = new Map();
+    this.providers = new ProviderGate(store, this.config.limits, dependencies);
+    this.jobs = new Jobs(this);
   }
   queue(operation) {
     const next = this.tail.then(operation);
@@ -43,15 +52,31 @@ export class Engine {
       const summary = {
         run_id: id,
         status: stats.invalid || stats.truncated ? "partial" : "completed",
-        ...this.store.ingest(items),
+        ...this.store.ingest(items, {
+          runId: id,
+          collector: "import:" + adapter,
+          target: "workspace_import",
+          input_hash: hash(data),
+        }),
         ...stats,
         input_hash: hash(data),
         next_actions: this.next(),
       };
       this.store.finish(id, summary.status, summary);
+      recordSource(
+        this.store,
+        id,
+        "import:" + adapter,
+        "workspace_import",
+        summary,
+      );
       return summary;
     } catch {
       this.store.finish(id, "failed", { code: "IMPORT_PARSE_ERROR" });
+      recordSource(this.store, id, "import:" + adapter, "workspace_import", {
+        status: "failed",
+        code: "IMPORT_PARSE_ERROR",
+      });
       return {
         run_id: id,
         status: "failed",
@@ -60,10 +85,11 @@ export class Engine {
       };
     }
   }
-  run(input) {
-    return this.queue(() => this.execute(input));
+  run(input, context = {}) {
+    return this.queue(() => this.execute(input, context));
   }
-  async execute(input) {
+  async execute(input, context = {}) {
+    context.signal?.throwIfAborted();
     const { adapter, target: raw } = RunInput.parse(input);
     const relatedHost =
       ["rdap", "routing"].includes(adapter) && isIP(raw)
@@ -76,32 +102,83 @@ export class Engine {
     if (ADAPTERS[adapter].mode === "active" && !this.config.active)
       throw new Error("ACTIVE_DISABLED");
     const runId = this.store.start(adapter, target);
-    const cacheKey = hash([adapter, target, this.config]);
+    context.onStarted?.(runId);
+    const finish = (summary) => {
+      this.store.finish(runId, summary.status, summary);
+      recordSource(this.store, runId, adapter, target, summary);
+      if (!context.isOwner || context.isOwner())
+        mirrorRun(this.store, runId, context.parentRunId);
+      return summary;
+    };
+    const cacheKey = hash(["v0.3", adapter, target, this.config]);
     const cached = this.store.cached(cacheKey);
-    if (cached) {
+    if (cached?.items) {
       const result = {
-        ...cached,
+        ...cached.summary,
         run_id: runId,
         cached: true,
+        inserted: 0,
+        repeated: cached.items.length,
         next_actions: this.next(),
       };
-      this.store.finish(runId, "cached", result);
-      return result;
+      capture(this.store, runId, cached.items, {
+        collector: adapter,
+        target,
+        cached: true,
+        collected_at: cached.summary.collected_at,
+        origin_run_id: cached.summary.run_id,
+        input_hash: cached.summary.input_hash,
+      });
+      return finish(result);
     }
     try {
       let attempts = 0;
-      const raw = await retry(async () => {
-        attempts++;
-        const interval =
-          adapter === "hibp"
-            ? Math.max(this.config.limits.minIntervalMs, 6000)
-            : this.config.limits.minIntervalMs;
-        const remaining =
-          interval - (Date.now() - (this.lastCall.get(adapter) ?? 0));
-        if (remaining > 0) await sleep(remaining);
-        this.lastCall.set(adapter, Date.now());
-        return collect(adapter, target, this.config, this.dependencies);
-      }, this.config.limits);
+      const raw = await retry(
+        async () => {
+          attempts++;
+          const signal = context.signal;
+          const dependencies = {
+            ...this.dependencies,
+            signal,
+            fetcher: (url, options) =>
+              this.providers.fetch(
+                url,
+                options,
+                this.dependencies.fetcher ?? fetch,
+                signal,
+              ),
+            runner: (command, args, limits, stdin = "") =>
+              this.providers.process(
+                adapter,
+                this.dependencies.runner ?? runProcess,
+                [command, args, limits, stdin],
+                signal,
+              ),
+          };
+          if (adapter === "mx")
+            await this.providers.before("dns:system", signal);
+          try {
+            const value = await collect(
+              adapter,
+              target,
+              this.config,
+              dependencies,
+            );
+            if (adapter === "mx") this.providers.success("dns:system");
+            return value;
+          } catch (error) {
+            if (adapter === "mx" && !signal?.aborted)
+              this.providers.failure(
+                "dns:system",
+                error.code ?? "DNS_LOOKUP_FAILED",
+              );
+            throw error;
+          }
+        },
+        this.config.limits,
+        undefined,
+        context.signal,
+      );
       let parsed;
       if (adapter === "hibp") {
         const data = z
@@ -145,6 +222,8 @@ export class Engine {
           { target, relatedHost },
         );
       const { items, ...stats } = parsed;
+      const collected_at = new Date().toISOString();
+      context.signal?.throwIfAborted();
       const summary = {
         run_id: runId,
         adapter,
@@ -152,15 +231,23 @@ export class Engine {
         status: stats.invalid || stats.truncated ? "partial" : "completed",
         cached: false,
         attempts,
-        ...this.store.ingest(items),
+        collected_at,
+        input_hash: hash(raw),
+        ...this.store.ingest(items, {
+          runId,
+          collector: adapter,
+          target,
+          collected_at,
+          input_hash: hash(raw),
+        }),
         ...stats,
         next_actions: this.next(),
       };
-      this.store.finish(runId, summary.status, summary);
+      finish(summary);
       if (summary.status === "completed")
         this.store.cache(
           cacheKey,
-          { ...summary, inserted: 0, repeated: summary.observations },
+          { summary, items },
           this.config.limits.cacheTtlSeconds,
         );
       return summary;
@@ -171,12 +258,17 @@ export class Engine {
       const summary = {
         run_id: runId,
         adapter,
-        status: "failed",
+        status:
+          code === "CANCELLED"
+            ? "cancelled"
+            : code.startsWith("PROVIDER_")
+              ? "deferred"
+              : "failed",
         code,
+        retry_after_ms: error.retryAfterMs ?? 0,
         next_actions: this.next(),
       };
-      this.store.finish(runId, "failed", summary);
-      return summary;
+      return finish(summary);
     }
   }
   async pipeline(target) {
@@ -234,7 +326,8 @@ export class Engine {
   }
   capabilities() {
     return {
-      version: "0.2.0",
+      version: "0.3.0",
+      durable_jobs: true,
       workflows: WORKFLOWS,
       network: this.config.network,
       active: this.config.active,
@@ -249,8 +342,18 @@ export class Engine {
       collectors: this.config.collectors,
     };
   }
-  workflow(input) {
-    return runWorkflow(this, input);
+  async workflow(input, signal) {
+    const request = WorkflowInput.parse(input);
+    if (!request.execute) return runWorkflow(this, request);
+    const job = this.jobs.create(request);
+    return this.resume({ id: job.id }, signal);
+  }
+  resume(input, signal) {
+    return this.jobs.resume(
+      input,
+      (request, job) => runWorkflow(this, request, job),
+      signal,
+    );
   }
 }
 export function openEngine(configPath, databasePath, dependencies) {

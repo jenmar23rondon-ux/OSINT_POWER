@@ -13,9 +13,9 @@
   <a href="#quick-start">Quick start</a> · <a href="docs/WORKFLOWS.md">Seven workflows</a> · <a href="docs/AI.md">Connect AI</a> · <a href="docs/ADAPTERS.md">Adapters</a> · <a href="docs/ROADMAP.md">Roadmap</a>
 </p>
 
-OSINT POWER is an evidence-focused reconnaissance framework for scoped security assessments and research. It normalizes public-source observations, stores provenance in SQLite, and exposes a CLI and **nine MCP tools**. It works without a model or an AI API key.
+OSINT POWER is an evidence-focused reconnaissance framework for scoped security assessments and research. It normalizes public-source observations, stores provenance in SQLite, and exposes a CLI and **19 MCP tools**. It works without a model or an AI API key.
 
-**Status: v0.2.0, initial workflow implementation.** Seven workflows are available with explicit budgets, source status and partial results. External binaries are installed separately. Some sources are supported through imports rather than live connectors; see the matrix below.
+**Status: v0.3.0, resumable investigations and evidence snapshots.** Seven workflows are available with explicit budgets, source status and partial results. External binaries are installed separately. Some sources are supported through imports rather than live connectors; see the matrix below.
 
 ## Quick start
 
@@ -40,6 +40,23 @@ node src/cli.js report
 ```
 
 `init` never overwrites an existing configuration. The default configuration disables network access and active collection. State is stored alongside the configuration in `.osint-power/state.sqlite`.
+
+## Reliable investigations
+
+Durable jobs resume from checkpoints, use shared SQLite worker leases, and support cancellation. Each execution segment seals an immutable evidence snapshot for comparison. Provider budgets, cooldowns and Retry-After survive process restarts.
+
+```bash
+node src/cli.js doctor
+node src/cli.js plan --workflow company --target example.com
+node src/cli.js workflow --workflow company --target example.com --queue
+node src/cli.js resume --id JOB_UUID
+node src/cli.js compare --before SNAPSHOT_UUID --after SNAPSHOT_UUID
+node src/cli.js report --format html --output investigation.html
+```
+
+The offline HTML report includes inventory filters, a selectable graph, entity details, timeline and provider health. Comparisons distinguish new/changed evidence, unobserved records and coverage gaps. They never equate a failed source with asset removal.
+
+See **[operations, recovery limits and snapshot semantics](docs/OPERATIONS.md)** before running long investigations.
 
 ## Seven workflows
 
@@ -103,7 +120,7 @@ The legacy pipeline runs configured crt.sh/subfinder/Amass collectors only. Work
 
 ## Integrations and actual support
 
-| Source                                                                                                         | v0.2 support                                              | Requirements and limitations                                                          |
+| Source                                                                                                         | Current support                                           | Requirements and limitations                                                          |
 | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------- |
 | [crt.sh](https://crt.sh/)                                                                                      | Certificate API                                           | Certificate names are not proof of ownership                                          |
 | [subfinder](https://github.com/projectdiscovery/subfinder)                                                     | Execute and import TXT/JSONL                              | Binary on PATH; native upstream provider configuration                                |
@@ -145,17 +162,22 @@ The MCP server uses stdio. Register it with your compatible host using absolute 
 
 Adapt registration to your host's format. See [AI integration](docs/AI.md) and the [agent template](docs/AGENT_PROMPT.md).
 
-| MCP tool           | Purpose                                           |
-| ------------------ | ------------------------------------------------- |
-| `capabilities`     | Configured scope, adapters, workflows and limits  |
-| `collect`          | One validated adapter/target pair                 |
-| `passive_pipeline` | Sequential passive discovery with partial results |
-| `import_findings`  | Normalize a bounded supplied export               |
-| `query_findings`   | Stable entity pages and provenance summary        |
-| `get_evidence`     | Untrusted observations for a specific entity      |
-| `get_graph`        | Evidence-backed relationships                     |
-| `workflow`         | Plan or execute a bounded workflow                |
-| `get_report`       | Bounded report, history and next actions          |
+| MCP tool                                       | Purpose                                                       |
+| ---------------------------------------------- | ------------------------------------------------------------- |
+| `capabilities`                                 | Configured scope, adapters, workflows and limits              |
+| `collect`                                      | One validated adapter/target pair                             |
+| `passive_pipeline`                             | Sequential passive discovery with partial results             |
+| `import_findings`                              | Normalize a bounded supplied export                           |
+| `query_findings`                               | Stable entity pages and provenance summary                    |
+| `get_evidence`                                 | Untrusted observations for a specific entity                  |
+| `get_graph`                                    | Evidence-backed relationships                                 |
+| `workflow`                                     | Plan or execute a bounded workflow                            |
+| `start_workflow` / `resume_run` / `cancel_run` | Queue, resume and cancel durable jobs                         |
+| `get_job` / `list_jobs`                        | Inspect checkpoints and worker leases                         |
+| `doctor` / `source_health`                     | Local compatibility and persisted provider state              |
+| `compare_runs` / `explain_entity`              | Immutable comparisons and provenance                          |
+| `plan_investigation`                           | Rank configured actions using coverage, freshness and budgets |
+| `get_report`                                   | Bounded report, history and next actions                      |
 
 The model reasons about the evidence; the core handles parsing, validation and storage. Evidence text cannot change the configured scope or become a shell command.
 
@@ -204,7 +226,7 @@ npm run schema
 npm audit
 ```
 
-CI covers Windows and Linux. Tests use synthetic fixtures, mocked network sources, bounded local subprocesses and a real MCP client/server session. They do not certify every upstream binary version. See [CONTRIBUTING.md](CONTRIBUTING.md).
+CI covers Windows and Linux. Core tests use synthetic fixtures, mocked network sources, bounded local subprocesses and real MCP sessions. A separate Linux native lab downloads checksum-pinned httpx/dnsx/naabu and exercises loopback-only fixtures. It does not certify every upstream version. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 The [Dockerfile](docker/Dockerfile) runs the core as an unprivileged user. It does not bundle reconnaissance binaries or impose a provider-specific egress policy; configure resource and network limits on the host.
 

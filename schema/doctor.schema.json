@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "probe": {
+      "default": true,
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "probe"
+  ],
+  "additionalProperties": false
+}

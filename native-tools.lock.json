@@ -1,0 +1,41 @@
+{
+  "httpx": {
+    "version": "v1.12.0",
+    "platforms": {
+      "linux": {
+        "url": "https://github.com/projectdiscovery/httpx/releases/download/v1.12.0/httpx_1.12.0_linux_amd64.zip",
+        "sha256": "9d8439e8b6c9aa7d1e2314817a392e00d5178da3af5652f7475f88868f418f76"
+      },
+      "windows": {
+        "url": "https://github.com/projectdiscovery/httpx/releases/download/v1.12.0/httpx_1.12.0_windows_amd64.zip",
+        "sha256": "14d8ccaa2d95ce9365162682f1a2ba3f14d2000bb4bfb0924af65ec5163ae021"
+      }
+    }
+  },
+  "dnsx": {
+    "version": "v1.3.1",
+    "platforms": {
+      "linux": {
+        "url": "https://github.com/projectdiscovery/dnsx/releases/download/v1.3.1/dnsx_1.3.1_linux_amd64.zip",
+        "sha256": "438b964653056dd51dcfe614b1a16f8bced3cc48a1d27bc07cc6fdf2ef2a9533"
+      },
+      "windows": {
+        "url": "https://github.com/projectdiscovery/dnsx/releases/download/v1.3.1/dnsx_1.3.1_windows_amd64.zip",
+        "sha256": "112c2d62d67d26a1b940ed9d10d500d2aa1ee3e3e18393d181ac4969936b9d96"
+      }
+    }
+  },
+  "naabu": {
+    "version": "v2.7.0",
+    "platforms": {
+      "linux": {
+        "url": "https://github.com/projectdiscovery/naabu/releases/download/v2.7.0/naabu_2.7.0_linux_amd64.zip",
+        "sha256": "0cc77c0ca32d2f519ffbaa7665bb0e7c88c40753ab22f03551d453a1a823e9f0"
+      },
+      "windows": {
+        "url": "https://github.com/projectdiscovery/naabu/releases/download/v2.7.0/naabu_2.7.0_windows_amd64.zip",
+        "sha256": "57f014880ec4d8cfe9d23d7a185d1b478f7867fc6f5fef63be1af835a4c5639a"
+      }
+    }
+  }
+}

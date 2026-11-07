@@ -4,13 +4,29 @@ import { readFileSync, writeFileSync, statSync } from "node:fs";
 import { Engine, openEngine } from "./engine.js";
 import { Store } from "./store.js";
 import { report } from "./report.js";
+import { reportHTML } from "./dashboard.js";
+import { doctor } from "./doctor.js";
+import { planInvestigation } from "./planning.js";
+import { compareRuns, explainEntity } from "./state.js";
+import { JobListInput } from "./schema.js";
 
 const HELP = {
   project: "OSINT_POWER",
-  version: "0.2.0",
+  version: "0.3.0",
   commands: {
+    doctor: "doctor [--skip-probes] (local diagnostics only)",
+    plan: "plan --workflow company --target example.com (ranked actions; no collection)",
+    resume: "resume --id JOB_UUID [--max-calls 10]",
+    cancel: "cancel --id JOB_UUID",
+    jobs: "jobs [--limit 20] [--offset 0]",
+    job: "job --id JOB_UUID",
+    runs: "runs [--limit 20] [--offset 0]",
+    compare:
+      "compare --before RUN_UUID --after RUN_UUID [--limit 25] [--cursor HASH]",
+    explain: "explain --id ENTITY_HASH [--limit 10]",
+    health: "health (persisted provider quotas and cooldowns)",
     workflow:
-      "workflow --workflow company --target example.com [--execute] [--max-targets 3] [--max-calls 10]",
+      "workflow --workflow company --target example.com [--execute | --queue] [--max-targets 3] [--max-calls 10]",
     demo: "Offline example: node src/cli.js demo",
     init: "Write a new config.json without overwriting: node src/cli.js init",
     capabilities: "List configured collectors, importers and scope",
@@ -21,7 +37,8 @@ const HELP = {
     query: "query [--type domain] [--limit 25] [--cursor HASH]",
     evidence: "evidence --id ENTITY_HASH [--limit 25] [--offset 0]",
     graph: "graph [--limit 25] [--offset 0]",
-    report: "Print a bounded JSON report to stdout",
+    report:
+      "report [--format json|html --output PATH]; interactive HTML requires an explicit output path",
   },
   options:
     "--config config.json --db PATH; all CLI responses are JSON; diagnostics use stderr",
@@ -32,6 +49,8 @@ try {
     allowPositionals: true,
     options: {
       execute: { type: "boolean", default: false },
+      queue: { type: "boolean", default: false },
+      "skip-probes": { type: "boolean", default: false },
       ...Object.fromEntries(
         [
           "config",
@@ -47,6 +66,10 @@ try {
           "workflow",
           "max-targets",
           "max-calls",
+          "before",
+          "after",
+          "format",
+          "output",
         ].map((k) => [k, { type: "string" }]),
       ),
     },
@@ -90,18 +113,66 @@ try {
       ...(v.cursor ? { cursor: v.cursor } : {}),
     };
     if (command === "capabilities") result = engine.capabilities();
+    else if (command === "doctor")
+      result = await doctor(engine, { probe: !v["skip-probes"] });
+    else if (command === "health") result = engine.providers.health();
+    else if (command === "plan")
+      result = await planInvestigation(engine, {
+        workflow: v.workflow,
+        target: v.target,
+        maxTargets: Number(v["max-targets"] ?? 3),
+        maxCalls: Number(v["max-calls"] ?? 10),
+      });
+    else if (command === "resume")
+      result = await engine.resume({
+        id: v.id,
+        ...(v["max-calls"] ? { maxCalls: Number(v["max-calls"]) } : {}),
+      });
+    else if (command === "cancel") result = engine.jobs.cancel({ id: v.id });
+    else if (command === "job") result = engine.jobs.inspect({ id: v.id });
+    else if (command === "jobs")
+      result = engine.jobs.list({
+        limit: Number(v.limit ?? 20),
+        offset: Number(v.offset ?? 0),
+      });
+    else if (command === "runs") {
+      const { limit, offset } = JobListInput.parse({
+        limit: Number(v.limit ?? 20),
+        offset: Number(v.offset ?? 0),
+      });
+      const total = engine.store.db
+        .prepare("SELECT COUNT(*) AS n FROM runs")
+        .get().n;
+      result = {
+        items: engine.store.runs(limit, offset),
+        total,
+        next_offset: offset + limit < total ? offset + limit : null,
+      };
+    } else if (command === "compare")
+      result = compareRuns(engine.store, {
+        before: v.before,
+        after: v.after,
+        limit: Number(v.limit ?? 25),
+        ...(v.cursor ? { cursor: v.cursor } : {}),
+      });
+    else if (command === "explain")
+      result = explainEntity(engine.store, v.id, Number(v.limit ?? 10));
     else if (command === "run")
       result = await engine.run({ adapter: v.adapter, target: v.target });
     else if (command === "pipeline") result = await engine.pipeline(v.target);
-    else if (command === "workflow")
-      result = await engine.workflow({
+    else if (command === "workflow") {
+      if (v.queue && v.execute) throw new Error("QUEUE_AND_EXECUTE_CONFLICT");
+      const request = {
         workflow: v.workflow,
         target: v.target,
         execute: v.execute,
         maxTargets: Number(v["max-targets"] ?? 3),
         maxCalls: Number(v["max-calls"] ?? 10),
-      });
-    else if (command === "import") {
+      };
+      result = v.queue
+        ? engine.jobs.create(request)
+        : await engine.workflow(request);
+    } else if (command === "import") {
       if (!v.file || statSync(v.file).size > engine.config.limits.maxBytes)
         throw new Error("INVALID_IMPORT_FILE");
       result = engine.import({
@@ -117,17 +188,52 @@ try {
       );
     else if (command === "graph")
       result = engine.store.graph(Number(v.limit ?? 25), Number(v.offset ?? 0));
-    else if (command === "report") result = report(engine);
-    else throw new Error("UNKNOWN_COMMAND");
+    else if (command === "report") {
+      const format = v.format ?? "json";
+      if (!["json", "html"].includes(format))
+        throw new Error("INVALID_REPORT_FORMAT");
+      if (format === "html" && !v.output)
+        throw new Error("OUTPUT_PATH_REQUIRED");
+      result = report(engine);
+      if (v.output) {
+        writeFileSync(
+          v.output,
+          format === "html"
+            ? reportHTML(result)
+            : JSON.stringify(result, null, 2) + "\n",
+          { mode: 0o600 },
+        );
+        result = {
+          status: "completed",
+          format,
+          path: v.output,
+          total_entities: result.findings.total,
+          returned_entities: result.findings.returned,
+        };
+      }
+    } else throw new Error("UNKNOWN_COMMAND");
   }
   process.stdout.write(
     JSON.stringify(
-      { ok: result.status !== "failed" && result.status !== "partial", result },
+      {
+        ok: ![
+          "failed",
+          "partial",
+          "cancelled",
+          "interrupted",
+          "deferred",
+        ].includes(result.status),
+        result,
+      },
       null,
       2,
     ) + "\n",
   );
-  if (result.status === "failed" || result.status === "partial")
+  if (
+    ["failed", "partial", "cancelled", "interrupted", "deferred"].includes(
+      result.status,
+    )
+  )
     process.exitCode = 1;
 } catch (error) {
   const code =

@@ -36,7 +36,7 @@ Adapt registration to your host. stdout is exclusively the MCP protocol; diagnos
 4. Request a small entity page and then evidence for a specific conclusion.
 5. Review graph/report results and three next actions.
 
-The nine tools are capabilities, collect, passive_pipeline, import_findings, query_findings, get_evidence, get_graph, workflow and get_report. The [workflow guide](WORKFLOWS.md) explains the seven modes and execution budgets.
+There are 19 tools. The original nine are capabilities, collect, passive_pipeline, import_findings, query_findings, get_evidence, get_graph, workflow and get_report. Additional job, diagnostic, provenance and planning tools are documented in [operations](OPERATIONS.md). The [workflow guide](WORKFLOWS.md) explains the seven modes and execution budgets.
 
 ## Response contract
 
@@ -79,3 +79,9 @@ HIBP uses HIBP_API_KEY from the server environment and requires exact configured
 ## References
 
 [MCP SDK](https://ts.sdk.modelcontextprotocol.io/v2/) · [Node SQLite](https://nodejs.org/api/sqlite.html) · [Adapter contracts](ADAPTERS.md).
+
+## Durable jobs and immutable evidence
+
+Use start_workflow to queue without collection, resume_run to execute pending steps and cancel_run to cancel. Inspect get_job/list_jobs and source_health before retrying. Workflow run_id identifies mutable job state; snapshot_id identifies a sealed comparison capture. compare_runs accepts immutable captures, not a mutable job ID. Provider cooldowns and quotas cannot be reset through MCP.
+
+plan_investigation ranks eligible actions without network or writes; explain_entity presents provenance without asserting independent confirmation. See [OPERATIONS.md](OPERATIONS.md) for at-least-once recovery, lease expiry, limits and errors.

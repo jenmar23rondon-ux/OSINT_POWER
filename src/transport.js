@@ -10,11 +10,13 @@ export class OperationError extends Error {
     this.retryAfterMs = retryAfterMs;
   }
 }
-export async function retry(operation, limits, wait = sleep) {
+export async function retry(operation, limits, wait = sleep, signal) {
   for (let attempt = 1; attempt <= limits.attempts; attempt++) {
+    signal?.throwIfAborted();
     try {
       return await operation();
     } catch (error) {
+      if (signal?.aborted) throw signal.reason;
       if (!error.retryable || attempt === limits.attempts) throw error;
       // Do not shorten a provider's Retry-After. Long waits end this run instead.
       const delay = Math.max(
@@ -23,7 +25,7 @@ export async function retry(operation, limits, wait = sleep) {
         error.retryAfterMs ?? 0,
       );
       if (delay > 60_000) throw new OperationError("RETRY_LATER");
-      await wait(delay);
+      await wait(delay, undefined, { signal });
     }
   }
 }
@@ -33,13 +35,14 @@ export async function fetchText(url, limits, headers = {}, fetcher = fetch) {
     response = await fetcher(url, {
       headers: {
         "User-Agent":
-          "OSINT_POWER/0.2 (+https://github.com/jenmar23rondon-ux/OSINT_POWER)",
+          "OSINT_POWER/0.3 (+https://github.com/jenmar23rondon-ux/OSINT_POWER)",
         ...headers,
       },
       redirect: "error",
       signal: AbortSignal.timeout(limits.timeoutMs),
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof OperationError) throw error;
     throw new OperationError("NETWORK_ERROR", true);
   }
   if (
@@ -84,8 +87,12 @@ export async function fetchText(url, limits, headers = {}, fetcher = fetch) {
   }
   return Buffer.concat(chunks).toString("utf8");
 }
-export function runProcess(command, args, limits, stdin = "") {
+export function runProcess(command, args, limits, stdin = "", options = {}) {
   return new Promise((resolve, reject) => {
+    if (options.signal?.aborted) {
+      reject(options.signal.reason);
+      return;
+    }
     const env = Object.fromEntries(
       Object.entries(process.env).filter(([key]) =>
         [
@@ -96,6 +103,8 @@ export function runProcess(command, args, limits, stdin = "") {
           "TMP",
           "HOME",
           "USERPROFILE",
+          "APPDATA",
+          "LOCALAPPDATA",
           "XDG_CONFIG_HOME",
         ].includes(key.toUpperCase()),
       ),
@@ -108,6 +117,8 @@ export function runProcess(command, args, limits, stdin = "") {
     });
     let bytes = 0;
     let output = "";
+    let stderr = "";
+    const errDecoder = new StringDecoder("utf8");
     const decoder = new StringDecoder("utf8");
     let failure;
     const stop = (code) => {
@@ -115,6 +126,13 @@ export function runProcess(command, args, limits, stdin = "") {
       child.kill("SIGKILL");
     };
     const timer = setTimeout(() => stop("PROCESS_TIMEOUT"), limits.timeoutMs);
+    const abort = () => stop("CANCELLED");
+    options.signal?.addEventListener("abort", abort, { once: true });
+    if (options.signal?.aborted) abort();
+    const cleanup = () => {
+      clearTimeout(timer);
+      options.signal?.removeEventListener("abort", abort);
+    };
     child.stdout.on("data", (chunk) => {
       bytes += chunk.length;
       if (bytes > limits.maxBytes) stop("RESPONSE_TOO_LARGE");
@@ -123,10 +141,11 @@ export function runProcess(command, args, limits, stdin = "") {
     child.stderr.on("data", (chunk) => {
       bytes += chunk.length;
       if (bytes > limits.maxBytes) stop("RESPONSE_TOO_LARGE");
+      else if (options.captureStderr) stderr += errDecoder.write(chunk);
     });
     child.stdin.on("error", () => {});
     child.on("error", (error) => {
-      clearTimeout(timer);
+      cleanup();
       reject(
         new OperationError(
           error.code === "ENOENT"
@@ -136,10 +155,15 @@ export function runProcess(command, args, limits, stdin = "") {
       );
     });
     child.on("close", (code) => {
-      clearTimeout(timer);
+      cleanup();
       if (failure) reject(failure);
       else if (code !== 0) reject(new OperationError("TOOL_FAILED"));
-      else resolve(output + decoder.end());
+      else
+        resolve(
+          output +
+            decoder.end() +
+            (options.captureStderr ? stderr + errDecoder.end() : ""),
+        );
     });
     child.stdin.end(stdin);
   });
