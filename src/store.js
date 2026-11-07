@@ -4,6 +4,7 @@ import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { Observation, QueryInput } from "./schema.js";
 import { normalized } from "./scope.js";
+import { employeeValue } from "./identity.js";
 
 function canonical(value) {
   if (Array.isArray(value)) return value.map(canonical);
@@ -108,6 +109,72 @@ export class Store {
             relation,
             observationId,
           );
+        const ev = o.evidence;
+        if (o.type === "domain") {
+          const company = this.db
+            .prepare(
+              "SELECT id, value FROM entities WHERE type='company' ORDER BY length(value) DESC",
+            )
+            .all()
+            .find(
+              (c) => o.value === c.value || o.value.endsWith("." + c.value),
+            );
+          if (company)
+            this.edge(company.id, entityId, "contains_domain", observationId);
+        }
+        if (ev.company && o.type !== "company")
+          this.edge(
+            hash(["company", ev.company]),
+            entityId,
+            o.type === "employee"
+              ? "professional_association"
+              : o.type === "place"
+                ? "public_office"
+                : "public_context",
+            observationId,
+          );
+        if (ev.person && ev.company && o.type !== "employee")
+          this.edge(
+            hash([
+              "employee",
+              employeeValue({ name: ev.person, companyDomain: ev.company }),
+            ]),
+            entityId,
+            o.type === "profile"
+              ? "candidate_profile"
+              : o.type === "username"
+                ? "candidate_alias"
+                : "public_context",
+            observationId,
+          );
+        if (o.type === "username" && ev.account)
+          this.edge(
+            hash(["email", ev.account]),
+            entityId,
+            "derived_alias",
+            observationId,
+          );
+        if (o.type === "email")
+          this.edge(
+            hash(["company", o.value.split("@")[1]]),
+            entityId,
+            "public_email",
+            observationId,
+          );
+        if (o.type === "breach" && ev.account)
+          this.edge(
+            hash(["email", ev.account]),
+            entityId,
+            "breach_association",
+            observationId,
+          );
+        if (["network", "asn"].includes(o.type) && ev.ip)
+          this.edge(
+            hash(["ip", ev.ip]),
+            entityId,
+            o.type === "asn" ? "announced_by" : "registered_or_routed_network",
+            observationId,
+          );
       }
       this.db.exec("COMMIT");
     } catch (error) {
@@ -174,6 +241,64 @@ export class Store {
           `SELECT COUNT(*) AS n FROM entities ${type ? "WHERE type=?" : ""}`,
         )
         .get(...(type ? [type] : [])).n,
+    };
+  }
+  domainEntities(type, target, limit = 10) {
+    return this.db
+      .prepare(
+        "SELECT * FROM entities WHERE type=? AND (value=? OR value LIKE ? OR value LIKE ?) ORDER BY id LIMIT ?",
+      )
+      .all(type, target, "%." + target, "%@" + target, Math.min(100, limit));
+  }
+  ipHost(value, scope) {
+    const rows = this.db
+      .prepare(
+        "SELECT o.evidence FROM observations o JOIN entities e ON e.id=o.entity_id WHERE e.type='ip' AND e.value=? LIMIT 100",
+      )
+      .all(value);
+    for (const row of rows) {
+      const host = JSON.parse(row.evidence).host;
+      if (host && scope.allows("domain", host)) return host;
+    }
+    return null;
+  }
+  domainIPs(target, limit = 10) {
+    return this.db
+      .prepare(
+        "SELECT DISTINCT ip.* FROM entities ip JOIN edges edge ON edge.to_id=ip.id AND edge.relation='resolves_to' JOIN entities host ON host.id=edge.from_id WHERE ip.type='ip' AND (host.value=? OR host.value LIKE ?) ORDER BY ip.id LIMIT ?",
+      )
+      .all(target, "%." + target, Math.min(100, limit));
+  }
+  contextEntities(type, target, limit = 25) {
+    return this.db
+      .prepare(
+        "SELECT DISTINCT e.* FROM entities e JOIN observations o ON o.entity_id=e.id WHERE e.type=? AND json_extract(o.evidence,'$.company')=? ORDER BY e.id LIMIT ?",
+      )
+      .all(type, target, Math.min(100, limit));
+  }
+  findings(target, limit = 25) {
+    const rows = this.db
+      .prepare(
+        "SELECT e.id,e.type,e.value,o.source,o.confidence,o.timestamp,o.evidence FROM entities e JOIN observations o ON o.entity_id=e.id WHERE e.value=? OR (e.type='domain' AND e.value LIKE ?) OR json_extract(o.evidence,'$.company')=? OR json_extract(o.evidence,'$.host')=? OR json_extract(o.evidence,'$.host') LIKE ? OR (e.type='email' AND e.value LIKE ?) OR json_extract(o.evidence,'$.account') LIKE ? ORDER BY o.last_seen DESC,o.id LIMIT ?",
+      )
+      .all(
+        target,
+        "%." + target,
+        target,
+        target,
+        "%." + target,
+        "%@" + target,
+        "%@" + target,
+        Math.min(100, limit),
+      );
+    return {
+      items: rows.map((r) => ({
+        ...r,
+        evidence: JSON.parse(r.evidence),
+        untrusted: true,
+      })),
+      limit,
+      bounded: true,
     };
   }
   evidence(entityId, limit = 25, offset = 0) {

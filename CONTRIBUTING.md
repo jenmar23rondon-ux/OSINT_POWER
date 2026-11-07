@@ -1,6 +1,6 @@
-# Contribuir a OSINT POWER
+# Contributing
 
-Abre un issue con el caso de uso, formato esperado y un fixture sintético. Para un nuevo adaptador, sigue [docs/ADAPTERS.md](docs/ADAPTERS.md). Evita dependencias obligatorias de frameworks externos completos: el núcleo debe seguir funcionando con la demo offline.
+Open an issue with the use case, expected contract and a synthetic fixture. Follow [adapter guidance](docs/ADAPTERS.md) for new sources. Keep the offline core usable without installing entire third-party frameworks.
 
 ```bash
 npm ci --ignore-scripts
@@ -11,6 +11,6 @@ npm run schema
 npm audit
 ```
 
-Las pruebas no deben enviar tráfico a servicios externos ni usar datos de personas reales. Incluye controles de alcance, errores y resultados parciales cuando cambies colección o parsing. Comprueba que stdout del servidor siga siendo exclusivamente MCP.
+Tests must not contact external targets or contain real personal information. Cover scope, malformed inputs, partial results and errors when changing collection/parsing. Preserve stdout as exclusively MCP in the server.
 
-Documenta lo que está implementado, sus límites y cómo se comprobó. No presentes planes futuros como capacidades existentes. Conserva la licencia MIT y los créditos de los proyectos integrados.
+Document implemented behavior, compatibility and validation. Keep planned capabilities distinct. Preserve MIT notices and upstream credits. Documentation, examples, templates and user-facing messages are maintained in English.

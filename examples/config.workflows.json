@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "scope": {
+    "domains": ["example.com"],
+    "people": [
+      {
+        "name": "Alex Rivera",
+        "companyDomain": "example.com",
+        "aliases": ["arivera"]
+      }
+    ],
+    "emails": ["alex@example.com"],
+    "documents": ["config.txt"]
+  },
+  "network": false,
+  "active": false,
+  "enabledAdapters": [
+    "crtsh",
+    "subfinder",
+    "sherlock",
+    "github-profile",
+    "theharvester",
+    "dnsx",
+    "httpx",
+    "mx",
+    "rdap",
+    "routing",
+    "hibp"
+  ],
+  "collectors": {
+    "sherlockSites": ["GitHub"],
+    "harvesterSources": ["crtsh"],
+    "usernameSuffixes": ["1", "01"]
+  }
+}

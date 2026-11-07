@@ -7,8 +7,10 @@ import { report } from "./report.js";
 
 const HELP = {
   project: "OSINT_POWER",
-  version: "0.1.0",
+  version: "0.2.0",
   commands: {
+    workflow:
+      "workflow --workflow company --target example.com [--execute] [--max-targets 3] [--max-calls 10]",
     demo: "Offline example: node src/cli.js demo",
     init: "Write a new config.json without overwriting: node src/cli.js init",
     capabilities: "List configured collectors, importers and scope",
@@ -28,20 +30,26 @@ let engine;
 try {
   const { values: v, positionals } = parseArgs({
     allowPositionals: true,
-    options: Object.fromEntries(
-      [
-        "config",
-        "db",
-        "adapter",
-        "target",
-        "file",
-        "type",
-        "limit",
-        "cursor",
-        "id",
-        "offset",
-      ].map((k) => [k, { type: "string" }]),
-    ),
+    options: {
+      execute: { type: "boolean", default: false },
+      ...Object.fromEntries(
+        [
+          "config",
+          "db",
+          "adapter",
+          "target",
+          "file",
+          "type",
+          "limit",
+          "cursor",
+          "id",
+          "offset",
+          "workflow",
+          "max-targets",
+          "max-calls",
+        ].map((k) => [k, { type: "string" }]),
+      ),
+    },
   });
   const command = positionals[0] ?? "help";
   if (positionals.length > 1) throw new Error("UNEXPECTED_ARGUMENT");
@@ -85,6 +93,14 @@ try {
     else if (command === "run")
       result = await engine.run({ adapter: v.adapter, target: v.target });
     else if (command === "pipeline") result = await engine.pipeline(v.target);
+    else if (command === "workflow")
+      result = await engine.workflow({
+        workflow: v.workflow,
+        target: v.target,
+        execute: v.execute,
+        maxTargets: Number(v["max-targets"] ?? 3),
+        maxCalls: Number(v["max-calls"] ?? 10),
+      });
     else if (command === "import") {
       if (!v.file || statSync(v.file).size > engine.config.limits.maxBytes)
         throw new Error("INVALID_IMPORT_FILE");

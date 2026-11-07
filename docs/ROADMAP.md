@@ -1,33 +1,33 @@
 # Roadmap
 
-Este documento describe trabajo pendiente. No es una lista de capacidades ya disponibles ni un compromiso de fechas.
+This lists implemented work and future proposals, not a guarantee of dates or source coverage.
 
-## v0.1 — base implementada
+## Implemented in v0.1
 
-- CLI JSON y servidor MCP stdio con validación y pruebas de protocolo.
-- SQLite: entidades, evidencias, relaciones, historial y caché.
-- Adaptadores y puentes descritos en la matriz del README.
-- Scope, exclusiones, ejecución secuencial, límites, resultados parciales y demo offline.
-- README con banner, licencia MIT, documentación y CI.
+JSON CLI, MCP stdio, SQLite evidence/provenance, deduplication, graph, cache, bounded subprocesses, partial results, synthetic offline demo, documentation and Windows/Linux CI.
 
-## Siguiente versión: compatibilidad y cobertura
+## Implemented in v0.2
 
-- Pruebas optativas de contrato con versiones fijadas de subfinder, Amass, dnsx, httpx y naabu en un laboratorio local.
-- Detección de binario y versión en un comando `doctor`; evitar confundir httpx con el paquete Python del mismo nombre.
-- RDAP, DNS histórico con proveedores configurados, certificados alternativos, Wayback y URLs históricas.
-- Importadores nativos versionados para recon-ng y SpiderFoot; conectores con fixtures de sus versiones.
-- Metadatos adicionales y OCR local optativo, revisión y minimización de datos personales.
-- Conectores de repositorios públicos y búsqueda de exposiciones sin persistir valores de secretos.
+Seven bounded workflows, professional candidate aliases, sourced company/employee/role/technology/public-office context, MX checks, RDAP, RIPEstat ASN/prefix data, public GitHub profiles, Sherlock/theHarvester wrappers, WhatsMyName bridge, TruffleHog secret references and strict breach-summary imports.
 
-## Escalabilidad
+## Compatibility and source coverage
 
-- Trabajos persistentes cancelables y recuperación tras reinicio; ahora una ejecución interrumpida puede quedar como `running` en el historial.
-- Cuotas por proveedor persistentes entre procesos, jitter y circuit breakers.
-- Familias de fuentes y scoring calibrado con corpus etiquetado. Hoy las puntuaciones son heurísticas y no se suman fuentes como si fueran independientes.
-- Exportación de grafo Neo4j/GraphML y diffs entre ejecuciones.
-- Informes HTML/SARIF sanitizados y exportación completa paginada.
-- Contenedores por herramienta, versiones/digests fijados y políticas de salida por proveedor.
+- Opt-in binary contract tests against pinned versions in a local lab.
+- A doctor command for binary/version checks, including ProjectDiscovery versus Python httpx.
+- Historical DNS, certificate alternatives, Wayback and URL history.
+- Versioned native recon-ng/SpiderFoot importers.
+- Additional reviewed business-record sources and local document analysis.
+- Public repository exposure connectors without retaining secret values.
 
-## Validación independiente
+## Scale and resilience
 
-Nuclei y otros validadores tendrían su propia interfaz, alcance, límites y evidencia. No se ejecutan en el pipeline de OSINT actual ni se convierten observaciones en vulnerabilidades confirmadas.
+- Durable cancellable jobs and restart recovery; interrupted runs may currently remain running in history.
+- Cross-process provider quotas, jitter and circuit breakers.
+- Calibrated source-family confidence using labeled data.
+- Neo4j/GraphML export and run-to-run diffs.
+- Sanitized HTML/SARIF reports and complete paginated exports.
+- Per-tool containers, pinned image digests and provider-specific egress policies.
+
+## Independent validation
+
+Nuclei or other validators would need separate interfaces, scope, budgets and evidence. Current reconnaissance does not automatically confirm vulnerabilities or execute validators.

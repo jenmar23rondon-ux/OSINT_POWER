@@ -34,7 +34,7 @@ test(
     });
     await client.connect(transport);
     const list = await client.listTools();
-    assert.equal(list.tools.length, 8);
+    assert.equal(list.tools.length, 9);
     const call = (name, args = {}) =>
       client.callTool({ name, arguments: args });
     assert.equal(
@@ -53,6 +53,15 @@ test(
     const page = (await call("query_findings", { limit: 1 })).structuredContent
       .result;
     assert.equal(page.items[0].value, "api.example.com");
+    const workflow = await call("workflow", {
+      workflow: "empresa",
+      target: "example.com",
+    });
+    assert.equal(workflow.structuredContent.result.status, "planned");
+    assert.equal(
+      (await call("query_findings", {})).structuredContent.result.total,
+      1,
+    );
     assert.equal(
       (await call("get_evidence", { entity_id: page.items[0].id }))
         .structuredContent.result.items[0].untrusted,

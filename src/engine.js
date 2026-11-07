@@ -8,13 +8,16 @@ import { parse } from "./parsers.js";
 import { collect, ADAPTERS } from "./adapters.js";
 import { retry } from "./transport.js";
 import { z } from "zod";
+import { isIP } from "node:net";
+import { runWorkflow, WORKFLOWS } from "./workflows.js";
 
 export class Engine {
   constructor(config, store, dependencies = {}) {
     this.config = Config.parse(config);
     this.scope = new Scope(this.config);
     this.store = store;
-    this.store.bindScope(this.config.scope);
+    const { people, ...legacyScope } = this.config.scope;
+    this.store.bindScope(people.length ? this.config.scope : legacyScope);
     this.dependencies = dependencies;
     this.tail = Promise.resolve();
     this.lastCall = new Map();
@@ -62,7 +65,11 @@ export class Engine {
   }
   async execute(input) {
     const { adapter, target: raw } = RunInput.parse(input);
-    const target = this.scope.target(adapter, raw);
+    const relatedHost =
+      ["rdap", "routing"].includes(adapter) && isIP(raw)
+        ? this.store.ipHost(raw, this.scope)
+        : null;
+    const target = relatedHost ? raw : this.scope.target(adapter, raw);
     if (!this.config.network) throw new Error("NETWORK_DISABLED");
     if (!this.config.enabledAdapters.includes(adapter))
       throw new Error("ADAPTER_DISABLED");
@@ -98,7 +105,15 @@ export class Engine {
       let parsed;
       if (adapter === "hibp") {
         const data = z
-          .array(z.object({ Name: z.string().min(1).max(200) }))
+          .array(
+            z.object({
+              Name: z.string().min(1).max(200),
+              BreachDate: z
+                .string()
+                .regex(/^\d{4}-\d{2}-\d{2}$/)
+                .optional(),
+            }),
+          )
           .parse(JSON.parse(raw));
         parsed = {
           items: data.slice(0, this.config.limits.maxRecords).map((r) =>
@@ -111,6 +126,8 @@ export class Engine {
               evidence: {
                 account: target,
                 name: String(r.Name).slice(0, 200),
+                ...(r.BreachDate ? { date: r.BreachDate } : {}),
+                verification: "breach_association_only",
                 reason: "Breach association; no passwords retrieved",
               },
             }),
@@ -120,7 +137,13 @@ export class Engine {
           truncated: data.length > this.config.limits.maxRecords,
         };
       } else
-        parsed = parse(adapter, raw, this.scope, this.config.limits.maxRecords);
+        parsed = parse(
+          adapter,
+          raw,
+          this.scope,
+          this.config.limits.maxRecords,
+          { target, relatedHost },
+        );
       const { items, ...stats } = parsed;
       const summary = {
         run_id: runId,
@@ -211,7 +234,8 @@ export class Engine {
   }
   capabilities() {
     return {
-      version: "0.1.0",
+      version: "0.2.0",
+      workflows: WORKFLOWS,
       network: this.config.network,
       active: this.config.active,
       adapters: Object.entries(ADAPTERS).map(([name, data]) => ({
@@ -222,7 +246,11 @@ export class Engine {
       imports: ImportInput.shape.adapter.options,
       scope: this.config.scope,
       limits: this.config.limits,
+      collectors: this.config.collectors,
     };
+  }
+  workflow(input) {
+    return runWorkflow(this, input);
   }
 }
 export function openEngine(configPath, databasePath, dependencies) {

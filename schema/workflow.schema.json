@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "workflow": {
+      "type": "string",
+      "enum": [
+        "people",
+        "company",
+        "places",
+        "users",
+        "emails",
+        "exposures",
+        "correlation",
+        "personas",
+        "empresa",
+        "lugares",
+        "usuarios",
+        "correos",
+        "filtraciones",
+        "correlacion"
+      ]
+    },
+    "target": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 253
+    },
+    "execute": {
+      "default": false,
+      "type": "boolean"
+    },
+    "maxTargets": {
+      "default": 3,
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10
+    },
+    "maxCalls": {
+      "default": 10,
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 30
+    }
+  },
+  "required": [
+    "workflow",
+    "target",
+    "execute",
+    "maxTargets",
+    "maxCalls"
+  ],
+  "additionalProperties": false
+}

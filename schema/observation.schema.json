@@ -16,7 +16,16 @@
         "breach",
         "secret",
         "service",
-        "unresolved"
+        "unresolved",
+        "company",
+        "employee",
+        "role",
+        "technology",
+        "place",
+        "job",
+        "mail_domain",
+        "network",
+        "asn"
       ]
     },
     "value": {

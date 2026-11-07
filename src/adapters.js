@@ -1,6 +1,41 @@
 import { fetchText, runProcess } from "./transport.js";
+import { collectExtra } from "./collectors.js";
 
 export const ADAPTERS = {
+  sherlock: {
+    mode: "passive",
+    kind: "binary",
+    description:
+      "One scoped username, 1-3 configured professional sites; CSV output",
+  },
+  theharvester: {
+    mode: "passive",
+    kind: "binary",
+    description:
+      "Configured crtsh/certspotter sources only; bounded JSON report",
+  },
+  mx: {
+    mode: "active",
+    kind: "dns",
+    description: "DNS MX only; mailbox and catch-all remain unknown",
+  },
+  rdap: {
+    mode: "passive",
+    kind: "api",
+    description:
+      "IANA bootstrap to allowlisted RIRs; registered network is not ownership or location",
+  },
+  routing: {
+    mode: "passive",
+    kind: "api",
+    description: "RIPE RIS prefix and origin ASN; never expands active scope",
+  },
+  "github-profile": {
+    mode: "passive",
+    kind: "api",
+    description:
+      "Public GitHub profile for one scoped alias; no employment verification",
+  },
   crtsh: {
     mode: "passive",
     kind: "api",
@@ -79,6 +114,8 @@ export function commandFor(adapter, target, limits) {
         "-json",
         "-status-code",
         "-tech-detect",
+        "-title",
+        "-tls-grab",
         "-rl",
         rate,
         "-threads",
@@ -115,6 +152,17 @@ export function commandFor(adapter, target, limits) {
   throw new Error("UNKNOWN_BINARY");
 }
 export async function collect(adapter, target, config, dependencies = {}) {
+  if (
+    [
+      "sherlock",
+      "theharvester",
+      "mx",
+      "rdap",
+      "routing",
+      "github-profile",
+    ].includes(adapter)
+  )
+    return collectExtra(adapter, target, config, dependencies);
   const { fetcher = fetch, runner = runProcess } = dependencies;
   if (adapter === "crtsh")
     return fetchText(
@@ -127,7 +175,7 @@ export async function collect(adapter, target, config, dependencies = {}) {
     const key = process.env.HIBP_API_KEY;
     if (!key) throw new Error("HIBP_KEY_MISSING");
     return fetchText(
-      `https://haveibeenpwned.com/api/v3/breachedaccount/${encodeURIComponent(target)}?truncateResponse=true`,
+      `https://haveibeenpwned.com/api/v3/breachedaccount/${encodeURIComponent(target)}?truncateResponse=false`,
       config.limits,
       { "hibp-api-key": key },
       fetcher,

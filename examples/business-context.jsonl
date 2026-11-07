@@ -1,0 +1,4 @@
+{"company_domain":"example.com","kind":"role","person":"Alex Rivera","value":"Engineer","source_url":"https://example.com/team","status":"observed","timestamp":"2026-11-07T00:00:00.000Z"}
+{"company_domain":"example.com","kind":"technology","value":"TypeScript","source_url":"https://example.com/careers","status":"inferred","timestamp":"2026-11-07T00:00:00.000Z"}
+{"company_domain":"example.com","kind":"place","place_kind":"public_office","value":"Demo office, Example City","source_url":"https://example.com/contact","status":"observed","timestamp":"2026-11-07T00:00:00.000Z"}
+{"company_domain":"example.com","kind":"email","person":"Alex Rivera","value":"alex@example.com","source_url":"https://example.com/team","status":"observed","timestamp":"2026-11-07T00:00:00.000Z"}

@@ -1,15 +1,15 @@
 ---
 name: Feature request
-about: Proponer una fuente, importador o mejora
+about: Propose a source, importer or improvement
 title: "[feature] "
 labels: ""
 assignees: ""
 ---
 
-## Problema y caso de uso
+## Problem and use case
 
-## Fuente oficial y contrato de datos
+## Official source and data contract
 
-## Scope, cuotas y ejemplo sintético
+## Scope, quotas and synthetic example
 
-## Criterio de aceptación comprobable
+## Testable acceptance criteria

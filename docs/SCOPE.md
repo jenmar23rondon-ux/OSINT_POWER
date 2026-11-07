@@ -1,30 +1,32 @@
-# Alcance, datos y operación
+# Scope and data handling
 
-Define un workspace por investigación y documenta activos, exclusiones y límites aplicables. Los permisos y condiciones dependen de la fuente, la plataforma y el contexto: que un dato sea público o una consulta sea pasiva no implica autorización universal para cualquier tratamiento.
+Use a separate workspace per investigation and record assets, exclusions and applicable limits. Public availability and passive access do not imply universal permission for every use of the data.
 
-## Reglas que aplica el código
+## Enforced controls
 
-- Un dominio configurado incluye sus subdominios. Las exclusiones también se aplican a descendientes y tienen prioridad.
-- No se permiten confusiones de sufijo: `example.com.evil.invalid` no pertenece a `example.com`.
-- IPs de destino: lista exacta, sin rangos CIDR en v0.1. Una IP encontrada en DNS puede guardarse como evidencia, pero no habilita su colección activa.
-- Correo: dominio configurado o cuenta explícita para importaciones. HIBP requiere siempre cuenta exacta en `scope.emails`.
-- Perfil: alias explícito en `scope.usernames`; se guarda como coincidencia inferida, sin confirmar identidad.
-- Documentos/metadatos/posibles secretos: nombre base permitido en `scope.documents`.
-- `unresolved`: solo con un host relacionado en scope. Los datos fuera de alcance se descartan y se cuentan.
-- No se siguen redirecciones de APIs y httpx no recibe flags para seguirlas. Una redirección no autoriza el nuevo destino.
+- Configured domains include descendants; excluded domains and descendants take priority.
+- Suffix confusion is rejected: example.com.evil.invalid does not belong to example.com.
+- Active IP targets require exact configured addresses; CIDR target ranges are not implemented.
+- Discovered IPs may receive passive registry/routing enrichment without authorizing active scanning.
+- Email imports need a scoped domain or exact account. HIBP always needs the exact configured account.
+- Professional subjects and aliases are explicit. Derived aliases remain candidates.
+- Office context requires public_office and a source; no residential-location inference.
+- Document/metadata/secret imports require allowed document basenames.
+- Unresolved observations require a related scoped host.
+- API redirects are disabled; httpx is not given redirect-following flags.
 
-Los datos recibidos de binarios se filtran antes de almacenarse. Un binario upstream puede usar configuración propia o hacer peticiones internas que el wrapper no intercepta. Comprueba esa configuración y usa una política de salida de red si necesitas garantías de destino por conexión. El núcleo no es un firewall.
+Upstream binaries can use native configuration and internal requests the wrapper does not intercept. Review them and impose host egress policies when connection-level control is required. This project is not a firewall.
 
-## Estado y privacidad
+## Local state
 
-La base de datos, caché y configuración son locales y se excluyen de Git. No están cifradas. El historial registra adaptador, objetivo, tiempos, estado y resumen; las importaciones registran el hash del contenido. No se conserva el stdout/stderr crudo de herramientas.
+SQLite, cache, configuration and run history are local, ignored by Git and not encrypted. History records adapter, target, timing, status and summaries. Imports record an input hash. Raw subprocess stdout/stderr is not stored in reports.
 
-El núcleo vincula la base de datos al scope inicial. Para un alcance diferente, elige otro `OSINT_POWER_DB` o `--db`; no reutilices datos de otro cliente. Haz copias de seguridad con el proceso detenido y aplica tu política de retención al workspace completo.
+The database is bound to its initial scope fingerprint. Select a new database for different subjects or assets. Empty people defaults preserve v0.1 scope fingerprints. Stop processes before backup and apply your retention policy to the complete workspace.
 
-HIBP devuelve asociaciones con nombres de brechas, sin contraseñas. Gitleaks conserva ubicaciones y reglas, descartando campos de secretos. Antes de publicar evidencia revisa datos personales, archivos, rutas y exports. No subas bases SQLite, claves ni informes privados a issues.
+HIBP stores breach metadata. Secret importers discard raw values and keep locations/rules. Before publishing, review source documents, personal data, filenames and exports; sanitization is best effort for arbitrary free text.
 
-## Límites de esta versión
+## Boundaries
 
-No hay explotación, pruebas de validez de credenciales, búsqueda de contraseñas filtradas, acciones sobre cuentas, OCR de gafetes ni confirmación automática de identidad. Tampoco se hace scoring de personas. El proyecto ofrece observaciones para análisis de superficie e investigación; los resultados necesitan interpretación.
+No exploitation, credential-validity testing, account actions, password retrieval, automatic identity confirmation or employee attack-target scoring is implemented. Public professional context is not proof of employment or identity. IP location and registry country do not establish an office.
 
-El contenedor limita el usuario del proceso; las cuotas de CPU/memoria y la política de red se establecen al ejecutarlo. Los binarios no se descargan automáticamente ni se consideran sandboxeados por llamarse desde Node.
+The Docker image runs as an unprivileged user. Set CPU, memory and egress restrictions on the host. External binaries are not automatically installed or considered sandboxed merely because Node launches them.

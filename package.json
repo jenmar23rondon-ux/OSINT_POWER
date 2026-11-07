@@ -1,6 +1,6 @@
 {
   "name": "osint-power",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Evidence-first OSINT workspace with a bounded CLI and MCP server",
   "type": "module",
   "private": true,

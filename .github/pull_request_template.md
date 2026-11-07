@@ -1,10 +1,10 @@
-## Problema y resultado
+## Problem and resulting behavior
 
-## Validación
+## Validation
 
-- [ ] Pruebas sin tráfico externo
-- [ ] Lint y esquemas actualizados
-- [ ] Fixtures sintéticos y sin secretos
-- [ ] README y matriz reflejan el estado real
+- [ ] Tests run without external target traffic
+- [ ] Lint and generated schemas are current
+- [ ] Fixtures are synthetic and contain no secrets
+- [ ] README and source matrix reflect implemented behavior
 
-## Límites o compatibilidad
+## Limitations or compatibility

@@ -1,91 +1,68 @@
-# Adaptadores y contratos
+# Adapter contracts
 
-## Ejecución disponible
+A closed registry defines available collectors. Targets pass scope validation before arguments are constructed. Clients cannot supply executables, arbitrary flags, provider URLs or shell commands.
 
-`src/adapters.js` define un registro cerrado. Los objetivos pasan por `Scope.target` antes de construir argumentos; el cliente no puede proporcionar ejecutables, flags, URLs de proveedor ni comandos de shell.
+## Execution
 
-| Adaptador | Contrato usado                                                                                            |
-| --------- | --------------------------------------------------------------------------------------------------------- |
-| crtsh     | GET a `https://crt.sh/`, array JSON, campo `name_value`                                                   |
-| subfinder | `-d TARGET -silent -rl RATE -timeout SECONDS -duc`                                                        |
-| amass     | `enum -passive -nocolor -d TARGET`, interfaz heredada documentada                                         |
-| dnsx      | Un host por stdin, `-json -a -aaaa -rl RATE -t 1 -retry 1 -duc`                                           |
-| httpx     | Un host por stdin, `-json -status-code -tech-detect -rl RATE -threads 1 -timeout SECONDS -retries 0 -duc` |
-| naabu     | `-host TARGET -p PORTS -scan-type c -rate RATE -c 1 -retries 1 -json -duc`                                |
-| hibp      | `/api/v3/breachedaccount/ACCOUNT?truncateResponse=true`, solo nombres de brechas                          |
+| Adapter        | Contract                                                                      |
+| -------------- | ----------------------------------------------------------------------------- |
+| crtsh          | Fixed crt.sh API, name_value array                                            |
+| subfinder      | Passive domain input, silent output, rate and timeout flags                   |
+| amass          | Legacy enum -passive -nocolor interface; verify installed compatibility       |
+| dnsx           | One host on stdin, JSON A/AAAA, one worker and rate limit                     |
+| httpx          | One host on stdin, JSON status/technology/title/TLS, no redirects             |
+| naabu          | One host, explicit ports, TCP connect, bounded workers/rate                   |
+| mx             | Native Node DNS MX resolver; no SMTP validation                               |
+| rdap           | IANA bootstrap followed by an allowlisted RIR; no redirects                   |
+| routing        | Fixed RIPEstat Network Info API                                               |
+| github-profile | Fixed public GitHub profile API for a scoped alias                            |
+| sherlock       | One alias, local catalog, configured professional sites, temporary CSV        |
+| theharvester   | crtsh/certspotter source selection, bounded result request and temporary JSON |
+| hibp           | Fixed breachedaccount endpoint, names and dates only                          |
 
-Se añaden flags de salida silenciosa donde corresponde. Los límites nativos dependen de la versión; comprueba `--help` de tus binarios. Las pruebas del repositorio validan construcción y manejo del proceso, no equivalen a una certificación de todos los binarios upstream. Amass no expone un límite HTTP universal en esta interfaz: configura sus proveedores y usa el timeout del proceso. No lo habilites si necesitas un límite por fuente que tu versión no pueda imponer.
+Arguments are defined in source and verified by contract tests. Native rate behavior depends on the upstream version. Amass/Sherlock/theHarvester do not expose one universal HTTP limit through these wrappers: configure source quotas and check installed behavior. Wrapper timeout/byte limits are not a firewall or a per-request sandbox.
 
-Los subprocessos no usan shell, ocultan la ventana en Windows y reciben una lista acotada de variables del sistema para PATH, temporales y configuración del usuario. El núcleo no inspecciona el contenido de los archivos de credenciales upstream. Los intentos se serializan por proceso del servidor; varios servidores o herramientas independientes necesitan coordinación externa.
+Subprocesses use shell-free argument arrays, hidden windows on Windows, and a reduced system/configuration environment. Credentials stay in native provider files or the documented HIBP environment variable. Multiple server processes need external quota coordination.
 
-## Importadores
+## Imports
+
+- subfinder/amass: plain names or JSONL host/name fields, not full Amass graph exports.
+- dnsx: host, a and aaaa.
+- httpx: url, status_code, tech, title and optional TLS subject/issuer.
+- naabu: host/ip and port.
+- sherlock: native CSV with username, url_user and exists=Claimed. The debug dump-response option is not a JSON export.
+- theharvester: JSON emails/hosts lists.
+- exiftool: JSON array with SourceFile and selected Author/Creator/Producer/Software/Title fields.
+- gitleaks/trufflehog: native report locations and detector/rule identifiers; no raw secret values.
+- whatsmyname: bridge objects with username, url and found/not_found/unknown status.
+- business-context: strict sourced professional/office assertions.
+- breach-summary: strict provider/email/breach/date metadata.
+- recon-ng/spiderfoot/jsonl: this project's normalized observation schema; native conversion may be necessary.
 
 ```bash
-node src/cli.js import --adapter sherlock --file researcher.csv
-node src/cli.js import --adapter exiftool --file metadata.json
-node src/cli.js import --adapter gitleaks --file leaks.json
-node src/cli.js import --adapter jsonl --file findings.jsonl
+node src/cli.js import --adapter sherlock --file reviewed.csv
+node src/cli.js import --adapter gitleaks --file reviewed-report.json
+node src/cli.js import --adapter business-context --file examples/business-context.jsonl
 ```
 
-- **subfinder / amass:** un nombre por línea o JSONL con `host`/`name`; `source` se conserva como `upstream`. No interpreta salidas de grafos completos de Amass.
-- **dnsx:** JSON/JSONL con `host`, `a`, `aaaa`.
-- **httpx:** JSON/JSONL con `url`, `status_code`, `tech`.
-- **naabu:** JSON/JSONL con `host` o `ip` y `port`.
-- **sherlock:** CSV con `username,name,url_main,url_user,exists,http_status,response_time_s`; solo filas `exists=Claimed`. El `--dump-response` de Sherlock es salida de depuración HTTP, no un export JSON.
-- **theharvester:** objeto JSON con listas `emails` y `hosts`. Las versiones que exporten otro esquema requieren un conversor.
-- **exiftool:** array JSON de `exiftool -j archivo.pdf`; se compara el nombre base con `scope.documents`.
-- **gitleaks:** array JSON con `File`, `StartLine`, `RuleID`. No se guardan `Secret`, `Match`, autor ni mensaje de commit.
-- **recon-ng / spiderfoot:** puente con nuestro contrato de observación. Convierte el export nativo a JSONL antes de importar. No son wrappers ejecutables de esos frameworks.
-- **jsonl:** array, objeto o líneas del JSON Schema de observación. Conserva un `source` explícito; confianza de importaciones genéricas limitada a 0.7.
+Only configured document basenames are accepted for document/secret imports. Identical basenames are ambiguous; use distinct names or workspaces. Sanitization is not a universal detector for arbitrary secrets in free text: minimize exports before sharing them.
 
-Documentos con el mismo nombre base son indistinguibles en esta versión. Usa un workspace separado o nombres únicos para evitar mezclarlos. Revisa y minimiza los exports antes de compartirlos con un host de IA; el saneamiento no detecta cualquier secreto posible.
+Generic imported confidence is capped at 0.7. Evidence keys and values are bounded. URL query strings/fragments are removed. Secret entity values are reconstructed from location metadata and marked unverified.
 
-Ejemplo del puente:
+## Add a source
 
-```json
-{
-  "type": "domain",
-  "value": "api.example.com",
-  "source": "my-source",
-  "confidence": 0.6,
-  "timestamp": "2026-11-07T00:00:00.000Z",
-  "evidence": { "upstream": "public-dataset" }
-}
-```
+1. Define strict input schemas and a fixed provider or known binary interface.
+2. Register its collection mode without accepting arbitrary commands.
+3. Bound responses and keep stdout exclusively MCP.
+4. Normalize observations and apply scope filtering.
+5. Test success, malformed data, exclusions, failures, redirects and quota handling using synthetic fixtures.
+6. Document formats, credentials, compatibility and confidence.
+7. Run tests, lint, schema generation and dependency audit without external target traffic.
 
-Se admiten solo claves de evidencia conocidas, con valores acotados. Las consultas y fragmentos de URL se eliminan. Ambigüedad relacionada con un host declarado:
+HTTP network errors, 429 and 5xx are retried at most three attempts total with backoff and Retry-After. Permanent errors and subprocess failures are not automatically retried. A failed source preserves findings from other stages.
 
-```json
-{
-  "type": "unresolved",
-  "value": "Contact format unclear",
-  "source": "review",
-  "confidence": 0.2,
-  "timestamp": "2026-11-07T00:00:00.000Z",
-  "evidence": {
-    "host": "example.com",
-    "reason": "Document contains an incomplete email"
-  }
-}
-```
+## Primary references
 
-## Añadir una fuente
+[ProjectDiscovery tools](https://projectdiscovery.io/open-source) · [httpx options](https://docs.projectdiscovery.io/opensource/httpx/usage) · [naabu options](https://docs.projectdiscovery.io/opensource/naabu/usage) · [Amass guide](https://github.com/owasp-amass/amass/blob/master/doc/user_guide.md) · [Sherlock source](https://github.com/sherlock-project/sherlock/blob/master/sherlock_project/sherlock.py) · [theHarvester source](https://github.com/laramies/theHarvester/blob/master/theHarvester/__main__.py) · [HIBP API](https://haveibeenpwned.com/API/v3).
 
-1. Define entradas estrictas en `src/schema.js`; nunca aceptes un comando arbitrario.
-2. Añade el adaptador y su modo en el registro; fija el host del proveedor para APIs.
-3. Devuelve texto acotado al parser, sin imprimir en stdout del servidor MCP.
-4. Implementa un parser que produzca `Observation` y filtre por `Scope`.
-5. Añade fixtures sanitizados para éxito, fallo, fuera de alcance, redirección, formato inesperado y rate limit.
-6. Documenta formato, versión compatible, claves, cuotas, confianza y límites; actualiza la matriz del README.
-7. Ejecuta tests, lint, schemas y auditoría de dependencias. Nunca uses objetivos externos en CI.
-
-La cola conserva lo logrado por otras fuentes. Solo se reintentan errores HTTP transitorios (red, 429 y 5xx), hasta tres intentos **en total**. Los fallos de procesos no se relanzan automáticamente: su error puede representar una instalación incompatible, no una condición transitoria.
-
-## Fuentes primarias
-
-- [ProjectDiscovery: herramientas y formatos](https://projectdiscovery.io/open-source).
-- [httpx: opciones oficiales](https://docs.projectdiscovery.io/opensource/httpx/usage).
-- [naabu: opciones oficiales](https://docs.projectdiscovery.io/opensource/naabu/usage).
-- [Amass: guía del usuario e interfaz enum](https://github.com/owasp-amass/amass/blob/master/doc/user_guide.md).
-- [Sherlock: exportación CSV en el código oficial](https://github.com/sherlock-project/sherlock/blob/master/sherlock_project/sherlock.py).
-- [HIBP: API, suscripciones y límites](https://haveibeenpwned.com/API/v3).
+See [workflows](WORKFLOWS.md) for execution modes, context schemas and limitations.

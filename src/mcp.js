@@ -3,11 +3,11 @@ import { McpServer } from "@modelcontextprotocol/server";
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
 import { z } from "zod";
 import { openEngine } from "./engine.js";
-import { ImportInput, QueryInput, RunInput } from "./schema.js";
+import { ImportInput, QueryInput, RunInput, WorkflowInput } from "./schema.js";
 import { report } from "./report.js";
 
 export function createServer(engine) {
-  const server = new McpServer({ name: "osint-power", version: "0.1.0" });
+  const server = new McpServer({ name: "osint-power", version: "0.2.0" });
   const outputSchema = z.object({
     ok: z.boolean(),
     result: z.record(z.string(), z.json()),
@@ -119,6 +119,14 @@ export function createServer(engine) {
       })
       .strict(),
     ({ limit, offset }) => engine.store.graph(limit, offset),
+  );
+  register(
+    "workflow",
+    "Plan or execute one bounded people/company/places/users/emails/exposures/correlation workflow. Default is a read-only plan. execute=true may collect through configured adapters and persist evidence; missing sources are explicit.",
+    WorkflowInput,
+    (input) => engine.workflow(input),
+    false,
+    true,
   );
   register(
     "get_report",

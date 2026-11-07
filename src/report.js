@@ -2,7 +2,7 @@ export function report(engine) {
   const findings = engine.store.query({ limit: 50 });
   return {
     project: "OSINT_POWER",
-    version: "0.1.0",
+    version: "0.2.0",
     generated_at: new Date().toISOString(),
     findings,
     graph: engine.store.graph(50),

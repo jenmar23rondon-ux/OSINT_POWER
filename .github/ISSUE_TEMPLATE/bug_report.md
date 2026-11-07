@@ -1,17 +1,17 @@
 ---
 name: Bug report
-about: Fallo reproducible con datos sintéticos
+about: Reproducible failure with synthetic data
 title: "[bug] "
 labels: ""
 assignees: ""
 ---
 
-## Qué ocurre
+## Problem
 
-## Versión, sistema y versión del binario externo
+## Version, operating system and external binary version
 
-## Pasos y fixture mínimo sanitizado
+## Steps and minimal sanitized fixture
 
-## Resultado esperado y observado
+## Expected and observed behavior
 
-No incluyas claves, bases de datos ni datos personales. Para problemas sensibles, consulta SECURITY.md.
+Do not include keys, databases or personal information. For sensitive issues, read SECURITY.md.

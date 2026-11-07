@@ -1,7 +1,7 @@
-# Seguridad
+# Security reporting
 
-La versión 0.1 es inicial. Reporta problemas sin incluir claves, datos de clientes, contraseñas ni exports reales. Usa fixtures que reproduzcan el fallo localmente.
+This is an early release. Reproduce issues with synthetic data; never include keys, customer data, passwords or private exports.
 
-Si está disponible, utiliza el [reporte privado de vulnerabilidades de GitHub](https://github.com/jenmar23rondon-ux/OSINT_POWER/security/advisories/new). Si no lo está, abre un issue mínimo solicitando un canal privado, sin detalles explotables ni evidencia sensible. No hay una dirección privada de contacto inventada en este repositorio.
+If enabled, use [GitHub private vulnerability reporting](https://github.com/jenmar23rondon-ux/OSINT_POWER/security/advisories/new). Otherwise, open a minimal issue requesting a private contact channel without exploit details or sensitive evidence. No unverified private contact address is listed here.
 
-Indica versión/commit, plataforma, entrada mínima, impacto y resultado esperado. Son áreas prioritarias: salto de scope, ejecución de comandos, redirecciones inesperadas, exposición de claves, contaminación de evidencias y agotamiento de recursos.
+Include commit/version, platform, minimal input, impact and expected behavior. Priority areas include scope bypass, command execution, unexpected redirects, credential disclosure, evidence contamination and resource exhaustion.

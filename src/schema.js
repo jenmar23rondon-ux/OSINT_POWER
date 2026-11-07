@@ -13,6 +13,15 @@ export const EntityType = z.enum([
   "secret",
   "service",
   "unresolved",
+  "company",
+  "employee",
+  "role",
+  "technology",
+  "place",
+  "job",
+  "mail_domain",
+  "network",
+  "asn",
 ]);
 export const Observation = z
   .object({
@@ -34,6 +43,12 @@ export const RunInput = z
       "httpx",
       "naabu",
       "hibp",
+      "sherlock",
+      "theharvester",
+      "mx",
+      "rdap",
+      "routing",
+      "github-profile",
     ]),
     target: z.string().min(1).max(253),
   })
@@ -63,6 +78,10 @@ export const ImportInput = z
       "recon-ng",
       "spiderfoot",
       "jsonl",
+      "whatsmyname",
+      "business-context",
+      "breach-summary",
+      "trufflehog",
     ]),
     data: z.string().min(1).max(2_000_000),
   })
@@ -77,15 +96,49 @@ export const Config = z
         ips: z.array(z.string()).max(100).default([]),
         emails: z.array(z.string().email()).max(100).default([]),
         usernames: z
-          .array(z.string().regex(/^[A-Za-z0-9_.-]{1,64}$/))
+          .array(z.string().regex(/^[A-Za-z0-9_][A-Za-z0-9_.-]{0,63}$/))
           .max(100)
           .default([]),
         documents: z.array(z.string().min(1).max(500)).max(100).default([]),
+        people: z
+          .array(
+            z
+              .object({
+                name: z.string().min(1).max(160),
+                companyDomain: z.string(),
+                aliases: z
+                  .array(z.string().regex(/^[A-Za-z0-9_][A-Za-z0-9_.-]{0,63}$/))
+                  .max(20)
+                  .default([]),
+              })
+              .strict(),
+          )
+          .max(50)
+          .default([]),
       })
       .strict(),
     network: z.boolean().default(false),
     active: z.boolean().default(false),
     enabledAdapters: z.array(RunInput.shape.adapter).default(["crtsh"]),
+    collectors: z
+      .object({
+        sherlockSites: z
+          .array(z.enum(["GitHub", "GitLab", "Keybase"]))
+          .min(1)
+          .max(3)
+          .default(["GitHub"]),
+        harvesterSources: z
+          .array(z.enum(["crtsh", "certspotter"]))
+          .min(1)
+          .max(2)
+          .default(["crtsh"]),
+        usernameSuffixes: z
+          .array(z.string().regex(/^\d{1,2}$/))
+          .max(3)
+          .default(["1", "01"]),
+      })
+      .strict()
+      .prefault({}),
     limits: z
       .object({
         timeoutMs: z.number().int().min(100).max(120_000).default(20_000),
@@ -103,5 +156,33 @@ export const Config = z
       })
       .strict()
       .prefault({}),
+  })
+  .strict();
+
+export const WORKFLOW_NAMES = [
+  "people",
+  "company",
+  "places",
+  "users",
+  "emails",
+  "exposures",
+  "correlation",
+];
+export const WORKFLOW_ALIASES = {
+  personas: "people",
+  empresa: "company",
+  lugares: "places",
+  usuarios: "users",
+  correos: "emails",
+  filtraciones: "exposures",
+  correlacion: "correlation",
+};
+export const WorkflowInput = z
+  .object({
+    workflow: z.enum([...WORKFLOW_NAMES, ...Object.keys(WORKFLOW_ALIASES)]),
+    target: z.string().min(1).max(253),
+    execute: z.boolean().default(false),
+    maxTargets: z.number().int().min(1).max(10).default(3),
+    maxCalls: z.number().int().min(1).max(30).default(10),
   })
   .strict();

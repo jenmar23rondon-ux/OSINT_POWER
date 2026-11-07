@@ -1,6 +1,7 @@
 import { basename } from "node:path";
 import { Observation } from "./schema.js";
 import { normalized } from "./scope.js";
+import { parseBusiness, BreachSummary } from "./context.js";
 
 const evidenceKeys = new Set([
   "host",
@@ -20,8 +21,37 @@ const evidenceKeys = new Set([
   "upstream",
   "inferred",
   "parser",
+  "company",
+  "person",
+  "source_url",
+  "place_kind",
+  "verification",
+  "ip",
+  "country",
+  "handle",
+  "start",
+  "end",
+  "prefix",
+  "mx",
+  "mailbox",
+  "catch_all",
+  "date",
+  "title",
+  "certificate_cn",
+  "certificate_issuer",
+  "credential_kind",
+  "provider",
+  "public_company",
 ]);
 function sanitize(evidence) {
+  if (typeof evidence.source_url === "string") {
+    const u = new URL(evidence.source_url);
+    if (!["https:", "http:"].includes(u.protocol) || u.username || u.password)
+      throw new Error("INVALID_SOURCE_URL");
+    u.search = "";
+    u.hash = "";
+    evidence = { ...evidence, source_url: u.href };
+  }
   const scalar = (value) => {
     if (typeof value === "string")
       return value
@@ -101,7 +131,7 @@ export function csv(text) {
     .filter((r) => r.some(Boolean))
     .map((r) => Object.fromEntries(headers.map((h, i) => [h, r[i] ?? ""])));
 }
-export function parse(adapter, text, scope, maxRecords = 2000) {
+export function parse(adapter, text, scope, maxRecords = 2000, context = {}) {
   const items = [];
   let skipped = 0;
   let invalid = 0;
@@ -119,7 +149,20 @@ export function parse(adapter, text, scope, maxRecords = 2000) {
       return;
     }
     try {
+      if (type === "secret")
+        evidence = {
+          ...evidence,
+          verification: "unverified",
+          credential_kind: evidence.credential_kind ?? "possible_secret",
+        };
+      if (type === "secret")
+        value = `${evidence.document}:${Number(evidence.line) || 0}:${String(evidence.rule ?? "unknown").slice(0, 100)}`;
       const valueNormalized = normalized(type, value);
+      if (type === "url")
+        evidence = {
+          ...evidence,
+          host: new URL(valueNormalized).hostname.replace(/^\[|\]$/g, ""),
+        };
       const safeEvidence = sanitize(evidence);
       if (!scope.allows(type, valueNormalized, safeEvidence)) {
         skipped++;
@@ -207,6 +250,9 @@ export function parse(adapter, text, scope, maxRecords = 2000) {
         {
           status: r.status_code ?? 0,
           technology: (r.tech ?? []).map(String).slice(0, 20),
+          title: String(r.title ?? "").slice(0, 200),
+          certificate_cn: String(r.tls?.subject_cn ?? "").slice(0, 200),
+          certificate_issuer: String(r.tls?.issuer_cn ?? "").slice(0, 200),
         },
         0.8,
       );
@@ -242,6 +288,163 @@ export function parse(adapter, text, scope, maxRecords = 2000) {
         0.45,
       );
     }
+  } else if (adapter === "whatsmyname") {
+    for (const r of records(text)) {
+      if (
+        !r ||
+        typeof r !== "object" ||
+        typeof r.username !== "string" ||
+        typeof r.url !== "string" ||
+        !["found", "not_found", "unknown"].includes(r.status)
+      ) {
+        invalid++;
+        continue;
+      }
+      if (r.status !== "found") continue;
+      emit("username", r.username, { inferred: true }, 0.4);
+      emit(
+        "profile",
+        r.url,
+        {
+          username: r.username,
+          inferred: true,
+          reason: "Imported username match; identity unverified",
+        },
+        0.4,
+      );
+    }
+  } else if (adapter === "business-context") {
+    for (const r of records(text)) {
+      try {
+        parseBusiness(r, scope, emit);
+      } catch {
+        invalid++;
+      }
+    }
+  } else if (adapter === "breach-summary") {
+    for (const record of records(text)) {
+      const parsed = BreachSummary.safeParse(record);
+      if (!parsed.success) {
+        invalid++;
+        continue;
+      }
+      const r = parsed.data;
+      emit(
+        "breach",
+        `${r.email}:${r.breach}`,
+        {
+          account: r.email,
+          name: r.breach,
+          provider: r.provider,
+          ...(r.date ? { date: r.date } : {}),
+          verification: "breach_association_only",
+        },
+        0.65,
+        r.provider,
+        r.timestamp,
+      );
+    }
+  } else if (adapter === "trufflehog") {
+    for (const r of records(text)) {
+      if (!r || typeof r !== "object") {
+        invalid++;
+        continue;
+      }
+      const git =
+        r.SourceMetadata?.Data?.Git ?? r.SourceMetadata?.Data?.Filesystem ?? {};
+      const document = basename(String(git.file ?? "").replaceAll("\\", "/"));
+      const rule = String(r.DetectorName ?? "unknown").slice(0, 100);
+      emit(
+        "secret",
+        `${document}:${Number(git.line) || 0}:${rule}`,
+        {
+          document,
+          line: Number(git.line) || 0,
+          rule,
+          credential_kind: "possible_secret",
+          verification: "unverified",
+        },
+        0.6,
+      );
+    }
+  } else if (adapter === "mx") {
+    const r = JSON.parse(text);
+    emit(
+      "mail_domain",
+      r.domain,
+      {
+        host: r.domain,
+        mx: (r.records ?? [])
+          .slice(0, 20)
+          .map((x) => `${x.priority} ${x.exchange}`),
+        status: r.status,
+        mailbox: "unknown",
+        catch_all: "unknown",
+      },
+      0.85,
+    );
+  } else if (adapter === "rdap" || adapter === "routing") {
+    const r = JSON.parse(text);
+    const evidence = {
+      ip: context.target,
+      ...(context.relatedHost ? { host: context.relatedHost } : {}),
+      inferred: false,
+      reason:
+        "Registry/routing data does not establish ownership or physical location",
+    };
+    if (adapter === "rdap") {
+      if (!r.startAddress || !r.endAddress)
+        throw new Error("INVALID_RDAP_RESPONSE");
+      emit(
+        "network",
+        `${r.startAddress}-${r.endAddress}`,
+        {
+          ...evidence,
+          start: r.startAddress,
+          end: r.endAddress,
+          handle: String(r.handle ?? ""),
+          country: String(r.country ?? ""),
+        },
+        0.8,
+      );
+    } else {
+      if (r.status !== "ok" || !r.data || !Array.isArray(r.data.asns))
+        throw new Error("INVALID_ROUTING_RESPONSE");
+      if (r.data.prefix)
+        emit(
+          "network",
+          r.data.prefix,
+          { ...evidence, prefix: r.data.prefix },
+          0.8,
+        );
+      for (const asn of r.data.asns.slice(0, 10))
+        if (/^\d{1,10}$/.test(String(asn)))
+          emit("asn", `AS${asn}`, evidence, 0.8);
+    }
+  } else if (adapter === "github-profile") {
+    const r = JSON.parse(text);
+    const username = context.target;
+    if (String(r.login).toLowerCase() !== username.toLowerCase())
+      throw new Error("PROFILE_MISMATCH");
+    emit("username", username, {}, 0.6);
+    emit(
+      "profile",
+      `https://github.com/${encodeURIComponent(username)}`,
+      {
+        username,
+        public_company: String(r.company ?? ""),
+        verification: "account_exists_identity_unverified",
+        inferred: true,
+      },
+      0.6,
+    );
+    if (r.email)
+      emit(
+        "email",
+        r.email,
+        { username, verification: "publicly_listed_mailbox_unknown" },
+        0.65,
+      );
   } else if (adapter === "theharvester") {
     for (const r of records(text)) {
       if (
@@ -297,6 +500,10 @@ export function parse(adapter, text, scope, maxRecords = 2000) {
           document,
           line: Number(r.StartLine) || 0,
           rule: String(r.RuleID).slice(0, 100),
+          credential_kind: /password/i.test(String(r.RuleID))
+            ? "possible_credential"
+            : "possible_secret",
+          verification: "unverified",
         },
         0.6,
       );
