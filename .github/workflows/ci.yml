@@ -35,6 +35,6 @@ jobs:
           node-version: "24.14.0"
           cache: npm
       - run: npm ci --ignore-scripts
-      - run: sudo apt-get update && sudo apt-get install -y libpcap-dev
+      - run: sudo apt-get update && sudo apt-get install -y libpcap-dev unzip
       - run: npm run lab:install
       - run: npm run test:lab

@@ -151,7 +151,7 @@ npm run lab:install
 npm run test:lab
 ```
 
-Installation explicitly downloads official release archives listed in native-tools.lock.json, verifies SHA-256 before extraction and writes binaries only into .lab. It does not install tools globally or install Npcap.
+Installation explicitly downloads official release archives listed in native-tools.lock.json, verifies SHA-256 before extraction and writes binaries only into .lab. Linux requires unzip; Windows uses its included tar utility. It does not install tools globally or install Npcap.
 
 The lab uses loopback HTTP, UDP DNS and a selected TCP-connect port; target fixtures never contact external organizations. Linux CI tests httpx, dnsx and naabu with libpcap-dev. Windows tests httpx/dnsx; naabu is skipped because Npcap is not provisioned. Current installer platforms are Linux/Windows x64.
 

@@ -32,7 +32,12 @@ for (const [name, definition] of Object.entries(manifest)) {
     binary = name + (platform === "windows" ? ".exe" : "");
   await writeFile(path, bytes);
   try {
-    await promisify(execFile)("tar", ["-xf", path, "-C", directory, binary], {
+    const command = platform === "linux" ? "unzip" : "tar";
+    const args =
+      platform === "linux"
+        ? ["-o", "-j", path, binary, "-d", directory]
+        : ["-xf", path, "-C", directory, binary];
+    await promisify(execFile)(command, args, {
       windowsHide: true,
     });
     await chmod(join(directory, binary), 0o755);
