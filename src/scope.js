@@ -170,7 +170,15 @@ export class Scope {
     }
     const value = isIP(input) ? normalized("ip", input) : domain(input);
     if (
-      ["subfinder", "amass", "crtsh", "mx", "theharvester"].includes(adapter) &&
+      [
+        "subfinder",
+        "amass",
+        "crtsh",
+        "certspotter",
+        "wayback",
+        "mx",
+        "theharvester",
+      ].includes(adapter) &&
       isIP(value)
     )
       throw new Error("DOMAIN_REQUIRED");

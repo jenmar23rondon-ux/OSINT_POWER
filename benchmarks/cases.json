@@ -1,0 +1,381 @@
+[
+  {
+    "id": "deduplicated-domains",
+    "tags": ["duplicates"],
+    "steps": [
+      {
+        "adapter": "subfinder",
+        "data": "api.example.com\nAPI.EXAMPLE.COM.\napi.example.com"
+      }
+    ],
+    "entities": [["domain", "api.example.com"]],
+    "relations": []
+  },
+  {
+    "id": "scope-boundaries",
+    "tags": ["scope", "false-positives"],
+    "steps": [
+      {
+        "adapter": "subfinder",
+        "data": "api.example.com\nexcluded.example.com\na.excluded.example.com\nexample.com.evil.invalid\notherexample.com\n--help"
+      }
+    ],
+    "entities": [["domain", "api.example.com"]],
+    "relations": []
+  },
+  {
+    "id": "idn-normalization",
+    "tags": ["normalization"],
+    "steps": [
+      {
+        "adapter": "subfinder",
+        "data": "mañana.example.com\nxn--maana-pta.example.com"
+      }
+    ],
+    "entities": [["domain", "xn--maana-pta.example.com"]],
+    "relations": []
+  },
+  {
+    "id": "overlapping-ct-sources",
+    "tags": ["source-overlap"],
+    "steps": [
+      {
+        "adapter": "crtsh",
+        "collect": true,
+        "data": [{ "id": 1, "name_value": "api.example.com" }]
+      },
+      {
+        "adapter": "certspotter",
+        "collect": true,
+        "data": [{ "id": "2", "dns_names": ["api.example.com"] }]
+      }
+    ],
+    "entities": [["domain", "api.example.com"]],
+    "relations": []
+  },
+  {
+    "id": "wildcard-certificates",
+    "tags": ["normalization", "scope"],
+    "steps": [
+      {
+        "adapter": "certspotter",
+        "collect": true,
+        "data": [
+          {
+            "id": "3",
+            "dns_names": ["*.example.com", "outside.invalid", "api.example.com"]
+          }
+        ]
+      }
+    ],
+    "entities": [
+      ["domain", "example.com"],
+      ["domain", "api.example.com"]
+    ],
+    "relations": []
+  },
+  {
+    "id": "historical-url",
+    "tags": ["historical", "scope", "redaction"],
+    "steps": [
+      { "adapter": "subfinder", "data": "old.example.com" },
+      {
+        "adapter": "wayback",
+        "collect": true,
+        "data": [
+          ["timestamp", "original", "statuscode", "digest"],
+          [
+            "20190101000000",
+            "https://old.example.com/legacy?token=private",
+            "200",
+            "digest-a"
+          ],
+          ["20190101000000", "https://excluded.example.com/", "200", "digest-b"]
+        ]
+      }
+    ],
+    "entities": [
+      ["domain", "old.example.com"],
+      ["url", "https://old.example.com/legacy"]
+    ],
+    "relations": [
+      [
+        "domain",
+        "old.example.com",
+        "historically_served",
+        "url",
+        "https://old.example.com/legacy"
+      ]
+    ]
+  },
+  {
+    "id": "live-url",
+    "tags": ["direct-observation"],
+    "steps": [
+      { "adapter": "subfinder", "data": "api.example.com" },
+      {
+        "adapter": "httpx",
+        "data": {
+          "url": "https://api.example.com/",
+          "status_code": 200,
+          "tech": ["nginx"]
+        }
+      }
+    ],
+    "entities": [
+      ["domain", "api.example.com"],
+      ["url", "https://api.example.com/"]
+    ],
+    "relations": [
+      ["domain", "api.example.com", "serves", "url", "https://api.example.com/"]
+    ]
+  },
+  {
+    "id": "shared-infrastructure",
+    "tags": ["shared-infrastructure", "ownership"],
+    "steps": [
+      {
+        "adapter": "dnsx",
+        "data": [
+          { "host": "a.example.com", "a": ["192.0.2.10"] },
+          { "host": "b.example.com", "a": ["192.0.2.10"] }
+        ]
+      }
+    ],
+    "entities": [
+      ["domain", "a.example.com"],
+      ["domain", "b.example.com"],
+      ["ip", "192.0.2.10"]
+    ],
+    "relations": [
+      ["domain", "a.example.com", "resolves_to", "ip", "192.0.2.10"],
+      ["domain", "b.example.com", "resolves_to", "ip", "192.0.2.10"]
+    ]
+  },
+  {
+    "id": "username-collision",
+    "tags": ["identity", "false-positives"],
+    "steps": [
+      {
+        "adapter": "sherlock",
+        "data": "username,url_user,exists\nalex,https://github.com/alex,Claimed\nalex,https://gitlab.com/alex,Claimed\n"
+      }
+    ],
+    "entities": [
+      ["username", "alex"],
+      ["profile", "https://github.com/alex"],
+      ["profile", "https://gitlab.com/alex"]
+    ],
+    "relations": [
+      [
+        "username",
+        "alex",
+        "username_match",
+        "profile",
+        "https://github.com/alex"
+      ],
+      [
+        "username",
+        "alex",
+        "username_match",
+        "profile",
+        "https://gitlab.com/alex"
+      ]
+    ]
+  },
+  {
+    "id": "unknown-account",
+    "tags": ["identity"],
+    "steps": [
+      {
+        "adapter": "whatsmyname",
+        "data": [
+          {
+            "username": "alex",
+            "url": "https://github.com/alex",
+            "status": "unknown"
+          }
+        ]
+      }
+    ],
+    "entities": [],
+    "relations": []
+  },
+  {
+    "id": "profile-mismatch",
+    "tags": ["identity", "failure"],
+    "steps": [
+      {
+        "adapter": "github-profile",
+        "target": "alex",
+        "collect": true,
+        "status": "failed",
+        "data": { "login": "someone-else" }
+      }
+    ],
+    "entities": [],
+    "relations": []
+  },
+  {
+    "id": "public-profile",
+    "tags": ["identity", "email"],
+    "steps": [
+      {
+        "adapter": "github-profile",
+        "target": "alex",
+        "collect": true,
+        "data": {
+          "login": "alex",
+          "company": "Example",
+          "email": "alex@example.com"
+        }
+      }
+    ],
+    "entities": [
+      ["username", "alex"],
+      ["profile", "https://github.com/alex"],
+      ["email", "alex@example.com"]
+    ],
+    "relations": [
+      [
+        "username",
+        "alex",
+        "username_match",
+        "profile",
+        "https://github.com/alex"
+      ]
+    ]
+  },
+  {
+    "id": "breach-is-not-password-validity",
+    "tags": ["breach", "email"],
+    "steps": [
+      { "adapter": "theharvester", "data": { "emails": ["alex@example.com"] } },
+      {
+        "adapter": "hibp",
+        "target": "alex@example.com",
+        "collect": true,
+        "data": [
+          {
+            "Name": "SyntheticBreach",
+            "BreachDate": "2020-01-01",
+            "Passwords": ["discard-this"]
+          }
+        ]
+      }
+    ],
+    "entities": [
+      ["email", "alex@example.com"],
+      ["breach", "alex@example.com:SyntheticBreach"]
+    ],
+    "relations": [
+      [
+        "email",
+        "alex@example.com",
+        "breach_association",
+        "breach",
+        "alex@example.com:SyntheticBreach"
+      ]
+    ]
+  },
+  {
+    "id": "secret-reference-only",
+    "tags": ["redaction"],
+    "steps": [
+      {
+        "adapter": "gitleaks",
+        "data": [
+          {
+            "File": "config.txt",
+            "StartLine": 7,
+            "RuleID": "api-key",
+            "Secret": "never-retain-this",
+            "Match": "never-retain-this"
+          }
+        ]
+      }
+    ],
+    "entities": [["secret", "config.txt:7:api-key"]],
+    "relations": []
+  },
+  {
+    "id": "invalid-calendar-date",
+    "tags": ["historical", "invalid-input"],
+    "steps": [
+      {
+        "adapter": "wayback",
+        "collect": true,
+        "status": "partial",
+        "data": [
+          ["timestamp", "original", "statuscode", "digest"],
+          ["20260230000000", "https://old.example.com/", "200", "digest"]
+        ]
+      }
+    ],
+    "entities": [],
+    "relations": []
+  },
+  {
+    "id": "stale-evidence",
+    "tags": ["freshness"],
+    "steps": [
+      {
+        "adapter": "jsonl",
+        "data": {
+          "type": "domain",
+          "value": "old.example.com",
+          "source": "fixture",
+          "confidence": 0.6,
+          "timestamp": "2001-01-01T00:00:00.000Z",
+          "evidence": {}
+        }
+      }
+    ],
+    "entities": [["domain", "old.example.com"]],
+    "relations": [],
+    "assessment": {
+      "type": "domain",
+      "value": "old.example.com",
+      "stale": 1,
+      "identity": "not_applicable"
+    }
+  },
+  {
+    "id": "conflicting-profile-assertions",
+    "tags": ["contradictions", "identity"],
+    "steps": [
+      {
+        "adapter": "jsonl",
+        "data": [
+          {
+            "type": "profile",
+            "value": "https://github.com/alex",
+            "source": "source-a",
+            "confidence": 0.6,
+            "timestamp": "2024-01-01T00:00:00.000Z",
+            "evidence": { "username": "alex", "public_company": "Example" }
+          },
+          {
+            "type": "profile",
+            "value": "https://github.com/alex",
+            "source": "source-b",
+            "confidence": 0.6,
+            "timestamp": "2025-01-01T00:00:00.000Z",
+            "evidence": {
+              "username": "alex",
+              "public_company": "Other Company"
+            }
+          }
+        ]
+      }
+    ],
+    "entities": [["profile", "https://github.com/alex"]],
+    "relations": [],
+    "assessment": {
+      "type": "profile",
+      "value": "https://github.com/alex",
+      "conflicting_assertions": 2,
+      "identity": "candidate_unverified"
+    }
+  }
+]

@@ -5,6 +5,8 @@ import { BusinessRecord, BreachSummary } from "../src/context.js";
 import { CompareInput } from "../src/state.js";
 import { ResumeInput, JobInput } from "../src/schema.js";
 import { DoctorInput } from "../src/doctor.js";
+import { RESULT_SCHEMAS, outputSchema } from "../src/contracts.js";
+import { BundleInput } from "../src/bundles.js";
 
 mkdirSync(new URL("../schema/", import.meta.url), { recursive: true });
 for (const [name, schema] of Object.entries({
@@ -17,8 +19,22 @@ for (const [name, schema] of Object.entries({
   resume: ResumeInput,
   job: JobInput,
   doctor: DoctorInput,
+  bundle: BundleInput,
 }))
   writeFileSync(
     new URL(`../schema/${name}.schema.json`, import.meta.url),
     JSON.stringify(z.toJSONSchema(schema), null, 2) + "\n",
   );
+writeFileSync(
+  new URL("../schema/mcp-output.schema.json", import.meta.url),
+  JSON.stringify(
+    Object.fromEntries(
+      Object.keys(RESULT_SCHEMAS).map((name) => [
+        name,
+        z.toJSONSchema(outputSchema(name)),
+      ]),
+    ),
+    null,
+    2,
+  ) + "\n",
+);

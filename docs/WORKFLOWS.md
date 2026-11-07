@@ -150,4 +150,6 @@ Tests use mocked sources, external-file contracts and a real MCP session. Verify
 
 ## v0.3 execution and snapshots
 
+v0.4 additionally includes one historical-discovery call for each enabled Cert Spotter/Wayback adapter in the company workflow. Existing call budgets apply. Each result is a page with incomplete historical coverage, not a complete census. See [the v0.4 guide](V0.4.md).
+
 Execution now creates durable jobs with recoverable steps and sealed snapshot IDs. Resume uses a new per-invocation budget while retaining lifetime and per-step caps. Correlation totals are exact for stored scoped entities; displayed samples remain bounded. See [OPERATIONS.md](OPERATIONS.md) for queue/resume/cancel, provider coordination and immutable run comparisons.

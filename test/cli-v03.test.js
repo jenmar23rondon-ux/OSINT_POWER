@@ -84,4 +84,23 @@ test("v0.3 CLI supports queued jobs, snapshots, diagnostics, comparison and HTML
   assert.equal(readFileSync(html, "utf8").includes("Evidence inventory"), true);
   assert.equal(call(["health"]).providers.length, 0);
   assert.equal(call(["runs", "--limit", "1"]).items.length, 1);
+  const bundle = join(dir, "evidence.json");
+  assert.equal(
+    call(["bundle", "--id", after.run_id, "--output", bundle]).captures,
+    1,
+  );
+  assert.equal(call(["verify-bundle", "--file", bundle]).complete, true);
+  assert.throws(() =>
+    call(["bundle", "--id", after.run_id, "--output", bundle]),
+  );
+  const data = JSON.parse(readFileSync(bundle, "utf8"));
+  data.manifest.run.target = "modified";
+  writeFileSync(bundle, JSON.stringify(data));
+  assert.throws(
+    () => call(["verify-bundle", "--file", bundle]),
+    (error) => {
+      assert.equal(JSON.parse(error.stdout).result.code, "INTEGRITY_MISMATCH");
+      return true;
+    },
+  );
 });

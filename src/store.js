@@ -25,7 +25,7 @@ export class Store {
   constructor(path = ":memory:") {
     if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true });
     this.db = new DatabaseSync(path, { timeout: 5000 });
-    if (this.db.prepare("PRAGMA user_version").get().user_version > 3) {
+    if (this.db.prepare("PRAGMA user_version").get().user_version > 4) {
       this.db.close();
       throw new Error("DATABASE_VERSION_TOO_NEW");
     }
@@ -57,11 +57,14 @@ export class Store {
       Observation.parse({ ...item, value: normalized(item.type, item.value) }),
     );
     let inserted = 0;
+    let entitiesInserted = 0;
     this.db.exec("BEGIN IMMEDIATE");
     try {
       for (const o of observations) {
         const entityId = hash([o.type, o.value]);
         const observationId = hash([entityId, o.source, o.evidence]);
+        if (!this.db.prepare("SELECT 1 FROM entities WHERE id=?").get(entityId))
+          entitiesInserted++;
         const existed = this.db
           .prepare("SELECT 1 FROM observations WHERE id=?")
           .get(observationId);
@@ -98,7 +101,7 @@ export class Store {
           this.edge(
             hash(["domain", new URL(o.value).hostname]),
             entityId,
-            "serves",
+            o.evidence.historical ? "historically_served" : "serves",
             observationId,
           );
         if (o.type === "profile" && o.evidence.username)
@@ -183,6 +186,31 @@ export class Store {
           );
       }
       capture(this, context.runId, observations, context);
+      if (context.discovery) {
+        const current = this.db
+          .prepare(
+            "SELECT cursor,updated_at FROM discovery_state WHERE adapter=? AND target=?",
+          )
+          .get(context.discovery.adapter, context.discovery.target);
+        // Restart is explicit; ordinary concurrent workers may repeat a page but cannot rewind state.
+        if (
+          !context.discovery.restart &&
+          JSON.stringify(current ?? null) !==
+            JSON.stringify(context.discovery.expected)
+        )
+          throw new Error("DISCOVERY_CURSOR_CONFLICT");
+        this.db
+          .prepare(
+            "INSERT INTO discovery_state VALUES(?,?,?,?,?) ON CONFLICT(adapter,target) DO UPDATE SET cursor=excluded.cursor,exhausted=excluded.exhausted,updated_at=excluded.updated_at",
+          )
+          .run(
+            context.discovery.adapter,
+            context.discovery.target,
+            context.discovery.cursor,
+            Number(context.discovery.exhausted),
+            new Date().toISOString(),
+          );
+      }
       this.db.exec("COMMIT");
     } catch (error) {
       this.db.exec("ROLLBACK");
@@ -191,6 +219,7 @@ export class Store {
     return {
       observations: observations.length,
       inserted,
+      entities_inserted: entitiesInserted,
       repeated: observations.length - inserted,
     };
   }

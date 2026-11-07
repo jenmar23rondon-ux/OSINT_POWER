@@ -124,6 +124,8 @@
         "type": "string",
         "enum": [
           "crtsh",
+          "certspotter",
+          "wayback",
           "subfinder",
           "amass",
           "dnsx",

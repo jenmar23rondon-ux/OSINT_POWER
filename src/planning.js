@@ -2,9 +2,12 @@ import { WorkflowInput } from "./schema.js";
 import { runWorkflow } from "./workflows.js";
 import { ADAPTERS } from "./adapters.js";
 import { hash } from "./store.js";
+import { sourceMetrics } from "./quality.js";
 
 const PROVIDERS = {
   crtsh: "crt.sh",
+  certspotter: "api.certspotter.com",
+  wayback: "web.archive.org",
   subfinder: "binary:subfinder",
   amass: "binary:amass",
   theharvester: "binary:theharvester",
@@ -40,7 +43,7 @@ export async function planInvestigation(engine, input) {
     if (provider && ["cooldown", "quota_exhausted"].includes(provider.status))
       eligibility = provider.status;
     const cached = engine.store.cached(
-      hash(["v0.3", step.adapter, step.target, engine.config]),
+      hash(["v0.4", step.adapter, step.target, engine.config]),
     );
     const prior = engine.store.db
       .prepare(
@@ -48,6 +51,7 @@ export async function planInvestigation(engine, input) {
       )
       .get(step.adapter, step.target);
     const passive = ADAPTERS[step.adapter].mode === "passive";
+    const metrics = sourceMetrics(engine.store, step.adapter, step.target);
     const reasons = [];
     let score = passive ? 30 : 10;
     reasons.push(
@@ -82,6 +86,24 @@ export async function planInvestigation(engine, input) {
       score += 20;
       reasons.push("address context is missing");
     }
+    if (metrics.sample_runs >= 3) {
+      score += Math.min(
+        15,
+        metrics.mean_new_entities / Math.max(1, metrics.mean_http_requests),
+      );
+      reasons.push(
+        "observed workspace novelty per HTTP request (at least 3 completed samples)",
+      );
+    }
+    if (
+      step.adapter === "wayback" &&
+      engine.store.db
+        .prepare(
+          "SELECT exhausted FROM discovery_state WHERE adapter=? AND target=?",
+        )
+        .get(step.adapter, step.target)?.exhausted
+    )
+      eligibility = "discovery_exhausted_restart_required";
     if (eligibility !== "ready") score = -1;
     candidates.push({
       tool: "collect",
@@ -93,6 +115,7 @@ export async function planInvestigation(engine, input) {
       estimated_logical_calls: 1,
       provider: PROVIDERS[step.adapter] ?? null,
       retry_at: provider?.status === "cooldown" ? provider.retry_at : null,
+      source_metrics: metrics,
     });
   }
   candidates.sort(

@@ -122,8 +122,19 @@ export class ProviderGate {
           ? AbortSignal.any([signal, options.signal].filter(Boolean))
           : options.signal,
       });
-      if (response.ok || response.status === 404) this.success(provider);
-      else
+      if (response.ok || response.status === 404) {
+        this.success(provider);
+        const delay = retryAfter(
+          response.headers.get("retry-after"),
+          this.now(),
+        );
+        if (delay)
+          this.db
+            .prepare(
+              "UPDATE provider_state SET next_at=MAX(next_at,?) WHERE provider=?",
+            )
+            .run(this.now() + delay, provider);
+      } else
         this.failure(
           provider,
           `HTTP_${response.status}`,

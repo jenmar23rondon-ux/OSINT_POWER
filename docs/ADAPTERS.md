@@ -4,25 +4,29 @@ A closed registry defines available collectors. Targets pass scope validation be
 
 ## Execution
 
-| Adapter        | Contract                                                                      |
-| -------------- | ----------------------------------------------------------------------------- |
-| crtsh          | Fixed crt.sh API, name_value array                                            |
-| subfinder      | Passive domain input, silent output, rate and timeout flags                   |
-| amass          | Legacy enum -passive -nocolor interface; verify installed compatibility       |
-| dnsx           | One host on stdin, JSON A/AAAA, one worker and rate limit                     |
-| httpx          | One host on stdin, JSON status/technology/title/TLS, no redirects             |
-| naabu          | One host, explicit ports, TCP connect, bounded workers/rate                   |
-| mx             | Native Node DNS MX resolver; no SMTP validation                               |
-| rdap           | IANA bootstrap followed by an allowlisted RIR; no redirects                   |
-| routing        | Fixed RIPEstat Network Info API                                               |
-| github-profile | Fixed public GitHub profile API for a scoped alias                            |
-| sherlock       | One alias, local catalog, configured professional sites, temporary CSV        |
-| theharvester   | crtsh/certspotter source selection, bounded result request and temporary JSON |
-| hibp           | Fixed breachedaccount endpoint, names and dates only                          |
+| Adapter        | Contract                                                                                                  |
+| -------------- | --------------------------------------------------------------------------------------------------------- |
+| crtsh          | Fixed crt.sh API, name_value array                                                                        |
+| certspotter    | Fixed CT Search v1 issuance API; one page, persistent after cursor, optional environment key              |
+| wayback        | Fixed HTTPS CDX index; four-column JSON, one page, persistent resume key, historical hostname/URL records |
+| subfinder      | Passive domain input, silent output, rate and timeout flags                                               |
+| amass          | Legacy enum -passive -nocolor interface; verify installed compatibility                                   |
+| dnsx           | One host on stdin, JSON A/AAAA, one worker and rate limit                                                 |
+| httpx          | One host on stdin, JSON status/technology/title/TLS, no redirects                                         |
+| naabu          | One host, explicit ports, TCP connect, bounded workers/rate                                               |
+| mx             | Native Node DNS MX resolver; no SMTP validation                                                           |
+| rdap           | IANA bootstrap followed by an allowlisted RIR; no redirects                                               |
+| routing        | Fixed RIPEstat Network Info API                                                                           |
+| github-profile | Fixed public GitHub profile API for a scoped alias                                                        |
+| sherlock       | One alias, local catalog, configured professional sites, temporary CSV                                    |
+| theharvester   | crtsh/certspotter source selection, bounded result request and temporary JSON                             |
+| hibp           | Fixed breachedaccount endpoint, names and dates only                                                      |
 
 Arguments are defined in source and verified by contract tests. Native rate behavior depends on the upstream version. Amass/Sherlock/theHarvester do not expose one universal HTTP limit through these wrappers: configure source quotas and check installed behavior. Wrapper timeout/byte limits are not a firewall or a per-request sandbox.
 
-Subprocesses use shell-free argument arrays, hidden windows on Windows, and a reduced system/configuration environment. Credentials stay in native provider files or the documented HIBP environment variable. Multiple server processes need external quota coordination.
+Subprocesses use shell-free argument arrays, hidden windows on Windows, and a reduced system/configuration environment. Credentials stay in native provider files or the documented HIBP/Cert Spotter environment variables. Processes sharing one SQLite workspace coordinate provider reservations; separate databases or machines require external coordination. Native quotas count invocations, not internal requests.
+
+Historical APIs also support imports using their documented projected response formats. Imports never modify live continuation state. Wayback expects timestamp/original/statuscode/digest columns, optionally followed by an empty row and a one-field resume-key row. See [v0.4 formats and recovery](V0.4.md).
 
 ## Imports
 

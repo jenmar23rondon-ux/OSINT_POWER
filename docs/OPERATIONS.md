@@ -142,7 +142,7 @@ The core report includes at most 50 entities, 50 relationships and 20 recent run
 | explain_entity      | Provenance and source-family explanation |
 | plan_investigation  | Rank eligible actions without execution  |
 
-There are **19 MCP tools** in total. The existing workflow tool remains compatible; execute=true now uses durable jobs. The legacy passive_pipeline is still a synchronous convenience command, without durable workflow recovery.
+There are **20 MCP tools** in total, including export_evidence. execute=true uses durable jobs. The legacy passive_pipeline is still a synchronous convenience command, without durable workflow recovery. MCP response-envelope changes are documented in the [v0.4 migration guide](V0.4.md).
 
 ## Pinned native integration lab
 
@@ -159,4 +159,4 @@ Regular npm test does not download or run the native binaries. Native cases are 
 
 ## Remaining work
 
-Historical discovery connectors, calibrated confidence, complete graph exports, a hosted dashboard, cross-machine orchestration and stronger per-tool isolation remain separate roadmap items. The HTML report is an offline investigation view, not a multi-user web service.
+Calibrated confidence, persistent claim-review decisions, complete graph exports, a hosted dashboard, cross-machine orchestration and stronger per-tool isolation remain roadmap items. v0.4 adds Cert Spotter/Wayback discovery, evidence packages and benchmark controls; see [the release guide](V0.4.md). The HTML report is an offline investigation view, not a multi-user web service.

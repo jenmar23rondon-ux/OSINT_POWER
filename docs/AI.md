@@ -36,18 +36,27 @@ Adapt registration to your host. stdout is exclusively the MCP protocol; diagnos
 4. Request a small entity page and then evidence for a specific conclusion.
 5. Review graph/report results and three next actions.
 
-There are 19 tools. The original nine are capabilities, collect, passive_pipeline, import_findings, query_findings, get_evidence, get_graph, workflow and get_report. Additional job, diagnostic, provenance and planning tools are documented in [operations](OPERATIONS.md). The [workflow guide](WORKFLOWS.md) explains the seven modes and execution budgets.
+There are 20 tools, including export_evidence for immutable bundle pages. Job, diagnostic, provenance and planning tools are documented in [operations](OPERATIONS.md). The [workflow guide](WORKFLOWS.md) explains the seven modes and execution budgets.
 
 ## Response contract
 
 ```json
 {
+  "schema_version": "0.4",
   "ok": true,
-  "result": { "items": [], "next_cursor": null, "limit": 25, "total": 0 }
+  "execution_status": "succeeded",
+  "collection_status": "partial",
+  "coverage": { "complete": false, "truncated": false },
+  "retry": { "retryable": false, "retry_after_ms": 0 },
+  "result": { "run_id": "...", "status": "partial", "next_actions": [] }
 }
 ```
 
-Successful calls provide structuredContent plus the same JSON in a text content block. Failed/partial results set ok to false and MCP isError to true. Check error codes, invalid/skipped counts, truncation and run history. A successful subprocess exit does not establish valid findings or a vulnerability.
+MCP calls provide structuredContent plus the same JSON in a text content block. Each tool has its own output schema, validated before returning. A malformed internal response becomes INTERNAL_OUTPUT_VALIDATION. Generated contracts are in schema/mcp-output.schema.json.
+
+**Migration from v0.3:** partial and deferred collection now retain ok=true and omit isError when orchestration succeeded. Read collection_status, coverage and retry before deciding what to do next. A failed collection or thrown input/operation error sets ok=false and isError=true. Successfully cancelling or inspecting a cancelled job is a successful tool call. Non-collection tools use collection_status=not_applicable and coverage.complete=null. The CLI keeps its previous nonzero exit status for partial/deferred runs.
+
+Check error codes, invalid/skipped counts, truncation and history. retryable describes whether a later retry may help; it does not override provider cooldowns or execute anything automatically. A successful subprocess exit does not establish valid findings or a vulnerability.
 
 Entity pages use next_cursor as the next cursor. Evidence and graph pages use offset; concurrent imports can change graph ordering between pages. All page sizes are capped at 100. Reports include at most 50 entities, 50 relationships and 20 recent runs.
 

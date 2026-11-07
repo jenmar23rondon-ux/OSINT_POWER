@@ -1,5 +1,7 @@
 # Contributing
 
+Run `npm run benchmark` alongside the test suite. Changes to parsers, normalization, correlation or source behavior should preserve the labeled expectations in [the benchmark corpus](benchmarks/cases.json). Add reviewed fixture labels for new behavior; synthetic scores do not establish real-world accuracy. Tool-output changes require regenerated schemas and a real MCP contract check. See [benchmark design](docs/BENCHMARKS.md) and [v0.4 migration](docs/V0.4.md).
+
 Open an issue with the use case, expected contract and a synthetic fixture. Follow [adapter guidance](docs/ADAPTERS.md) for new sources. Keep the offline core usable without installing entire third-party frameworks.
 
 ```bash

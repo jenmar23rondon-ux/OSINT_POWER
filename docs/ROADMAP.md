@@ -14,7 +14,7 @@ Seven bounded workflows, professional candidate aliases, sourced company/employe
 
 - Broader binary compatibility coverage beyond the v0.3 pinned httpx/dnsx/naabu local lab.
 - Additional tool dialect/version profiles beyond the v0.3 doctor probes.
-- Historical DNS, certificate alternatives, Wayback and URL history.
+- Historical DNS and additional historical URL providers beyond v0.4 Cert Spotter/Wayback.
 - Versioned native recon-ng/SpiderFoot importers.
 - Additional reviewed business-record sources and local document analysis.
 - Public repository exposure connectors without retaining secret values.
@@ -24,7 +24,7 @@ Seven bounded workflows, professional candidate aliases, sourced company/employe
 - Cross-machine orchestration beyond v0.3 SQLite job leases and explicit recovery.
 - Distributed quotas and improved jitter beyond v0.3 shared-workspace reservations/cooldowns.
 - Calibrated source-family confidence using labeled data.
-- Neo4j/GraphML export and run-to-run diffs.
+- Neo4j/GraphML export; immutable run-to-run comparisons are implemented.
 - SARIF and complete graph exports; v0.3 includes bounded JSON/offline interactive HTML.
 - Per-tool containers, pinned image digests and provider-specific egress policies.
 
@@ -35,3 +35,16 @@ Nuclei or other validators would need separate interfaces, scope, budgets and ev
 ## Implemented in v0.3
 
 Persistent job/checkpoint recovery, cancellation, worker leases, immutable execution snapshots, coverage-aware comparisons, shared provider quotas/cooldowns, doctor, source-family provenance, ranked planning, 19 MCP tools, an offline interactive report and pinned native loopback lab coverage.
+
+## Implemented in v0.4
+
+Direct Cert Spotter/Wayback connectors and imports, persistent per-target cursors with atomic progress, historical hostname/URL semantics, 20 tool-specific MCP output contracts, separate execution/collection/retry states, normalized evidence packages with offline integrity verification, 17 labeled synthetic benchmark scenarios, evidence freshness/conflict assessments and observed source novelty/request-cost samples in the planner.
+
+## Next investigation improvements
+
+- Broaden the labeled corpus with reviewed, publishable datasets and independently maintained gold labels.
+- Calibrate source assessments from evaluation data; current confidence remains heuristic.
+- Persist reviewer decisions and explicit supporting/contradicting claim relationships.
+- Monitor incrementally with reviewed change notifications and source-specific watermarks.
+- Add an evidence-review interface on top of the existing offline report.
+- Harden per-tool process/resource/egress isolation and publish reproducible release artifacts.

@@ -35,7 +35,7 @@ export async function fetchText(url, limits, headers = {}, fetcher = fetch) {
     response = await fetcher(url, {
       headers: {
         "User-Agent":
-          "OSINT_POWER/0.3 (+https://github.com/jenmar23rondon-ux/OSINT_POWER)",
+          "OSINT_POWER/0.4 (+https://github.com/jenmar23rondon-ux/OSINT_POWER)",
         ...headers,
       },
       redirect: "error",

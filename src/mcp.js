@@ -16,13 +16,11 @@ import { CompareInput, compareRuns, explainEntity } from "./state.js";
 import { DoctorInput, doctor } from "./doctor.js";
 import { planInvestigation } from "./planning.js";
 import { report } from "./report.js";
+import { outputSchema, toolResponse } from "./contracts.js";
+import { BundleInput, exportEvidence } from "./bundles.js";
 
 export function createServer(engine) {
-  const server = new McpServer({ name: "osint-power", version: "0.3.0" });
-  const outputSchema = z.object({
-    ok: z.boolean(),
-    result: z.record(z.string(), z.json()),
-  });
+  const server = new McpServer({ name: "osint-power", version: "0.4.0" });
   const register = (
     name,
     description,
@@ -36,7 +34,7 @@ export function createServer(engine) {
       {
         description,
         inputSchema,
-        outputSchema,
+        outputSchema: outputSchema(name),
         annotations: {
           readOnlyHint: readOnly,
           destructiveHint: false,
@@ -48,25 +46,17 @@ export function createServer(engine) {
         let output;
         try {
           const result = await handler(input, extra.signal);
-          output = {
-            ok: ![
-              "failed",
-              "partial",
-              "deferred",
-              "cancelled",
-              "interrupted",
-            ].includes(result.status),
-            result,
-          };
+          output = toolResponse(name, result);
         } catch (error) {
-          output = {
-            ok: false,
-            result: {
+          output = toolResponse(
+            name,
+            {
               code: /^[A-Z_0-9]+$/.test(error.message)
                 ? error.message
                 : "INVALID_INPUT",
             },
-          };
+            true,
+          );
         }
         // Serializing removes SQLite's null-prototype rows before SDK validation.
         const structuredContent = JSON.parse(JSON.stringify(output));
@@ -190,6 +180,7 @@ export function createServer(engine) {
     "Inspect local database/binaries, version/help contracts and credential presence. No target or credential verification.",
     DoctorInput,
     (input) => doctor(engine, input),
+    false,
   );
   register(
     "compare_runs",
@@ -213,6 +204,12 @@ export function createServer(engine) {
     "Rank configured actions using missing coverage, previous results, cache and source health; does not execute.",
     WorkflowInput.omit({ execute: true }),
     (input) => planInvestigation(engine, input),
+  );
+  register(
+    "export_evidence",
+    "Read a reproducible evidence-bundle page for an immutable run/snapshot. Includes integrity hashes; no file writes or raw source bodies. Follow next_cursor for more.",
+    BundleInput,
+    (input) => exportEvidence(engine.store, input),
   );
   register(
     "get_report",

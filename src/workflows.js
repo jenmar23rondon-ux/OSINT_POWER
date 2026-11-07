@@ -3,6 +3,7 @@ import { usernameVariants, employeeValue } from "./identity.js";
 import { ADAPTERS } from "./adapters.js";
 import { domain } from "./scope.js";
 import { recordSource } from "./state.js";
+import { hash } from "./store.js";
 
 export const WORKFLOWS = WORKFLOW_NAMES;
 const obs = (type, value, evidence, confidence = 0.25) => ({
@@ -182,6 +183,8 @@ export async function runWorkflow(engine, input, job) {
         runId,
         collector: "workflow",
         target,
+        configuration_digest: hash(engine.config),
+        collector_version: "builtin-0.4.0",
       });
       recordSource(engine.store, runId, "workflow", target, {
         status: "completed",
@@ -369,6 +372,11 @@ export async function runWorkflow(engine, input, job) {
       if (workflow === "company")
         for (const adapter of ["crtsh", "subfinder", "amass"])
           await invoke("passive_domains", adapter, target);
+      if (workflow === "company")
+        for (const adapter of ["certspotter", "wayback"].filter((a) =>
+          engine.config.enabledAdapters.includes(a),
+        ))
+          await invoke("historical_discovery", adapter, target);
       await invoke("public_email_collection", "theharvester", target);
     }
     if (workflow === "company") {

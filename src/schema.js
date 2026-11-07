@@ -37,6 +37,8 @@ export const RunInput = z
   .object({
     adapter: z.enum([
       "crtsh",
+      "certspotter",
+      "wayback",
       "subfinder",
       "amass",
       "dnsx",
@@ -51,6 +53,7 @@ export const RunInput = z
       "github-profile",
     ]),
     target: z.string().min(1).max(253),
+    restart: z.boolean().default(false),
   })
   .strict();
 export const QueryInput = z
@@ -66,6 +69,8 @@ export const QueryInput = z
 export const ImportInput = z
   .object({
     adapter: z.enum([
+      "certspotter",
+      "wayback",
       "subfinder",
       "amass",
       "dnsx",

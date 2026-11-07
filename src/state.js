@@ -1,10 +1,11 @@
 import { hash } from "./store.js";
 import { z } from "zod";
+import { assessEvidence } from "./quality.js";
 
 export const UUID = z.uuid();
 export function initializeState(db) {
   const version = db.prepare("PRAGMA user_version").get().user_version;
-  if (version > 3) throw new Error("DATABASE_VERSION_TOO_NEW");
+  if (version > 4) throw new Error("DATABASE_VERSION_TOO_NEW");
   db.exec(`
     CREATE TABLE IF NOT EXISTS run_observations(
       run_id TEXT NOT NULL REFERENCES runs(id), observation_id TEXT NOT NULL,
@@ -35,7 +36,8 @@ export function initializeState(db) {
       window_start INTEGER NOT NULL DEFAULT 0, used INTEGER NOT NULL DEFAULT 0,
       requests INTEGER NOT NULL DEFAULT 0, failures INTEGER NOT NULL DEFAULT 0,
       last_code TEXT, last_success TEXT, last_failure TEXT);
-    PRAGMA user_version=3;`);
+    CREATE TABLE IF NOT EXISTS discovery_state(adapter TEXT NOT NULL,target TEXT NOT NULL,cursor TEXT,exhausted INTEGER NOT NULL,updated_at TEXT NOT NULL,PRIMARY KEY(adapter,target));
+    PRAGMA user_version=4;`);
 }
 export function sourceFamily(source, evidence = {}) {
   const name = String(source).toLowerCase();
@@ -58,6 +60,7 @@ export function sourceFamily(source, evidence = {}) {
   if (["workflow", "configuration"].includes(name))
     return "configured_or_derived";
   if (name === "business-context") return "source_assertion";
+  if (name === "wayback") return "web_archive";
   return "unclassified";
 }
 export function capture(store, runId, items, context = {}) {
@@ -70,7 +73,10 @@ export function capture(store, runId, items, context = {}) {
     const entity = hash([o.type, o.value]);
     const observation = hash([entity, o.source, o.evidence]);
     const provenance = {
-      parser_version: "0.3.0",
+      parser_version: "0.4.0",
+      framework_version: "0.4.0",
+      collector_version: context.collector_version ?? "not_recorded",
+      configuration_digest: context.configuration_digest ?? null,
       source_family: sourceFamily(o.source, o.evidence),
       collected_at: collectedAt,
       observed_at: o.timestamp,
@@ -148,7 +154,8 @@ const snapshotQuery = `WITH
       SELECT 1 FROM run_observations old WHERE old.run_id=? AND old.entity_id=ids.entity_id
       AND NOT EXISTS(SELECT 1 FROM run_sources current WHERE current.run_id=?
         AND current.collector=old.collector AND current.target=old.target
-        AND current.status='completed' AND current.truncated=0 AND current.cached=0))
+        AND current.status='completed' AND current.truncated=0 AND current.cached=0
+        AND COALESCE(json_extract(current.summary,'$.coverage_complete'),1)=1))
       THEN 'coverage_gap' ELSE 'not_observed' END
     WHEN a.state<>b.state THEN 'evidence_changed' ELSE 'unchanged' END AS change
     FROM ids LEFT JOIN b USING(entity_id) LEFT JOIN a USING(entity_id))`;
@@ -249,6 +256,13 @@ export function explainEntity(store, entityId, limit = 10) {
     .map((r) => ({ ...r, provenance: JSON.parse(r.provenance) }));
   return {
     entity,
+    assessment: assessEvidence(
+      page.items.map((o) => ({ ...o, type: entity.type })),
+    ),
+    assessment_sampled:
+      store.db
+        .prepare("SELECT COUNT(*) AS n FROM observations WHERE entity_id=?")
+        .get(entityId).n > page.items.length,
     evidence: page,
     source_families: families,
     history,

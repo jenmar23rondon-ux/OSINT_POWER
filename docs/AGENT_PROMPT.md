@@ -65,3 +65,9 @@ List only calls actually made. Findings need the observation contract and verifi
 ## Recovery and evidence comparisons
 
 Read job state and provider health before retrying. Use resume_run for pending checkpoints, not a new investigation to bypass quotas. Compare sealed snapshot_id values; mutable job IDs are not historical captures. Preserve coverage_gap and not_observed uncertainty. Use plan_investigation for ranked actions and explain_entity for source-family provenance. No score turns alias matches or overlapping source counts into identity confirmation.
+
+## v0.4 evidence and response handling
+
+Inspect execution_status, collection_status, coverage and retry separately. A successful partial/deferred call does not mean collection is complete. Historical connectors consume one page per call and keep continuation locally; repeat within the existing budget, and use restart only to begin a new traversal. Do not describe archived URLs as live services or incremental pages as a complete asset census.
+
+Use export_evidence for paginated immutable capture packages. Preserve manifest/page integrity digests and disclose incomplete pages. Integrity is not publisher authentication. Evidence assessments remain sampled, unreviewed and heuristic. Direct-tool records may be imported; a source label alone does not establish a live collection or ownership. Public company conflicts require review and do not justify merging people.

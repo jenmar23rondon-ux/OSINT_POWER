@@ -34,7 +34,12 @@ test(
     });
     await client.connect(transport);
     const list = await client.listTools();
-    assert.equal(list.tools.length, 19);
+    assert.equal(list.tools.length, 20);
+    for (const tool of list.tools) {
+      assert.equal(tool.outputSchema.additionalProperties, false);
+      assert.equal(tool.outputSchema.properties.schema_version.const, "0.4");
+      assert.equal(tool.outputSchema.properties.result.anyOf.length, 2);
+    }
     const call = (name, args = {}) =>
       client.callTool({ name, arguments: args });
     assert.equal(
@@ -116,6 +121,53 @@ test(
       (await call("get_report")).structuredContent.result.next_actions.length,
       3,
     );
+    const checked = async (name, args = {}) => {
+      const response = await call(name, args);
+      assert.notEqual(
+        response.structuredContent?.result.code,
+        "INTERNAL_OUTPUT_VALIDATION",
+        name,
+      );
+      assert.equal(response.isError, undefined, name);
+      return response.structuredContent;
+    };
+    await checked("get_graph");
+    await checked("list_jobs");
+    await checked("source_health");
+    const before = (
+      await checked("import_findings", {
+        adapter: "subfinder",
+        data: "before.example.com",
+      })
+    ).result.run_id;
+    const after = (
+      await checked("import_findings", {
+        adapter: "subfinder",
+        data: "after.example.com",
+      })
+    ).result.run_id;
+    await checked("compare_runs", { before, after });
+    const exported = await checked("export_evidence", { run_id: after });
+    assert.equal(exported.result.page.complete, true);
+    const partial = await checked("import_findings", {
+      adapter: "subfinder",
+      data: "valid.example.com\n--invalid",
+    });
+    assert.equal(partial.ok, true);
+    assert.equal(partial.collection_status, "partial");
+    assert.equal(partial.coverage.complete, false);
+    const pipeline = await checked("passive_pipeline", {
+      target: "example.com",
+    });
+    assert.equal(pipeline.collection_status, "partial");
+    const job2 = (
+      await checked("start_workflow", {
+        workflow: "correlation",
+        target: "example.com",
+      })
+    ).result;
+    await checked("cancel_run", { id: job2.id });
+    await checked("get_job", { id: queued.id });
     assert.equal(stderr.includes("SyntaxError"), false);
   },
 );

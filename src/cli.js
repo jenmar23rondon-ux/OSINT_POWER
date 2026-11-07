@@ -9,11 +9,16 @@ import { doctor } from "./doctor.js";
 import { planInvestigation } from "./planning.js";
 import { compareRuns, explainEntity } from "./state.js";
 import { JobListInput } from "./schema.js";
+import { completeEvidence, verifyEvidence } from "./bundles.js";
 
 const HELP = {
   project: "OSINT_POWER",
-  version: "0.3.0",
+  version: "0.4.0",
   commands: {
+    bundle:
+      "bundle --id SNAPSHOT_UUID --output evidence.json (complete capture, at most 10000 observations/40 MB)",
+    "verify-bundle":
+      "verify-bundle --file evidence.json (offline integrity verification)",
     doctor: "doctor [--skip-probes] (local diagnostics only)",
     plan: "plan --workflow company --target example.com (ranked actions; no collection)",
     resume: "resume --id JOB_UUID [--max-calls 10]",
@@ -30,7 +35,7 @@ const HELP = {
     demo: "Offline example: node src/cli.js demo",
     init: "Write a new config.json without overwriting: node src/cli.js init",
     capabilities: "List configured collectors, importers and scope",
-    run: "run --adapter crtsh --target example.com",
+    run: "run --adapter crtsh --target example.com [--restart for certspotter/wayback]",
     pipeline:
       "pipeline --target example.com (passive configured collectors only)",
     import: "import --adapter subfinder --file examples/subdomains.txt",
@@ -50,6 +55,7 @@ try {
     options: {
       execute: { type: "boolean", default: false },
       queue: { type: "boolean", default: false },
+      restart: { type: "boolean", default: false },
       "skip-probes": { type: "boolean", default: false },
       ...Object.fromEntries(
         [
@@ -75,6 +81,8 @@ try {
     },
   });
   const command = positionals[0] ?? "help";
+  if (v.restart && command !== "run")
+    throw new Error("RESTART_ONLY_FOR_COLLECTION");
   if (positionals.length > 1) throw new Error("UNEXPECTED_ARGUMENT");
   let result;
   if (command === "help") result = HELP;
@@ -86,6 +94,10 @@ try {
       { flag: "wx" },
     );
     result = { status: "created", config: path, network: false, active: false };
+  } else if (command === "verify-bundle") {
+    if (!v.file || statSync(v.file).size > 50_000_000)
+      throw new Error("INVALID_BUNDLE_FILE");
+    result = verifyEvidence(JSON.parse(readFileSync(v.file, "utf8")));
   } else if (command === "demo") {
     const config = JSON.parse(
       readFileSync(new URL("../config.example.json", import.meta.url), "utf8"),
@@ -158,8 +170,25 @@ try {
     else if (command === "explain")
       result = explainEntity(engine.store, v.id, Number(v.limit ?? 10));
     else if (command === "run")
-      result = await engine.run({ adapter: v.adapter, target: v.target });
-    else if (command === "pipeline") result = await engine.pipeline(v.target);
+      result = await engine.run({
+        adapter: v.adapter,
+        target: v.target,
+        restart: v.restart,
+      });
+    else if (command === "bundle") {
+      if (!v.output) throw new Error("OUTPUT_PATH_REQUIRED");
+      const bundle = completeEvidence(engine.store, v.id);
+      writeFileSync(v.output, JSON.stringify(bundle, null, 2) + "\n", {
+        mode: 0o600,
+        flag: "wx",
+      });
+      result = {
+        status: "completed",
+        path: v.output,
+        captures: bundle.captures.length,
+        integrity: bundle.integrity,
+      };
+    } else if (command === "pipeline") result = await engine.pipeline(v.target);
     else if (command === "workflow") {
       if (v.queue && v.execute) throw new Error("QUEUE_AND_EXECUTE_CONFLICT");
       const request = {

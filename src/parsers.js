@@ -2,6 +2,11 @@ import { basename } from "node:path";
 import { Observation } from "./schema.js";
 import { normalized } from "./scope.js";
 import { parseBusiness, BreachSummary } from "./context.js";
+import {
+  decodeDiscovery,
+  archiveTimestamp,
+  HISTORICAL_ADAPTERS,
+} from "./discovery.js";
 
 const evidenceKeys = new Set([
   "host",
@@ -42,6 +47,10 @@ const evidenceKeys = new Set([
   "credential_kind",
   "provider",
   "public_company",
+  "historical",
+  "archive_timestamp",
+  "valid_from",
+  "valid_until",
 ]);
 function sanitize(evidence) {
   if (typeof evidence.source_url === "string") {
@@ -136,6 +145,7 @@ export function parse(adapter, text, scope, maxRecords = 2000, context = {}) {
   let skipped = 0;
   let invalid = 0;
   let truncated = false;
+  let discovery;
   const emit = (
     type,
     value,
@@ -182,7 +192,71 @@ export function parse(adapter, text, scope, maxRecords = 2000, context = {}) {
       invalid++;
     }
   };
-  if (["subfinder", "amass"].includes(adapter)) {
+  if (HISTORICAL_ADAPTERS.includes(adapter)) {
+    const page = decodeDiscovery(adapter, text);
+    discovery = {
+      next_cursor: page.next_cursor,
+      exhausted: page.exhausted,
+      records: page.records.length,
+      coverage_mode: "incremental_page",
+      coverage_complete: false,
+    };
+    for (const row of page.records) {
+      if (adapter === "certspotter") {
+        for (const name of row.dns_names)
+          emit(
+            "domain",
+            name,
+            {
+              record: row.id,
+              historical: true,
+              ...(typeof row.not_before === "string"
+                ? { valid_from: row.not_before }
+                : {}),
+              ...(typeof row.not_after === "string"
+                ? { valid_until: row.not_after }
+                : {}),
+              verification: "certificate_name_only",
+            },
+            0.8,
+          );
+      } else {
+        try {
+          const timestamp = archiveTimestamp(row[0]);
+          const archivedHost = new URL(normalized("url", row[1])).hostname;
+          emit(
+            "domain",
+            archivedHost,
+            {
+              historical: true,
+              archive_timestamp: timestamp,
+              verification: "archived_hostname_live_status_unknown",
+            },
+            0.6,
+            adapter,
+            timestamp,
+          );
+          emit(
+            "url",
+            row[1],
+            {
+              historical: true,
+              archive_timestamp: timestamp,
+              status: row[2],
+              fingerprint: row[3],
+              source_url: "https://web.archive.org/",
+              verification: "archived_capture_live_status_unknown",
+            },
+            0.65,
+            adapter,
+            timestamp,
+          );
+        } catch {
+          invalid++;
+        }
+      }
+    }
+  } else if (["subfinder", "amass"].includes(adapter)) {
     for (const line of text.split(/\r?\n/).filter(Boolean)) {
       if (line.trim().startsWith("{")) {
         let r;
@@ -526,5 +600,11 @@ export function parse(adapter, text, scope, maxRecords = 2000, context = {}) {
       );
     }
   } else throw new Error("UNKNOWN_PARSER");
-  return { items, skipped, invalid, truncated };
+  return {
+    items,
+    skipped,
+    invalid,
+    truncated,
+    ...(discovery ? { discovery } : {}),
+  };
 }

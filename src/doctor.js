@@ -96,6 +96,10 @@ export async function doctor(engine, input = {}) {
         });
         result.version =
           version.match(/\b[vV]?\d+\.\d+(?:\.\d+)?\b/)?.[0] ?? null;
+        if (result.version)
+          engine.store.db
+            .prepare("INSERT OR REPLACE INTO settings VALUES(?,?)")
+            .run("tool-version:" + adapter, result.version);
         result.missing_flags = contract.flags.filter(
           (flag) => !help.includes(flag),
         );
@@ -112,7 +116,7 @@ export async function doctor(engine, input = {}) {
     ["missing", "incompatible", "probe_failed"].includes(b.compatibility),
   );
   return {
-    version: "0.3.0",
+    version: "0.4.0",
     status: problems.length ? "attention_required" : "completed",
     network_probe: false,
     database: {
@@ -130,7 +134,10 @@ export async function doctor(engine, input = {}) {
         .get(Date.now()).n,
     },
     binaries,
-    credentials: { hibp_api_key_configured: Boolean(process.env.HIBP_API_KEY) },
+    credentials: {
+      hibp_api_key_configured: Boolean(process.env.HIBP_API_KEY),
+      certspotter_api_key_configured: Boolean(process.env.CERTSPOTTER_API_KEY),
+    },
     providers: engine.providers.health(),
     note: "Local version/help probes do not query targets or validate credentials. Flag presence does not certify runtime compatibility; use the native lab.",
   };

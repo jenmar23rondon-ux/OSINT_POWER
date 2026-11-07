@@ -18,6 +18,20 @@ import { runWorkflow, WORKFLOWS } from "./workflows.js";
 import { ProviderGate } from "./providers.js";
 import { Jobs } from "./jobs.js";
 import { capture, recordSource, mirrorRun } from "./state.js";
+import { HISTORICAL_ADAPTERS } from "./discovery.js";
+
+const discoverySummary = (value) => {
+  if (!value) return {};
+  const { next_cursor, ...page } = value;
+  return {
+    discovery: {
+      ...page,
+      has_more: !page.exhausted,
+      cursor_hash: next_cursor ? hash(next_cursor) : null,
+    },
+    coverage_complete: false,
+  };
+};
 
 export class Engine {
   constructor(config, store, dependencies = {}) {
@@ -48,7 +62,7 @@ export class Engine {
         this.scope,
         this.config.limits.maxRecords,
       );
-      const { items, ...stats } = result;
+      const { items, discovery, ...stats } = result;
       const summary = {
         run_id: id,
         status: stats.invalid || stats.truncated ? "partial" : "completed",
@@ -57,8 +71,11 @@ export class Engine {
           collector: "import:" + adapter,
           target: "workspace_import",
           input_hash: hash(data),
+          configuration_digest: hash(this.config),
+          collector_version: "external_version_unknown",
         }),
         ...stats,
+        ...discoverySummary(discovery),
         input_hash: hash(data),
         next_actions: this.next(),
       };
@@ -90,7 +107,10 @@ export class Engine {
   }
   async execute(input, context = {}) {
     context.signal?.throwIfAborted();
-    const { adapter, target: raw } = RunInput.parse(input);
+    const { adapter, target: raw, restart } = RunInput.parse(input);
+    const historical = HISTORICAL_ADAPTERS.includes(adapter);
+    if (restart && !historical)
+      throw new Error("RESTART_REQUIRES_DISCOVERY_ADAPTER");
     const relatedHost =
       ["rdap", "routing"].includes(adapter) && isIP(raw)
         ? this.store.ipHost(raw, this.scope)
@@ -110,8 +130,53 @@ export class Engine {
         mirrorRun(this.store, runId, context.parentRunId);
       return summary;
     };
-    const cacheKey = hash(["v0.3", adapter, target, this.config]);
-    const cached = this.store.cached(cacheKey);
+    const cacheKey = hash(["v0.4", adapter, target, this.config]);
+    const cached = historical ? null : this.store.cached(cacheKey);
+    const cursorState =
+      historical && !restart
+        ? this.store.db
+            .prepare(
+              "SELECT * FROM discovery_state WHERE adapter=? AND target=?",
+            )
+            .get(adapter, target)
+        : null;
+    const configuration_digest = hash(this.config);
+    const collector_version =
+      ADAPTERS[adapter].kind === "binary"
+        ? (this.store.db
+            .prepare("SELECT value FROM settings WHERE key=?")
+            .get("tool-version:" + adapter)?.value ?? "not_recorded")
+        : adapter === "certspotter"
+          ? "ct-search-v1"
+          : adapter === "wayback"
+            ? "cdx-v1"
+            : "builtin-0.4.0";
+    if (adapter === "wayback" && cursorState?.exhausted)
+      return finish({
+        run_id: runId,
+        adapter,
+        target,
+        status: "completed",
+        cached: false,
+        attempts: 0,
+        observations: 0,
+        inserted: 0,
+        repeated: 0,
+        skipped: 0,
+        invalid: 0,
+        truncated: false,
+        coverage_complete: false,
+        discovery: {
+          exhausted: true,
+          has_more: false,
+          cursor_advanced: false,
+          coverage_mode: "incremental_page",
+          coverage_complete: false,
+          records: 0,
+          cursor_hash: null,
+        },
+        next_actions: this.next(),
+      });
     if (cached?.items) {
       const result = {
         ...cached.summary,
@@ -128,11 +193,14 @@ export class Engine {
         collected_at: cached.summary.collected_at,
         origin_run_id: cached.summary.run_id,
         input_hash: cached.summary.input_hash,
+        configuration_digest: cached.summary.configuration_digest,
+        collector_version: cached.summary.collector_version,
       });
       return finish(result);
     }
     try {
       let attempts = 0;
+      let httpRequests = 0;
       const raw = await retry(
         async () => {
           attempts++;
@@ -140,11 +208,15 @@ export class Engine {
           const dependencies = {
             ...this.dependencies,
             signal,
+            discoveryCursor: cursorState?.cursor,
             fetcher: (url, options) =>
               this.providers.fetch(
                 url,
                 options,
-                this.dependencies.fetcher ?? fetch,
+                (...args) => {
+                  httpRequests++;
+                  return (this.dependencies.fetcher ?? fetch)(...args);
+                },
                 signal,
               ),
             runner: (command, args, limits, stdin = "") =>
@@ -221,7 +293,17 @@ export class Engine {
           this.config.limits.maxRecords,
           { target, relatedHost },
         );
-      const { items, ...stats } = parsed;
+      const { items, discovery, ...stats } = parsed;
+      const advanceCursor = historical && !stats.invalid && !stats.truncated;
+      const nextCursor =
+        discovery?.next_cursor ??
+        (restart ? null : (cursorState?.cursor ?? null));
+      if (
+        advanceCursor &&
+        discovery.next_cursor &&
+        discovery.next_cursor === cursorState?.cursor
+      )
+        throw new Error("DISCOVERY_CURSOR_STALLED");
       const collected_at = new Date().toISOString();
       context.signal?.throwIfAborted();
       const summary = {
@@ -231,20 +313,51 @@ export class Engine {
         status: stats.invalid || stats.truncated ? "partial" : "completed",
         cached: false,
         attempts,
+        http_requests: httpRequests,
         collected_at,
         input_hash: hash(raw),
+        configuration_digest,
+        collector_version,
         ...this.store.ingest(items, {
           runId,
           collector: adapter,
           target,
           collected_at,
           input_hash: hash(raw),
+          configuration_digest,
+          collector_version,
+          ...(advanceCursor
+            ? {
+                discovery: {
+                  adapter,
+                  target,
+                  cursor: nextCursor,
+                  exhausted: discovery.exhausted,
+                  expected: cursorState
+                    ? {
+                        cursor: cursorState.cursor,
+                        updated_at: cursorState.updated_at,
+                      }
+                    : null,
+                  restart,
+                },
+              }
+            : {}),
         }),
         ...stats,
+        ...discoverySummary(discovery),
+        ...(discovery
+          ? {
+              discovery: {
+                ...discoverySummary(discovery).discovery,
+                cursor_advanced: advanceCursor,
+              },
+            }
+          : {}),
         next_actions: this.next(),
       };
       finish(summary);
-      if (summary.status === "completed")
+      if (summary.status === "completed" && !historical)
         this.store.cache(
           cacheKey,
           { summary, items },
@@ -326,7 +439,7 @@ export class Engine {
   }
   capabilities() {
     return {
-      version: "0.3.0",
+      version: "0.4.0",
       durable_jobs: true,
       workflows: WORKFLOWS,
       network: this.config.network,

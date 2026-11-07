@@ -1,7 +1,20 @@
 import { fetchText, runProcess } from "./transport.js";
 import { collectExtra } from "./collectors.js";
+import { collectDiscovery, HISTORICAL_ADAPTERS } from "./discovery.js";
 
 export const ADAPTERS = {
+  certspotter: {
+    mode: "passive",
+    kind: "api",
+    description:
+      "One CT issuance page; persistent after cursor, optional CERTSPOTTER_API_KEY",
+  },
+  wayback: {
+    mode: "passive",
+    kind: "api",
+    description:
+      "One historical CDX URL page; persistent resume key, no archived page downloads",
+  },
   sherlock: {
     mode: "passive",
     kind: "binary",
@@ -152,6 +165,8 @@ export function commandFor(adapter, target, limits) {
   throw new Error("UNKNOWN_BINARY");
 }
 export async function collect(adapter, target, config, dependencies = {}) {
+  if (HISTORICAL_ADAPTERS.includes(adapter))
+    return collectDiscovery(adapter, target, config, dependencies);
   if (
     [
       "sherlock",

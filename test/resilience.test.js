@@ -405,8 +405,8 @@ test("provenance retains source families without claiming independence; database
   store.close();
   store = fileStore(path);
   assert.equal(store.query().total, 1);
-  assert.equal(store.db.prepare("PRAGMA user_version").get().user_version, 3);
-  store.db.exec("PRAGMA user_version=4");
+  assert.equal(store.db.prepare("PRAGMA user_version").get().user_version, 4);
+  store.db.exec("PRAGMA user_version=5");
   store.close();
   assert.throws(() => fileStore(path), /DATABASE_VERSION_TOO_NEW/);
 });
