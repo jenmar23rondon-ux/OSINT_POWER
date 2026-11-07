@@ -1,0 +1,8 @@
+node_modules/
+.osint-power/
+*.sqlite*
+config.json
+.env
+reports/
+coverage/
+*.tgz

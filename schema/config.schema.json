@@ -1,0 +1,184 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "number",
+      "const": 1
+    },
+    "scope": {
+      "type": "object",
+      "properties": {
+        "domains": {
+          "default": [],
+          "maxItems": 100,
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "excludeDomains": {
+          "default": [],
+          "maxItems": 100,
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "ips": {
+          "default": [],
+          "maxItems": 100,
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "emails": {
+          "default": [],
+          "maxItems": 100,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "email",
+            "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+          }
+        },
+        "usernames": {
+          "default": [],
+          "maxItems": 100,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+          }
+        },
+        "documents": {
+          "default": [],
+          "maxItems": 100,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        }
+      },
+      "required": [
+        "domains",
+        "excludeDomains",
+        "ips",
+        "emails",
+        "usernames",
+        "documents"
+      ],
+      "additionalProperties": false
+    },
+    "network": {
+      "default": false,
+      "type": "boolean"
+    },
+    "active": {
+      "default": false,
+      "type": "boolean"
+    },
+    "enabledAdapters": {
+      "default": [
+        "crtsh"
+      ],
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "crtsh",
+          "subfinder",
+          "amass",
+          "dnsx",
+          "httpx",
+          "naabu",
+          "hibp"
+        ]
+      }
+    },
+    "limits": {
+      "type": "object",
+      "properties": {
+        "timeoutMs": {
+          "default": 20000,
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 120000
+        },
+        "maxBytes": {
+          "default": 2000000,
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 10000000
+        },
+        "maxRecords": {
+          "default": 2000,
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "minIntervalMs": {
+          "default": 1500,
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 60000
+        },
+        "attempts": {
+          "default": 3,
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3
+        },
+        "cacheTtlSeconds": {
+          "default": 3600,
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 86400
+        },
+        "ports": {
+          "default": [
+            80,
+            443
+          ],
+          "minItems": 1,
+          "maxItems": 20,
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535
+          }
+        },
+        "requestRate": {
+          "default": 2,
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        }
+      },
+      "required": [
+        "timeoutMs",
+        "maxBytes",
+        "maxRecords",
+        "minIntervalMs",
+        "attempts",
+        "cacheTtlSeconds",
+        "ports",
+        "requestRate"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "version",
+    "scope",
+    "network",
+    "active",
+    "enabledAdapters",
+    "limits"
+  ],
+  "additionalProperties": false
+}

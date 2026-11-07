@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "scope": {
+    "domains": ["example.com"],
+    "excludeDomains": ["excluded.example.com"],
+    "ips": [],
+    "emails": [],
+    "usernames": ["example-researcher"],
+    "documents": ["public.pdf", "config.txt"]
+  },
+  "network": false,
+  "active": false,
+  "enabledAdapters": ["crtsh", "subfinder"],
+  "limits": {
+    "timeoutMs": 20000,
+    "maxBytes": 2000000,
+    "maxRecords": 2000,
+    "minIntervalMs": 1500,
+    "attempts": 3,
+    "cacheTtlSeconds": 3600,
+    "ports": [80, 443],
+    "requestRate": 2
+  }
+}

@@ -1,0 +1,8 @@
+node_modules
+.git
+.osint-power
+config.json
+.env
+reports
+*.sqlite*
+outputs
