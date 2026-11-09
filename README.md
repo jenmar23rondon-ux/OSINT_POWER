@@ -13,7 +13,7 @@
   <a href="#quick-start">Quick start</a> · <a href="docs/WORKFLOWS.md">Seven workflows</a> · <a href="docs/AI.md">Connect AI</a> · <a href="docs/ADAPTERS.md">Adapters</a> · <a href="docs/ROADMAP.md">Roadmap</a>
 </p>
 
-OSINT POWER is an evidence-focused reconnaissance framework for scoped security assessments and research. It normalizes public-source observations, stores provenance in SQLite, and exposes a CLI and **20 MCP tools**. It works without a model or an AI API key.
+OSINT POWER is an evidence-focused reconnaissance framework for scoped security assessments and research. It normalizes public-source observations, stores provenance in SQLite, and exposes a CLI and **23 MCP tools**. It works without a model or an AI API key.
 
 **Status: v0.4.0, historical discovery and verifiable evidence packages.** Seven workflows include explicit budgets, source status and partial results. External binaries are installed separately. Live connectors and import bridges are distinguished in the matrix below.
 
@@ -26,6 +26,14 @@ OSINT POWER is an evidence-focused reconnaissance framework for scoped security 
 - **Evidence assessments:** existence, ownership, identity and freshness remain separate. The planner exposes observed source novelty and request cost.
 
 See the **[v0.4 guide and migration notes](docs/V0.4.md)**.
+
+Analyst decisions are stored beside that evidence. A shared name or handle, including the same handle on a GitHub profile and in an email address, stays a **candidate** until a non-name identifier is supported by independent sources. Mirrors, a shared upstream, and the same collector run do not count as separate corroboration.
+
+```bash
+node src/cli.js review-queue
+node src/cli.js show-entity --id ENTITY_HASH
+node src/cli.js decide --subject entity --id ENTITY_HASH --decision needs-more-evidence --reason "Shared handle only." --analyst analyst-1
+```
 
 ## Quick start
 

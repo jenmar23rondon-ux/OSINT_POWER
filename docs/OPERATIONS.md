@@ -111,11 +111,26 @@ node src/cli.js explain --id ENTITY_HASH
 node src/cli.js plan --workflow company --target example.com --max-calls 3
 ```
 
-Explanations include source families, original captures, input hashes, collection/observation timestamps, cache origin and parser version. Shared CT sources and unknown aggregators are not counted as independent confirmations.
+Explanations include source families, original captures, input hashes, collection/observation timestamps, cache origin and parser version. Shared CT sources and unknown aggregators are not counted as independent confirmations. `explain_entity` keeps its heuristic `review_status`. Analyst decisions live on the review commands below and do not change that assessment.
 
 The planner ranks registered source/target actions using missing inventory, passive collection preference, prior outcomes, freshness, cache and current provider availability. It does not contact sources or write jobs. Scores are transparent prioritization heuristics, not probabilities or risk scores.
 
 Plans remain bounded. Later targets can be deferred until earlier discoveries exist; execution still checks scope and budgets.
+
+## Evidence review and entity resolution
+
+```bash
+node src/cli.js review-queue --limit 25
+node src/cli.js show-entity --id ENTITY_HASH
+node src/cli.js decide --subject entity --id ENTITY_HASH --decision accept --reason "In-scope and consistent." --analyst analyst-1
+node src/cli.js decide --subject finding --id OBSERVATION_HASH --decision reject --reason "Duplicate row." --analyst analyst-1
+```
+
+Decisions are `accept`, `reject`, or `needs-more-evidence`. Each one stores the reason, analyst id and timestamp. Older decisions stay in the table. The queue lists entities with no terminal decision, an unconfirmed candidate link, or a contradiction.
+
+Identity links are recomputed from stored observations. The same name or handle on two entities, such as GitHub user `alice` and `alice@example.com`, is always a candidate. Confirmation requires a non-name identifier (a full email address, profile URL, or key fingerprint) supported by at least two independent sources. Sources that share an `upstream`, a `mirror_of` origin, or a collector run count once. Only username, email, profile and employee entities are compared. A decision never merges those entities.
+
+Contradictions are derived when stored sources disagree on an attribute such as `public_company`, `name`, `company`, `title`, `country`, or `account`. They are shown on `show-entity` and keep the entity in the queue. SQLite schema v5 adds `review_decisions` and `entity_links` without rewriting existing evidence.
 
 ## Offline HTML report
 
@@ -130,19 +145,22 @@ The core report includes at most 50 entities, 50 relationships and 20 recent run
 
 ## MCP additions
 
-| Tool                | Behavior                                 |
-| ------------------- | ---------------------------------------- |
-| start_workflow      | Create a queued job without collection   |
-| resume_run          | Execute pending steps of a durable job   |
-| cancel_run          | Request cancellation                     |
-| get_job / list_jobs | Inspect durable state                    |
-| doctor              | Local diagnostics                        |
-| source_health       | Persisted quotas and cooldowns           |
-| compare_runs        | Paginated immutable evidence comparison  |
-| explain_entity      | Provenance and source-family explanation |
-| plan_investigation  | Rank eligible actions without execution  |
+| Tool                | Behavior                                                   |
+| ------------------- | ---------------------------------------------------------- |
+| start_workflow      | Create a queued job without collection                     |
+| resume_run          | Execute pending steps of a durable job                     |
+| cancel_run          | Request cancellation                                       |
+| get_job / list_jobs | Inspect durable state                                      |
+| doctor              | Local diagnostics                                          |
+| source_health       | Persisted quotas and cooldowns                             |
+| compare_runs        | Paginated immutable evidence comparison                    |
+| explain_entity      | Provenance and source-family explanation                   |
+| plan_investigation  | Rank eligible actions without execution                    |
+| list_review_queue   | Unreviewed entities, candidate links, contradictions       |
+| record_decision     | Append an analyst decision; does not confirm identity      |
+| show_entity         | Candidates, contradictions, independence, decision history |
 
-There are **20 MCP tools** in total, including export_evidence. execute=true uses durable jobs. The legacy passive_pipeline is still a synchronous convenience command, without durable workflow recovery. MCP response-envelope changes are documented in the [v0.4 migration guide](V0.4.md).
+There are **23 MCP tools** in total, including export_evidence and the three review tools. Existing tool names and output schemas are unchanged. execute=true uses durable jobs. The legacy passive_pipeline is still a synchronous convenience command, without durable workflow recovery. MCP response-envelope changes are documented in the [v0.4 migration guide](V0.4.md).
 
 ## Pinned native integration lab
 
@@ -159,4 +177,4 @@ Regular npm test does not download or run the native binaries. Native cases are 
 
 ## Remaining work
 
-Calibrated confidence, persistent claim-review decisions, complete graph exports, a hosted dashboard, cross-machine orchestration and stronger per-tool isolation remain roadmap items. v0.4 adds Cert Spotter/Wayback discovery, evidence packages and benchmark controls; see [the release guide](V0.4.md). The HTML report is an offline investigation view, not a multi-user web service.
+Calibrated confidence, complete graph exports, a hosted dashboard, cross-machine orchestration and stronger per-tool isolation remain roadmap items. Analyst decisions, candidate links and contradiction flags are stored locally; see the evidence-review commands above. v0.4 adds Cert Spotter/Wayback discovery, evidence packages and benchmark controls; see [the release guide](V0.4.md). The HTML report is an offline investigation view, not a multi-user web service.

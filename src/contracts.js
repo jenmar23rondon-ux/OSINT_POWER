@@ -327,6 +327,51 @@ export const BundleResult = row({
     page_sha256: id,
   }),
 });
+const analystDecision = row({
+  id: text,
+  subject_kind: z.enum(["entity", "finding"]),
+  subject_id: id,
+  decision: z.enum(["accept", "reject", "needs-more-evidence"]),
+  reason: text,
+  analyst_id: text,
+  recorded_at: text,
+});
+const resolutionLink = row({
+  id,
+  status: z.enum(["candidate", "confirmed"]),
+  basis: text,
+  confidence: z.number().min(0).max(1),
+  confidence_basis: text,
+  other: row({ id, type: EntityType, value: text }),
+  shared_names: z.array(text),
+  shared_handles: z.array(text),
+  shared_identifiers: z.array(text),
+  independent_corroboration: count,
+  blocked_reason: text.nullable(),
+  evidence: z.array(
+    row({
+      observation_id: id,
+      entity_id: id,
+      source: text,
+      attribute: text,
+      value: text,
+      role: text,
+    }),
+  ),
+});
+const reviewContradiction = row({
+  scope: z.enum(["entity", "linked_entity"]),
+  attribute: text,
+  entity_ids: z.array(id),
+  values: z.array(
+    row({
+      value: text,
+      sources: z.array(text),
+      observation_ids: z.array(id),
+    }),
+  ),
+  independent_disagreement: z.boolean(),
+});
 
 export const RESULT_SCHEMAS = {
   capabilities: row({
@@ -488,6 +533,51 @@ export const RESULT_SCHEMAS = {
     limitations: z.array(text),
   }),
   export_evidence: BundleResult,
+  list_review_queue: row({
+    items: z.array(
+      row({
+        entity_id: id,
+        type: EntityType,
+        value: text,
+        current_decision: analystDecision.nullable(),
+        candidate_links: count,
+        confirmed_links: count,
+        contradictions: count,
+        queue_reasons: z.array(text),
+      }),
+    ),
+    returned: count,
+    limit: count,
+    next_cursor: id.nullable(),
+    total: count,
+    rules: z.array(text),
+  }),
+  record_decision: row({
+    current: analystDecision,
+    history: z.array(analystDecision),
+    appended: z.literal(true),
+  }),
+  show_entity: row({
+    entity,
+    current_decision: analystDecision.nullable(),
+    decision_history: z.array(analystDecision),
+    finding_decisions: z.array(
+      row({
+        observation_id: id,
+        current_decision: analystDecision,
+        history_count: count,
+      }),
+    ),
+    candidates: z.array(resolutionLink),
+    confirmed_links: z.array(resolutionLink),
+    contradictions: z.array(reviewContradiction),
+    independence: row({
+      observations: count,
+      independent_groups: count,
+      note: text,
+    }),
+    rules: z.array(text),
+  }),
 };
 
 const transient =

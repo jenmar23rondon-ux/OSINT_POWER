@@ -64,7 +64,7 @@ List only calls actually made. Findings need the observation contract and verifi
 
 ## Recovery and evidence comparisons
 
-Read job state and provider health before retrying. Use resume_run for pending checkpoints, not a new investigation to bypass quotas. Compare sealed snapshot_id values; mutable job IDs are not historical captures. Preserve coverage_gap and not_observed uncertainty. Use plan_investigation for ranked actions and explain_entity for source-family provenance. No score turns alias matches or overlapping source counts into identity confirmation.
+Read job state and provider health before retrying. Use resume_run for pending checkpoints, not a new investigation to bypass quotas. Compare sealed snapshot_id values; mutable job IDs are not historical captures. Preserve coverage_gap and not_observed uncertainty. Use plan_investigation for ranked actions and explain_entity for source-family provenance. No score turns alias matches or overlapping source counts into identity confirmation. Use show_entity for candidate links and contradictions. record_decision appends an analyst judgment and does not merge entities. The same name or handle across sources stays a candidate until independent non-name evidence exists.
 
 ## v0.4 evidence and response handling
 

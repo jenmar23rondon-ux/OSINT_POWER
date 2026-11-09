@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+Added persistent analyst review decisions (`accept`, `reject`, `needs-more-evidence`) with append-only history, candidate entity links, contradiction flags and independent-source corroboration counts. A shared name or handle never confirms an identity. SQLite schema v5 adds the review tables without rewriting existing evidence. Three MCP tools and CLI commands expose the queue, decisions and entity view. Package version remains 0.4.0. Existing MCP tool names and output schemas are unchanged.
+
 ## 0.4.0 — 2026-11-07
 
 Added bounded Cert Spotter and Wayback CDX connectors/imports, atomic persistent continuation, historical hostname/URL relationships and explicit restart. Added deterministic evidence packages, paginated MCP export and offline integrity verification. Every MCP tool now has a validated output schema; the server exposes 20 tools. Partial/deferred collection is separated from execution failure, which changes v0.3 MCP response semantics. Added 17 labeled benchmark scenarios and CI gates, freshness/conflict assessments and planner source-yield/request-cost samples. SQLite schema v4 preserves existing evidence and jobs; original captures are not backfilled with missing provenance.
