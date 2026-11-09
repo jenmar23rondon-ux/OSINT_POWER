@@ -26,6 +26,12 @@ import {
   reviewQueue,
   showEntity,
 } from "./review.js";
+import {
+  PhishingInput,
+  PhishingReportInput,
+  phishingReport,
+  runPhishingWorkflow,
+} from "./phishing.js";
 
 export function createServer(engine) {
   const server = new McpServer({ name: "osint-power", version: "0.4.0" });
@@ -243,6 +249,20 @@ export function createServer(engine) {
     false,
     false,
     false,
+  );
+  register(
+    "run_phishing_workflow",
+    "Generate suspected lookalikes for one in-scope apex domain. execute=false is a local plan. execute=true stores suspected leads and may query configured passive sources. It never confirms phishing, submits forms, or downloads a kit. DNS runs only when active mode and the mx adapter are already enabled.",
+    PhishingInput,
+    (input, signal) => runPhishingWorkflow(engine, input, signal),
+    false,
+    true,
+  );
+  register(
+    "phishing_report",
+    "Read the stored phishing leads for one in-scope apex domain as an unverified CERT report. Does not collect or change analyst decisions.",
+    PhishingReportInput,
+    (input) => phishingReport(engine, input),
   );
   register(
     "show_entity",

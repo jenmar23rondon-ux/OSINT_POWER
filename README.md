@@ -13,7 +13,7 @@
   <a href="#quick-start">Quick start</a> · <a href="docs/WORKFLOWS.md">Seven workflows</a> · <a href="docs/AI.md">Connect AI</a> · <a href="docs/ADAPTERS.md">Adapters</a> · <a href="docs/ROADMAP.md">Roadmap</a>
 </p>
 
-OSINT POWER is an evidence-focused reconnaissance framework for scoped security assessments and research. It normalizes public-source observations, stores provenance in SQLite, and exposes a CLI and **23 MCP tools**. It works without a model or an AI API key.
+OSINT POWER is an evidence-focused reconnaissance framework for scoped security assessments and research. It normalizes public-source observations, stores provenance in SQLite, and exposes a CLI and **25 MCP tools**. It works without a model or an AI API key.
 
 **Status: v0.4.0, historical discovery and verifiable evidence packages.** Seven workflows include explicit budgets, source status and partial results. External binaries are installed separately. Live connectors and import bridges are distinguished in the matrix below.
 
@@ -28,6 +28,14 @@ OSINT POWER is an evidence-focused reconnaissance framework for scoped security 
 See the **[v0.4 guide and migration notes](docs/V0.4.md)**.
 
 Analyst decisions are stored beside that evidence. A shared name or handle, including the same handle on a GitHub profile and in an email address, stays a **candidate** until a non-name identifier is supported by independent sources. Mirrors, a shared upstream, and the same collector run do not count as separate corroboration.
+
+Suspicious lookalikes of an in-scope apex are a separate workflow. They are stored as **suspected** leads, with the basis for each signal, and they are not confirmed phishing. An analyst decision is required before notification or takedown.
+
+```bash
+node src/cli.js phishing-scan --target example.com
+node src/cli.js phishing-scan --target example.com --execute --max-candidates 10 --max-calls 10
+node src/cli.js phishing-report --target example.com --format markdown --output leads.md
+```
 
 ```bash
 node src/cli.js review-queue
@@ -176,6 +184,7 @@ The legacy pipeline runs configured crt.sh/subfinder/Amass collectors only. Work
 | DeHashed / LeakCheck                                                                                           | Strict breach-summary imports                             | Metadata only; no password retrieval or live connectors                                              |
 | [recon-ng](https://github.com/lanmaster53/recon-ng) / [SpiderFoot](https://github.com/smicallef/spiderfoot)    | Common-schema JSONL bridge                                | Native export conversion required; no module execution                                               |
 | LinkedIn / X / job listings / public office records                                                            | Search-query handoff and sourced business-context imports | No automated scraping or fabricated search results                                                   |
+| Phishing lookalikes                                                                                            | Offline variants plus passive enrichment of those names   | In-scope apex only. Suspected, never auto-confirmed. No kit download, form submit, or credential use |
 
 External projects are not bundled or relicensed. Their versions and API availability affect compatibility. OCR, historical DNS, global code/paste search, geocoding and Nuclei execution remain outside this release.
 
@@ -197,23 +206,25 @@ The MCP server uses stdio. Register it with your compatible host using absolute 
 
 Adapt registration to your host's format. See [AI integration](docs/AI.md) and the [agent template](docs/AGENT_PROMPT.md).
 
-| MCP tool                                       | Purpose                                                       |
-| ---------------------------------------------- | ------------------------------------------------------------- |
-| `capabilities`                                 | Configured scope, adapters, workflows and limits              |
-| `collect`                                      | One validated adapter/target pair                             |
-| `passive_pipeline`                             | Sequential passive discovery with partial results             |
-| `import_findings`                              | Normalize a bounded supplied export                           |
-| `query_findings`                               | Stable entity pages and provenance summary                    |
-| `get_evidence`                                 | Untrusted observations for a specific entity                  |
-| `get_graph`                                    | Evidence-backed relationships                                 |
-| `workflow`                                     | Plan or execute a bounded workflow                            |
-| `start_workflow` / `resume_run` / `cancel_run` | Queue, resume and cancel durable jobs                         |
-| `get_job` / `list_jobs`                        | Inspect checkpoints and worker leases                         |
-| `doctor` / `source_health`                     | Local compatibility and persisted provider state              |
-| `compare_runs` / `explain_entity`              | Immutable comparisons and provenance                          |
-| `plan_investigation`                           | Rank configured actions using coverage, freshness and budgets |
-| `get_report`                                   | Bounded report, history and next actions                      |
-| `export_evidence`                              | Paginated immutable evidence package with integrity digests   |
+| MCP tool                                       | Purpose                                                                                  |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `capabilities`                                 | Configured scope, adapters, workflows and limits                                         |
+| `collect`                                      | One validated adapter/target pair                                                        |
+| `passive_pipeline`                             | Sequential passive discovery with partial results                                        |
+| `import_findings`                              | Normalize a bounded supplied export                                                      |
+| `query_findings`                               | Stable entity pages and provenance summary                                               |
+| `get_evidence`                                 | Untrusted observations for a specific entity                                             |
+| `get_graph`                                    | Evidence-backed relationships                                                            |
+| `workflow`                                     | Plan or execute a bounded workflow                                                       |
+| `start_workflow` / `resume_run` / `cancel_run` | Queue, resume and cancel durable jobs                                                    |
+| `get_job` / `list_jobs`                        | Inspect checkpoints and worker leases                                                    |
+| `doctor` / `source_health`                     | Local compatibility and persisted provider state                                         |
+| `compare_runs` / `explain_entity`              | Immutable comparisons and provenance                                                     |
+| `plan_investigation`                           | Rank configured actions using coverage, freshness and budgets                            |
+| `get_report`                                   | Bounded report, history and next actions                                                 |
+| `export_evidence`                              | Paginated immutable evidence package with integrity digests                              |
+| `run_phishing_workflow`                        | Suspected lookalikes for one in-scope apex; passive enrichment only when execute is true |
+| `phishing_report`                              | Unverified CERT-style lead report for stored candidates                                  |
 
 The model reasons about the evidence; the core handles parsing, validation and storage. Evidence text cannot change the configured scope or become a shell command.
 

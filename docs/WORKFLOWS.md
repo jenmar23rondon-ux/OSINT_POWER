@@ -148,6 +148,24 @@ Empty new people defaults preserve the scope fingerprint of v0.1 workspaces. Add
 
 Tests use mocked sources, external-file contracts and a real MCP session. Verify installed upstream binary versions locally. Import bridges are not equivalent to live API connectors.
 
+## Phishing leads
+
+`phishing-scan` is separate from the seven workflows. It accepts one configured apex domain, such as `example.com`, and generates a capped, deterministic set of lookalikes: character omissions, duplications, transpositions, adjacent-key typos, digit substitutions, single-character homoglyphs stored as punycode, final-label TLD swaps, `login`/`secure`/`support` additions, and hyphenation. The protected label must be 4–32 characters and must not already contain a hyphen. The final label is treated as the public suffix. Variants beyond the cap are a coverage gap.
+
+```bash
+node src/cli.js phishing-scan --target example.com --max-candidates 10
+node src/cli.js phishing-scan --target example.com --execute --max-candidates 10 --max-calls 10
+node src/cli.js phishing-report --target example.com --format html --output leads.html
+```
+
+Without `--execute`, the command only plans. It does not store leads or send traffic. With `--execute`, suspected domain entities are stored and enter the existing review queue. The stored status is always `suspected`. `accept` records an analyst decision; it does not confirm phishing. Rejected entities can leave the queue while the lead status stays `suspected`.
+
+Enrichment runs only for names this command just generated. It uses configured crt.sh, Cert Spotter, IANA domain RDAP and Wayback when `network` is on. Each source is one attempt and one page. Those calls do not advance the in-scope historical cursors and do not download site or archive bodies. Domain RDAP hosts come from the IANA bootstrap; links inside the registry body are ignored. DNS A, MX and NS run only when `active` is on and the `mx` adapter is enabled, through the same system resolver as MX. An MX record does not prove a mailbox. No port scan, HTTP probe, form submission, credential check, or phishing-kit download is added.
+
+The JSON, Markdown and offline HTML reports label the set as unverified leads and list the basis and source of each signal: name similarity, registration within 400 days, MX presence, a certificate name that contains the brand label, and an address shared by two candidates enriched in the same run. Recommended notification or takedown text is advisory and still requires the analyst decision.
+
+MCP tools are `run_phishing_workflow` and `phishing_report`. The scan is synchronous. It is not a durable resumable job.
+
 ## v0.3 execution and snapshots
 
 v0.4 additionally includes one historical-discovery call for each enabled Cert Spotter/Wayback adapter in the company workflow. Existing call budgets apply. Each result is a page with incomplete historical coverage, not a complete census. See [the v0.4 guide](V0.4.md).

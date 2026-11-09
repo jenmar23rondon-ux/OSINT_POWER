@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { Config, EntityType, Observation, WorkflowInput } from "./schema.js";
+import { PhishingReportResult, PhishingWorkflowResult } from "./phishing.js";
 
 const text = z.string(),
   count = z.number().int().nonnegative(),
@@ -578,6 +579,8 @@ export const RESULT_SCHEMAS = {
     }),
     rules: z.array(text),
   }),
+  run_phishing_workflow: PhishingWorkflowResult,
+  phishing_report: PhishingReportResult,
 };
 
 const transient =
@@ -608,7 +611,8 @@ export function toolResponse(name, result, thrown = false) {
     ["collect", "passive_pipeline", "import_findings", "resume_run"].includes(
       name,
     ) ||
-    (name === "workflow" && result.mode === "execute");
+    (name === "workflow" && result.mode === "execute") ||
+    (name === "run_phishing_workflow" && result.mode === "execute");
   const failed =
     thrown ||
     (collecting &&

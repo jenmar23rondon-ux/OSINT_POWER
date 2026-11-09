@@ -377,5 +377,32 @@
       "conflicting_assertions": 2,
       "identity": "candidate_unverified"
     }
+  },
+  {
+    "id": "lookalike-generation",
+    "tags": ["phishing", "lookalikes", "scoring"],
+    "steps": [],
+    "entities": [],
+    "relations": [],
+    "lookalike": {
+      "protected": "example.com",
+      "maxCandidates": 40,
+      "includes": [
+        "example.net",
+        "examp1e.com",
+        "example-login.com",
+        "ex-ample.com",
+        "eample.com"
+      ],
+      "excludes": ["example.com", "login.example.com", "excluded.example.com"],
+      "scores": {
+        "example.net": 0.9,
+        "examp1e.com": 0.87,
+        "example-login.com": 0.81,
+        "ex-ample.com": 0.86,
+        "eample.com": 0.79
+      },
+      "homoglyph": true
+    }
   }
 ]

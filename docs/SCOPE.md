@@ -27,7 +27,7 @@ HIBP stores breach metadata. Secret importers discard raw values and keep locati
 
 ## Boundaries
 
-No exploitation, credential-validity testing, account actions, password retrieval, automatic identity confirmation or employee attack-target scoring is implemented. Public professional context is not proof of employment or identity. IP location and registry country do not establish an office.
+No exploitation, credential-validity testing, account actions, password retrieval, automatic identity confirmation, confirmed-phishing labels, or employee attack-target scoring is implemented. Lookalike enrichment does not fetch page content or submit forms. Public professional context is not proof of employment or identity. IP location and registry country do not establish an office.
 
 The Docker image runs as an unprivileged user. Set CPU, memory and egress restrictions on the host. External binaries are not automatically installed or considered sandboxed merely because Node launches them. The wrapper kills the native process tree on timeout and cancellation, caps concurrent runs and output bytes, and refuses non-allowlisted commands. It does not apply a hard memory limit and it does not intercept connections those tools open.
 

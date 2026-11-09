@@ -57,7 +57,7 @@ export function sourceFamily(source, evidence = {}) {
   if (name === "httpx" || name === "naabu") return "direct_observation";
   if (["hibp", "dehashed", "leakcheck"].includes(name)) return "breach_catalog";
   if (["rdap", "routing"].includes(name)) return "registry_or_routing";
-  if (["workflow", "configuration"].includes(name))
+  if (["workflow", "configuration", "lookalike"].includes(name))
     return "configured_or_derived";
   if (name === "business-context") return "source_assertion";
   if (name === "wayback") return "web_archive";

@@ -7,6 +7,7 @@ import { normalized } from "./scope.js";
 import { employeeValue } from "./identity.js";
 import { initializeState, capture } from "./state.js";
 import { SCHEMA_VERSION, initializeReview } from "./review.js";
+import { initializePhishing } from "./phishing.js";
 
 function canonical(value) {
   if (Array.isArray(value)) return value.map(canonical);
@@ -43,6 +44,7 @@ export class Store {
       `);
     initializeState(this.db);
     initializeReview(this.db);
+    initializePhishing(this.db);
   }
   bindScope(scope) {
     const fingerprint = hash(scope);

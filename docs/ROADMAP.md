@@ -44,6 +44,10 @@ Direct Cert Spotter/Wayback connectors and imports, persistent per-target cursor
 
 Persistent analyst decisions with append-only history, candidate entity links, contradiction flags and independent-source counts. A shared name or handle is never a confirmed identity. Exposed through additive CLI commands and MCP tools on SQLite schema v5. Package version remains 0.4.0.
 
+## Phishing leads
+
+Deterministic lookalikes of one in-scope apex, then passive enrichment of only those names. Every candidate stays `suspected` until an analyst decides. Package version remains 0.4.0. Schema v5 gains the phishing tables on open and does not rewrite existing evidence.
+
 ## Next investigation improvements
 
 - Broaden the labeled corpus with reviewed, publishable datasets and independently maintained gold labels.

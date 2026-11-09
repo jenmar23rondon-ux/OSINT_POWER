@@ -25,6 +25,8 @@ Collect and correlate public information about configured assets and declared pr
 
 Use workflow with people/company/places/users/emails/exposures/correlation. Default planning is local. execute=true requests only configured stages with explicit target/call budgets.
 
+Use `run_phishing_workflow` only for an apex domain already in scope. Treat every returned domain as a suspected lead. Do not describe it as confirmed phishing, and do not draft a takedown or brand notice until an analyst records a decision. Do not request page fetches, form submissions, credential use, or phishing-kit downloads.
+
 Do not interpret a DNS MX as mailbox existence or catch-all, an ASN as ownership, or a breach as a current credential. Correlation supports defensive evidence review, not employee attack-target rankings.
 
 ## Output
