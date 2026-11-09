@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { DatabaseSync } from "node:sqlite";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -62,6 +63,15 @@ function releaseStore(store) {
 }
 function removeTemp(dir) {
   rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+}
+function releaseDatabase(path) {
+  try {
+    const db = new DatabaseSync(path);
+    db.exec("PRAGMA wal_checkpoint(TRUNCATE)");
+    db.close();
+  } catch {
+    // The file may already be gone, or Windows may still be releasing it.
+  }
 }
 function engineFor(t, config = settings(), dependencies = {}) {
   const store = new Store();
@@ -556,104 +566,111 @@ test("an old registration is not recent and a one-call budget stops later source
   );
 });
 
-test("CLI and MCP expose the workflow without changing the suspected state", async (t) => {
-  const dir = mkdtempSync(join(tmpdir(), "osint-phishing-"));
-  t.after(() => removeTemp(dir));
-  const config = join(dir, "config.json");
-  const db = join(dir, "state.sqlite");
-  writeFileSync(config, JSON.stringify(settings()));
-  const cli = fileURLToPath(new URL("../src/cli.js", import.meta.url));
-  const call = (args) =>
-    JSON.parse(
-      execFileSync(
-        process.execPath,
-        [cli, ...args, "--config", config, "--db", db],
-        { encoding: "utf8" },
+test(
+  "CLI and MCP expose the workflow without changing the suspected state",
+  { timeout: 20_000 },
+  async (t) => {
+    const dir = mkdtempSync(join(tmpdir(), "osint-phishing-"));
+    const config = join(dir, "config.json");
+    const db = join(dir, "state.sqlite");
+    let client;
+    t.after(async () => {
+      if (client) await client.close();
+      releaseDatabase(db);
+      removeTemp(dir);
+    });
+    writeFileSync(config, JSON.stringify(settings()));
+    const cli = fileURLToPath(new URL("../src/cli.js", import.meta.url));
+    const call = (args) =>
+      JSON.parse(
+        execFileSync(
+          process.execPath,
+          [cli, ...args, "--config", config, "--db", db],
+          { encoding: "utf8" },
+        ),
+      );
+    const plan = call([
+      "phishing-scan",
+      "--target",
+      "example.com",
+      "--max-candidates",
+      "4",
+    ]);
+    assert.equal(plan.ok, true);
+    assert.equal(plan.result.mode, "plan");
+    assert.equal(plan.result.persisted, false);
+    const executed = call([
+      "phishing-scan",
+      "--target",
+      "example.com",
+      "--execute",
+      "--max-candidates",
+      "3",
+      "--max-calls",
+      "2",
+    ]);
+    assert.equal(executed.ok, true);
+    assert.equal(executed.result.persisted, true);
+    assert.equal(
+      executed.result.candidates.every(
+        (candidate) => candidate.status === "suspected",
       ),
+      true,
     );
-  const plan = call([
-    "phishing-scan",
-    "--target",
-    "example.com",
-    "--max-candidates",
-    "4",
-  ]);
-  assert.equal(plan.ok, true);
-  assert.equal(plan.result.mode, "plan");
-  assert.equal(plan.result.persisted, false);
-  const executed = call([
-    "phishing-scan",
-    "--target",
-    "example.com",
-    "--execute",
-    "--max-candidates",
-    "3",
-    "--max-calls",
-    "2",
-  ]);
-  assert.equal(executed.ok, true);
-  assert.equal(executed.result.persisted, true);
-  assert.equal(
-    executed.result.candidates.every(
-      (candidate) => candidate.status === "suspected",
-    ),
-    true,
-  );
-  const report = call(["phishing-report", "--target", "example.com"]);
-  assert.equal(report.result.classification, "unverified_leads");
-  assert.match(report.result.markdown, /Unverified leads/);
-  const htmlPath = join(dir, "leads.html");
-  const written = call([
-    "phishing-report",
-    "--target",
-    "example.com",
-    "--format",
-    "html",
-    "--output",
-    htmlPath,
-  ]);
-  assert.equal(written.result.status, "completed");
-  const html = readFileSync(htmlPath, "utf8");
-  assert.match(html, /UNVERIFIED LEADS/);
-  assert.match(html, /connect-src 'none'/);
-  assert.throws(() =>
-    call(["phishing-scan", "--target", "example.net", "--execute"]),
-  );
-  const client = new Client({ name: "phishing-test", version: "1.0.0" });
-  const transport = new StdioClientTransport({
-    command: process.execPath,
-    args: [fileURLToPath(new URL("../src/mcp.js", import.meta.url))],
-    env: { ...process.env, OSINT_POWER_CONFIG: config, OSINT_POWER_DB: db },
-    stderr: "pipe",
-  });
-  t.after(async () => {
-    await client.close();
-  });
-  await client.connect(transport);
-  const names = new Set(
-    (await client.listTools()).tools.map((tool) => tool.name),
-  );
-  assert.equal(names.has("run_phishing_workflow"), true);
-  assert.equal(names.has("phishing_report"), true);
-  assert.equal(names.has("workflow"), true);
-  const response = await client.callTool({
-    name: "run_phishing_workflow",
-    arguments: { target: "example.com", execute: false, maxCandidates: 2 },
-  });
-  assert.equal(response.isError, undefined);
-  assert.equal(response.structuredContent.result.mode, "plan");
-  assert.equal(response.structuredContent.result.coverage_complete, false);
-  assert.equal(response.structuredContent.schema_version, "0.4");
-  const reported = await client.callTool({
-    name: "phishing_report",
-    arguments: { target: "example.com" },
-  });
-  assert.equal(
-    reported.structuredContent.result.classification,
-    "unverified_leads",
-  );
-  assert.equal(
-    hash(["domain", executed.result.candidates[0].domain]).length,
-    64,
-  );
-});
+    const report = call(["phishing-report", "--target", "example.com"]);
+    assert.equal(report.result.classification, "unverified_leads");
+    assert.match(report.result.markdown, /Unverified leads/);
+    const htmlPath = join(dir, "leads.html");
+    const written = call([
+      "phishing-report",
+      "--target",
+      "example.com",
+      "--format",
+      "html",
+      "--output",
+      htmlPath,
+    ]);
+    assert.equal(written.result.status, "completed");
+    const html = readFileSync(htmlPath, "utf8");
+    assert.match(html, /UNVERIFIED LEADS/);
+    assert.match(html, /connect-src 'none'/);
+    assert.throws(() =>
+      call(["phishing-scan", "--target", "example.net", "--execute"]),
+    );
+    client = new Client({ name: "phishing-test", version: "1.0.0" });
+    const transport = new StdioClientTransport({
+      command: process.execPath,
+      args: [fileURLToPath(new URL("../src/mcp.js", import.meta.url))],
+      env: { ...process.env, OSINT_POWER_CONFIG: config, OSINT_POWER_DB: db },
+      stderr: "pipe",
+    });
+    transport.stderr.on("data", () => {});
+    await client.connect(transport);
+    const names = new Set(
+      (await client.listTools()).tools.map((tool) => tool.name),
+    );
+    assert.equal(names.has("run_phishing_workflow"), true);
+    assert.equal(names.has("phishing_report"), true);
+    assert.equal(names.has("workflow"), true);
+    const response = await client.callTool({
+      name: "run_phishing_workflow",
+      arguments: { target: "example.com", execute: false, maxCandidates: 2 },
+    });
+    assert.equal(response.isError, undefined);
+    assert.equal(response.structuredContent.result.mode, "plan");
+    assert.equal(response.structuredContent.result.coverage_complete, false);
+    assert.equal(response.structuredContent.schema_version, "0.4");
+    const reported = await client.callTool({
+      name: "phishing_report",
+      arguments: { target: "example.com" },
+    });
+    assert.equal(
+      reported.structuredContent.result.classification,
+      "unverified_leads",
+    );
+    assert.equal(
+      hash(["domain", executed.result.candidates[0].domain]).length,
+      64,
+    );
+  },
+);
