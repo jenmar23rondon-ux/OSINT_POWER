@@ -10,6 +10,7 @@ import { planInvestigation } from "./planning.js";
 import { compareRuns, explainEntity } from "./state.js";
 import { JobListInput } from "./schema.js";
 import { completeEvidence, verifyEvidence } from "./bundles.js";
+import { recordDecision, reviewQueue, showEntity } from "./review.js";
 
 const HELP = {
   project: "OSINT_POWER",
@@ -29,6 +30,12 @@ const HELP = {
     compare:
       "compare --before RUN_UUID --after RUN_UUID [--limit 25] [--cursor HASH]",
     explain: "explain --id ENTITY_HASH [--limit 10]",
+    "review-queue":
+      "review-queue [--limit 25] [--cursor HASH] (unreviewed entities, candidate links, contradictions)",
+    decide:
+      "decide --subject entity|finding --id HASH --decision accept|reject|needs-more-evidence --reason TEXT --analyst ID",
+    "show-entity":
+      "show-entity --id ENTITY_HASH (candidates, contradictions, independence, decision history)",
     health: "health (persisted provider quotas and cooldowns)",
     workflow:
       "workflow --workflow company --target example.com [--execute | --queue] [--max-targets 3] [--max-calls 10]",
@@ -76,6 +83,10 @@ try {
           "after",
           "format",
           "output",
+          "decision",
+          "reason",
+          "analyst",
+          "subject",
         ].map((k) => [k, { type: "string" }]),
       ),
     },
@@ -169,6 +180,21 @@ try {
       });
     else if (command === "explain")
       result = explainEntity(engine.store, v.id, Number(v.limit ?? 10));
+    else if (command === "review-queue")
+      result = reviewQueue(engine.store, {
+        ...(v.limit ? { limit: Number(v.limit) } : {}),
+        ...(v.cursor ? { cursor: v.cursor } : {}),
+      });
+    else if (command === "decide")
+      result = recordDecision(engine.store, {
+        subject_kind: v.subject,
+        subject_id: v.id,
+        decision: v.decision,
+        reason: v.reason,
+        analyst_id: v.analyst,
+      });
+    else if (command === "show-entity")
+      result = showEntity(engine.store, { entity_id: v.id });
     else if (command === "run")
       result = await engine.run({
         adapter: v.adapter,

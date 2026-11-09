@@ -51,15 +51,21 @@ const evidenceKeys = new Set([
   "archive_timestamp",
   "valid_from",
   "valid_until",
+  "mirror_of",
+  "profile_url",
 ]);
+function publicUrl(value) {
+  const u = new URL(value);
+  if (!["https:", "http:"].includes(u.protocol) || u.username || u.password)
+    throw new Error("INVALID_SOURCE_URL");
+  u.search = "";
+  u.hash = "";
+  return u.href;
+}
 function sanitize(evidence) {
-  if (typeof evidence.source_url === "string") {
-    const u = new URL(evidence.source_url);
-    if (!["https:", "http:"].includes(u.protocol) || u.username || u.password)
-      throw new Error("INVALID_SOURCE_URL");
-    u.search = "";
-    u.hash = "";
-    evidence = { ...evidence, source_url: u.href };
+  for (const key of ["source_url", "profile_url"]) {
+    if (typeof evidence[key] === "string")
+      evidence = { ...evidence, [key]: publicUrl(evidence[key]) };
   }
   const scalar = (value) => {
     if (typeof value === "string")

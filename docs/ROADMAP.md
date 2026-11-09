@@ -40,11 +40,14 @@ Persistent job/checkpoint recovery, cancellation, worker leases, immutable execu
 
 Direct Cert Spotter/Wayback connectors and imports, persistent per-target cursors with atomic progress, historical hostname/URL semantics, 20 tool-specific MCP output contracts, separate execution/collection/retry states, normalized evidence packages with offline integrity verification, 17 labeled synthetic benchmark scenarios, evidence freshness/conflict assessments and observed source novelty/request-cost samples in the planner.
 
+## Evidence review
+
+Persistent analyst decisions with append-only history, candidate entity links, contradiction flags and independent-source counts. A shared name or handle is never a confirmed identity. Exposed through additive CLI commands and MCP tools on SQLite schema v5. Package version remains 0.4.0.
+
 ## Next investigation improvements
 
 - Broaden the labeled corpus with reviewed, publishable datasets and independently maintained gold labels.
 - Calibrate source assessments from evaluation data; current confidence remains heuristic.
-- Persist reviewer decisions and explicit supporting/contradicting claim relationships.
 - Monitor incrementally with reviewed change notifications and source-specific watermarks.
-- Add an evidence-review interface on top of the existing offline report.
+- Add analyst decisions to the offline HTML report. Decisions, candidate links and contradictions are available through CLI and MCP.
 - Harden per-tool process/resource/egress isolation and publish reproducible release artifacts.

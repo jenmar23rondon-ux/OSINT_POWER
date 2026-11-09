@@ -6,6 +6,7 @@ import { Observation, QueryInput } from "./schema.js";
 import { normalized } from "./scope.js";
 import { employeeValue } from "./identity.js";
 import { initializeState, capture } from "./state.js";
+import { SCHEMA_VERSION, initializeReview } from "./review.js";
 
 function canonical(value) {
   if (Array.isArray(value)) return value.map(canonical);
@@ -25,7 +26,9 @@ export class Store {
   constructor(path = ":memory:") {
     if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true });
     this.db = new DatabaseSync(path, { timeout: 5000 });
-    if (this.db.prepare("PRAGMA user_version").get().user_version > 4) {
+    if (
+      this.db.prepare("PRAGMA user_version").get().user_version > SCHEMA_VERSION
+    ) {
       this.db.close();
       throw new Error("DATABASE_VERSION_TOO_NEW");
     }
@@ -39,6 +42,7 @@ export class Store {
       CREATE TABLE IF NOT EXISTS runs(id TEXT PRIMARY KEY, adapter TEXT NOT NULL, target TEXT NOT NULL, started TEXT NOT NULL, finished TEXT, status TEXT NOT NULL, summary TEXT);
       `);
     initializeState(this.db);
+    initializeReview(this.db);
   }
   bindScope(scope) {
     const fingerprint = hash(scope);

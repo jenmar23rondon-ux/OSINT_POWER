@@ -1,11 +1,12 @@
 import { hash } from "./store.js";
 import { z } from "zod";
 import { assessEvidence } from "./quality.js";
+import { SCHEMA_VERSION } from "./review.js";
 
 export const UUID = z.uuid();
 export function initializeState(db) {
   const version = db.prepare("PRAGMA user_version").get().user_version;
-  if (version > 4) throw new Error("DATABASE_VERSION_TOO_NEW");
+  if (version > SCHEMA_VERSION) throw new Error("DATABASE_VERSION_TOO_NEW");
   db.exec(`
     CREATE TABLE IF NOT EXISTS run_observations(
       run_id TEXT NOT NULL REFERENCES runs(id), observation_id TEXT NOT NULL,
@@ -36,8 +37,7 @@ export function initializeState(db) {
       window_start INTEGER NOT NULL DEFAULT 0, used INTEGER NOT NULL DEFAULT 0,
       requests INTEGER NOT NULL DEFAULT 0, failures INTEGER NOT NULL DEFAULT 0,
       last_code TEXT, last_success TEXT, last_failure TEXT);
-    CREATE TABLE IF NOT EXISTS discovery_state(adapter TEXT NOT NULL,target TEXT NOT NULL,cursor TEXT,exhausted INTEGER NOT NULL,updated_at TEXT NOT NULL,PRIMARY KEY(adapter,target));
-    PRAGMA user_version=4;`);
+    CREATE TABLE IF NOT EXISTS discovery_state(adapter TEXT NOT NULL,target TEXT NOT NULL,cursor TEXT,exhausted INTEGER NOT NULL,updated_at TEXT NOT NULL,PRIMARY KEY(adapter,target));`);
 }
 export function sourceFamily(source, evidence = {}) {
   const name = String(source).toLowerCase();

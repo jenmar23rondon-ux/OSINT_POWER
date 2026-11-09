@@ -18,6 +18,14 @@ import { planInvestigation } from "./planning.js";
 import { report } from "./report.js";
 import { outputSchema, toolResponse } from "./contracts.js";
 import { BundleInput, exportEvidence } from "./bundles.js";
+import {
+  DecisionInput,
+  ReviewQueueInput,
+  ShowEntityInput,
+  recordDecision,
+  reviewQueue,
+  showEntity,
+} from "./review.js";
 
 export function createServer(engine) {
   const server = new McpServer({ name: "osint-power", version: "0.4.0" });
@@ -28,6 +36,7 @@ export function createServer(engine) {
     handler,
     readOnly = true,
     openWorld = false,
+    idempotent = readOnly,
   ) => {
     server.registerTool(
       name,
@@ -38,7 +47,7 @@ export function createServer(engine) {
         annotations: {
           readOnlyHint: readOnly,
           destructiveHint: false,
-          idempotentHint: readOnly,
+          idempotentHint: idempotent,
           openWorldHint: openWorld,
         },
       },
@@ -216,6 +225,33 @@ export function createServer(engine) {
     "Return a bounded report, audit history and three ranked next steps.",
     z.object({}).strict(),
     () => report(engine),
+  );
+  register(
+    "list_review_queue",
+    "List entities that still need an analyst decision, have an unconfirmed candidate link, or have a source contradiction. Refreshes stored candidate links locally and does not collect. A shared name or handle is never a confirmed identity.",
+    ReviewQueueInput,
+    (input) => reviewQueue(engine.store, input),
+    false,
+    false,
+    true,
+  );
+  register(
+    "record_decision",
+    "Append an analyst decision (accept, reject, or needs-more-evidence) for one stored entity or finding. Keeps the previous decisions. Does not merge entities, confirm identity, or contact sources.",
+    DecisionInput,
+    (input) => recordDecision(engine.store, input),
+    false,
+    false,
+    false,
+  );
+  register(
+    "show_entity",
+    "Show one entity with candidate and confirmed links, the evidence for each link, contradictions, independent-source counts and analyst decision history. Shared names and handles stay candidates until a non-name identifier has independent corroboration.",
+    ShowEntityInput,
+    (input) => showEntity(engine.store, input),
+    false,
+    false,
+    true,
   );
   return server;
 }
