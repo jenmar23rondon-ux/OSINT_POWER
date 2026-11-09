@@ -166,6 +166,18 @@ The JSON, Markdown and offline HTML reports label the set as unverified leads an
 
 MCP tools are `run_phishing_workflow` and `phishing_report`. The scan is synchronous. It is not a durable resumable job.
 
+## Incremental monitor
+
+```bash
+node src/cli.js monitor add --name edge --workflow company --target example.com --sources crtsh,naabu --interval 24h
+node src/cli.js monitor run --id MONITOR_UUID
+node src/cli.js monitor diff --id MONITOR_UUID --format markdown --output changes.md
+```
+
+`company`, the other six workflows, `phishing` and `collectors` are stored as the investigation label. A phishing monitor may list only `crtsh`, `certspotter`, `wayback`, `rdap` and `mx`. Collection still goes through the existing adapters and the phishing workflow; the monitor does not add a source or bypass a gate. `interval_hint` is not a schedule. Cron or CI calls `monitor run`.
+
+The diff can raise a local alert for a new certificate that names the brand, a suspected lookalike that gained an MX record, or a newly observed service. Those rules state their basis and do not confirm ownership, phishing, a mailbox, or a vulnerability. New entities enter the review queue unreviewed. Markdown and JSON stay on disk unless a webhook URL was set and network access is enabled. See [OPERATIONS.md](OPERATIONS.md).
+
 ## v0.3 execution and snapshots
 
 v0.4 additionally includes one historical-discovery call for each enabled Cert Spotter/Wayback adapter in the company workflow. Existing call budgets apply. Each result is a page with incomplete historical coverage, not a complete census. See [the v0.4 guide](V0.4.md).

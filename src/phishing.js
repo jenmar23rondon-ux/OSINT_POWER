@@ -592,7 +592,7 @@ function nowIso(engine) {
   const clock = engine.dependencies.now?.() ?? Date.now();
   return new Date(clock).toISOString();
 }
-function gate(engine, adapter, budget, activeAdapter = false) {
+function gate(engine, adapter, budget, activeAdapter = false, allowed) {
   if (!engine.config.network)
     return enrichment(
       adapter,
@@ -623,6 +623,13 @@ function gate(engine, adapter, budget, activeAdapter = false) {
       adapter,
       "budget_exhausted",
       "The logical call budget was reached before this source.",
+    );
+  // Optional caller allow-list. Existing checks above stay in front of it.
+  if (allowed && !allowed.has(activeAdapter ? "mx" : adapter))
+    return enrichment(
+      adapter,
+      "adapter_disabled",
+      "This monitor does not include this source. No query was sent.",
     );
   return null;
 }
@@ -789,6 +796,7 @@ async function enrichCandidate(
   budget,
   fetcher,
   signalAbort,
+  allowed,
 ) {
   signalAbort?.throwIfAborted();
   const passive = [
@@ -812,7 +820,7 @@ async function enrichCandidate(
     ["rdap", async () => collectRdap(engine, candidate, fetcher)],
   ];
   for (const [source, run] of passive) {
-    const blocked = gate(engine, source, budget, false);
+    const blocked = gate(engine, source, budget, false, allowed);
     if (blocked) {
       replaceEnrichment(candidate, blocked);
       continue;
@@ -823,7 +831,7 @@ async function enrichCandidate(
     if (result.signal) replaceSignal(candidate, result.signal);
     if (result.matched) candidate[result.matchedKey] = result.matched;
   }
-  const dnsBlocked = gate(engine, "dns", budget, true);
+  const dnsBlocked = gate(engine, "dns", budget, true, allowed);
   if (dnsBlocked) {
     replaceEnrichment(candidate, dnsBlocked);
     return;
@@ -1347,8 +1355,14 @@ function buildResult(engine, input, generated, candidates, extra) {
   if (!parsed.success) throw new Error("INTERNAL_OUTPUT_VALIDATION");
   return parsed.data;
 }
-export async function runPhishingWorkflow(engine, input, signalAbort) {
+export async function runPhishingWorkflow(
+  engine,
+  input,
+  signalAbort,
+  options = {},
+) {
   const request = PhishingInput.parse(input ?? {});
+  const allowed = options.sources ? new Set(options.sources) : undefined;
   signalAbort?.throwIfAborted();
   const protectedDomain = authorizeApex(engine.scope, request.target);
   const generated = generateLookalikes(protectedDomain, {
@@ -1415,6 +1429,7 @@ export async function runPhishingWorkflow(engine, input, signalAbort) {
         budget,
         fetcher,
         signalAbort,
+        allowed,
       );
     applyCertificates(drafted, protectedDomain.split(".")[0]);
     applySharedInfrastructure(drafted);

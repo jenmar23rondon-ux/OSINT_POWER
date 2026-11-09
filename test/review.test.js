@@ -556,11 +556,14 @@ test("schema v5 migrates an existing database without rewriting its evidence", (
   assert.equal(showEntity(store, { entity_id: id }).decision_history.length, 1);
   releaseStore(store);
   const bumped = new DatabaseSync(path);
-  bumped.exec("PRAGMA user_version=6");
+  bumped.exec(`PRAGMA user_version=${SCHEMA_VERSION + 1}`);
   bumped.close();
   assert.throws(() => new Store(path), /DATABASE_VERSION_TOO_NEW/);
   const preserved = new DatabaseSync(path);
-  assert.equal(preserved.prepare("PRAGMA user_version").get().user_version, 6);
+  assert.equal(
+    preserved.prepare("PRAGMA user_version").get().user_version,
+    SCHEMA_VERSION + 1,
+  );
   assert.equal(
     preserved.prepare("SELECT value FROM entities WHERE id=?").get(id).value,
     "kept.example.com",
@@ -649,7 +652,7 @@ test(
     await client.connect(transport);
     const list = await client.listTools();
     const names = new Set(list.tools.map((tool) => tool.name));
-    assert.equal(list.tools.length, 25);
+    assert.equal(list.tools.length, 29);
     for (const name of [
       "list_review_queue",
       "record_decision",

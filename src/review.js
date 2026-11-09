@@ -4,8 +4,9 @@ import { hash } from "./store.js";
 import { nameKey } from "./identity.js";
 import { normalized } from "./scope.js";
 
-// Schema v5 adds review tables. Existing evidence, jobs and runs are untouched.
-export const SCHEMA_VERSION = 5;
+// Schema v5 adds review tables. Schema v6 adds monitor tables in monitor.js.
+// Opening a database creates the missing tables and does not rewrite existing rows.
+export const SCHEMA_VERSION = 6;
 const IDENTITY_TYPES = new Set(["email", "username", "profile", "employee"]);
 const CONTRADICTION_FIELDS = [
   "public_company",

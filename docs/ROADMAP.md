@@ -48,10 +48,14 @@ Persistent analyst decisions with append-only history, candidate entity links, c
 
 Deterministic lookalikes of one in-scope apex, then passive enrichment of only those names. Every candidate stays `suspected` until an analyst decides. Package version remains 0.4.0. Schema v5 gains the phishing tables on open and does not rewrite existing evidence.
 
+## Incremental monitors
+
+Local monitor definitions, per-run snapshots and diffs for subdomains, hosts, certificates, DNS, phishing lookalikes and exposures. Alerts are local records with an explicit basis. A webhook is opt-in and off by default. There is no scheduler: the operator's cron or CI calls `monitor run`. New entities stay unreviewed. SQLite schema v6 is additive. Package version remains 0.4.0.
+
 ## Next investigation improvements
 
 - Broaden the labeled corpus with reviewed, publishable datasets and independently maintained gold labels.
 - Calibrate source assessments from evaluation data; current confidence remains heuristic.
-- Monitor incrementally with reviewed change notifications and source-specific watermarks.
+- Source-specific watermarks beyond the current per-run snapshot. The monitor does not advance Cert Spotter or Wayback cursors by itself.
 - Add analyst decisions to the offline HTML report. Decisions, candidate links and contradictions are available through CLI and MCP.
 - Harden per-tool process/resource/egress isolation and publish reproducible release artifacts.

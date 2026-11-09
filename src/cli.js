@@ -16,6 +16,13 @@ import {
   phishingReport,
   runPhishingWorkflow,
 } from "./phishing.js";
+import {
+  createMonitor,
+  listMonitors,
+  monitorChanges,
+  monitorMarkdown,
+  runMonitor,
+} from "./monitor.js";
 
 const HELP = {
   project: "OSINT_POWER",
@@ -45,6 +52,13 @@ const HELP = {
       "phishing-scan --target example.com [--execute] [--max-candidates 20] [--max-calls 10] (suspected lookalikes; not confirmed phishing)",
     "phishing-report":
       "phishing-report --target example.com [--format json|markdown|html --output PATH]",
+    "monitor add":
+      "monitor add --name NAME --workflow company|phishing|collectors --target example.com --sources crtsh,naabu [--interval 24h] [--minimum notable] [--webhook URL]",
+    "monitor run":
+      "monitor run --id MONITOR_UUID [--max-calls 10] (invoked by cron or CI; no built-in scheduler)",
+    "monitor diff":
+      "monitor diff --id MONITOR_UUID [--run RUN_UUID] [--format json|markdown --output PATH]",
+    "monitor list": "monitor list [--limit 25] [--offset 0]",
     health: "health (persisted provider quotas and cooldowns)",
     workflow:
       "workflow --workflow company --target example.com [--execute | --queue] [--max-targets 3] [--max-calls 10]",
@@ -97,14 +111,27 @@ try {
           "analyst",
           "subject",
           "max-candidates",
+          "name",
+          "sources",
+          "interval",
+          "webhook",
+          "minimum",
+          "run",
         ].map((k) => [k, { type: "string" }]),
       ),
     },
   });
   const command = positionals[0] ?? "help";
+  const subcommand = positionals[1];
   if (v.restart && command !== "run")
     throw new Error("RESTART_ONLY_FOR_COLLECTION");
-  if (positionals.length > 1) throw new Error("UNEXPECTED_ARGUMENT");
+  if (command === "monitor") {
+    if (
+      positionals.length !== 2 ||
+      !["add", "run", "diff", "list"].includes(subcommand)
+    )
+      throw new Error("UNKNOWN_COMMAND");
+  } else if (positionals.length > 1) throw new Error("UNEXPECTED_ARGUMENT");
   let result;
   if (command === "help") result = HELP;
   else if (command === "init") {
@@ -214,7 +241,61 @@ try {
           : {}),
         ...(v["max-calls"] ? { maxCalls: Number(v["max-calls"]) } : {}),
       });
-    else if (command === "phishing-report") {
+    else if (command === "monitor" && subcommand === "add")
+      result = createMonitor(engine, {
+        name: v.name,
+        investigation: v.workflow,
+        target: v.target,
+        sources: (v.sources ?? "")
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean),
+        ...(v.interval ? { interval_hint: v.interval } : {}),
+        ...(v.minimum ? { thresholds: { minimum: v.minimum } } : {}),
+        ...(v.webhook ? { webhook_url: v.webhook } : {}),
+        ...(v["max-candidates"]
+          ? { max_candidates: Number(v["max-candidates"]) }
+          : {}),
+      });
+    else if (command === "monitor" && subcommand === "run")
+      result = await runMonitor(engine, {
+        id: v.id,
+        ...(v["max-calls"] ? { max_calls: Number(v["max-calls"]) } : {}),
+      });
+    else if (command === "monitor" && subcommand === "list")
+      result = listMonitors(engine.store, {
+        ...(v.limit ? { limit: Number(v.limit) } : {}),
+        ...(v.offset ? { offset: Number(v.offset) } : {}),
+      });
+    else if (command === "monitor" && subcommand === "diff") {
+      const format = v.format ?? "json";
+      if (!["json", "markdown"].includes(format))
+        throw new Error("INVALID_REPORT_FORMAT");
+      const body = monitorChanges(engine.store, {
+        id: v.id,
+        ...(v.run ? { run_id: v.run } : {}),
+        ...(v.limit ? { limit: Number(v.limit) } : {}),
+        ...(v.cursor ? { cursor: v.cursor } : {}),
+      });
+      if (v.output) {
+        writeFileSync(
+          v.output,
+          format === "markdown"
+            ? monitorMarkdown(body)
+            : JSON.stringify(body, null, 2) + "\n",
+          { mode: 0o600, flag: "wx" },
+        );
+        result = {
+          status: "completed",
+          format,
+          path: v.output,
+          total: body.total,
+          alert_count: body.alert_count,
+        };
+      } else if (format === "markdown")
+        result = { ...body, markdown: monitorMarkdown(body) };
+      else result = body;
+    } else if (command === "phishing-report") {
       const format = v.format ?? "json";
       if (!["json", "markdown", "html"].includes(format))
         throw new Error("INVALID_REPORT_FORMAT");
