@@ -3,7 +3,7 @@ import { BlockList, isIP } from "node:net";
 import { mkdtemp, readFile, stat, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve, sep } from "node:path";
-import { fetchText, runProcess } from "./transport.js";
+import { fetchText, runProcess, assertSafeTarget } from "./transport.js";
 
 const RIR_HOSTS = new Set([
   "rdap.arin.net",
@@ -117,6 +117,7 @@ export async function collectExtra(adapter, target, config, dependencies = {}) {
     );
   if (!["sherlock", "theharvester"].includes(adapter))
     throw new Error("UNKNOWN_COLLECTOR");
+  assertSafeTarget(target);
   const directory = await mkdtemp(join(tmpdir(), "osint-power-collector-"));
   try {
     let filename;
@@ -152,7 +153,13 @@ export async function collectExtra(adapter, target, config, dependencies = {}) {
         prefix,
       ];
     }
-    await (dependencies.runner ?? runProcess)(command, args, config.limits);
+    await (dependencies.runner ?? runProcess)(
+      command,
+      args,
+      config.limits,
+      "",
+      { targets: [target] },
+    );
     if ((await stat(filename)).size > config.limits.maxBytes)
       throw new Error("RESPONSE_TOO_LARGE");
     return await readFile(filename, "utf8");

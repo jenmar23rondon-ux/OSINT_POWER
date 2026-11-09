@@ -219,11 +219,12 @@ export class Engine {
                 },
                 signal,
               ),
-            runner: (command, args, limits, stdin = "") =>
+            scope: this.scope,
+            runner: (command, args, limits, stdin = "", options = {}) =>
               this.providers.process(
                 adapter,
                 this.dependencies.runner ?? runProcess,
-                [command, args, limits, stdin],
+                [command, args, limits, stdin, options],
                 signal,
               ),
           };
@@ -378,6 +379,7 @@ export class Engine {
               ? "deferred"
               : "failed",
         code,
+        ...(code === "RESPONSE_TOO_LARGE" ? { truncated: true } : {}),
         retry_after_ms: error.retryAfterMs ?? 0,
         next_actions: this.next(),
       };

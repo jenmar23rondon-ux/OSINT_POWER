@@ -70,18 +70,21 @@ The server validates and bounds data; it is not a prompt-injection classifier. A
 
 ## Common errors
 
-| Code                                 | Meaning                                                           |
-| ------------------------------------ | ----------------------------------------------------------------- |
-| NETWORK_DISABLED                     | Workspace is offline                                              |
-| ACTIVE_DISABLED / ADAPTER_DISABLED   | Mode or source is not enabled                                     |
-| OUT_OF_SCOPE / PERSON_OUT_OF_SCOPE   | Target is not configured                                          |
-| TOOL_NOT_INSTALLED                   | External binary is absent from PATH                               |
-| TOOL_FAILED                          | Check the installed version and supported flags locally           |
-| HTTP_401 / HTTP_403                  | Provider credentials, subscription or restriction; not retried    |
-| HTTP_429                             | Bounded retry with Retry-After                                    |
-| RETRY_LATER                          | Provider requested a wait over 60 seconds; preserve other results |
-| RESPONSE_TOO_LARGE / PROCESS_TIMEOUT | Output or runtime limit reached                                   |
-| SCOPE_DATABASE_MISMATCH              | Select a new database for a different scope                       |
+| Code                               | Meaning                                                                       |
+| ---------------------------------- | ----------------------------------------------------------------------------- |
+| NETWORK_DISABLED                   | Workspace is offline                                                          |
+| ACTIVE_DISABLED / ADAPTER_DISABLED | Mode or source is not enabled                                                 |
+| OUT_OF_SCOPE / PERSON_OUT_OF_SCOPE | Target is not configured                                                      |
+| TOOL_NOT_INSTALLED                 | Allowlisted binary is absent (binary-missing)                                 |
+| TOOL_FAILED                        | Check the installed version and supported flags locally                       |
+| REJECTED_ARGUMENT                  | Command, target, or argument failed validation; nothing was spawned           |
+| HTTP_401 / HTTP_403                | Provider credentials, subscription or restriction; not retried                |
+| HTTP_429                           | Bounded retry with Retry-After                                                |
+| RETRY_LATER                        | Provider requested a wait over 60 seconds; preserve other results             |
+| RESPONSE_TOO_LARGE                 | Output cap reached (output-truncated); partial text is not stored as a result |
+| PROCESS_TIMEOUT                    | Wall-clock limit reached and the process tree was killed (timeout)            |
+| CANCELLED                          | Caller aborted the run and the process tree was killed (cancelled)            |
+| SCOPE_DATABASE_MISMATCH            | Select a new database for a different scope                                   |
 
 HIBP uses HIBP_API_KEY from the server environment and requires exact configured accounts. Subfinder/Amass manage their own provider files. No keys belong in prompts, argv, README or commits. There is no account/key rotation to bypass quotas.
 

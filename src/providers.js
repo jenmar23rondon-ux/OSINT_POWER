@@ -151,7 +151,16 @@ export class ProviderGate {
     const key = "binary:" + adapter;
     await this.before(key, signal);
     try {
-      const result = await runner(...args, { signal });
+      const tail = args.at(-1);
+      const extra =
+        tail &&
+        typeof tail === "object" &&
+        !Array.isArray(tail) &&
+        !Object.hasOwn(tail, "timeoutMs")
+          ? tail
+          : undefined;
+      const positional = extra ? args.slice(0, -1) : args;
+      const result = await runner(...positional, { ...extra, signal });
       this.success(key);
       return result;
     } catch (error) {

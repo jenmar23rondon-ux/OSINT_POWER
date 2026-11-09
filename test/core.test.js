@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Config } from "../src/schema.js";
@@ -317,23 +317,28 @@ test("binary arguments contain explicit rates and ports and never follow HTTP re
 });
 test("process limits stop local fixtures and missing binaries return a bounded error", async () => {
   const limits = { timeoutMs: 2000, maxBytes: 100 };
-  await assert.rejects(
-    runProcess(
-      process.execPath,
-      ["-e", 'process.stdout.write("x".repeat(101))'],
-      limits,
-    ),
-    /RESPONSE_TOO_LARGE/,
-  );
-  await assert.rejects(
-    runProcess(process.execPath, ["-e", "setTimeout(()=>{},10000)"], {
-      ...limits,
-      timeoutMs: 100,
-    }),
-    /PROCESS_TIMEOUT/,
-  );
-  await assert.rejects(
-    runProcess("osint-power-nonexistent-fixture", [], limits),
-    /TOOL_NOT_INSTALLED/,
-  );
+  const directory = mkdtempSync(join(tmpdir(), "osint-power-process-"));
+  const allow = [process.execPath];
+  try {
+    const big = join(directory, "big.cjs");
+    const hang = join(directory, "hang.cjs");
+    writeFileSync(big, 'process.stdout.write("x".repeat(101))\n');
+    writeFileSync(hang, "setTimeout(() => {}, 10000)\n");
+    await assert.rejects(
+      runProcess(process.execPath, [big], limits, "", { allow }),
+      /RESPONSE_TOO_LARGE/,
+    );
+    await assert.rejects(
+      runProcess(process.execPath, [hang], { ...limits, timeoutMs: 100 }, "", {
+        allow,
+      }),
+      /PROCESS_TIMEOUT/,
+    );
+    await assert.rejects(
+      runProcess(join(directory, "subfinder"), ["-version"], limits),
+      /TOOL_NOT_INSTALLED/,
+    );
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
 });
