@@ -32,6 +32,16 @@ import {
   phishingReport,
   runPhishingWorkflow,
 } from "./phishing.js";
+import {
+  MonitorChangesInput,
+  MonitorCreateInput,
+  MonitorListInput,
+  MonitorRunInput,
+  createMonitor,
+  listMonitors,
+  monitorChanges,
+  runMonitor,
+} from "./monitor.js";
 
 export function createServer(engine) {
   const server = new McpServer({ name: "osint-power", version: "0.4.0" });
@@ -263,6 +273,33 @@ export function createServer(engine) {
     "Read the stored phishing leads for one in-scope apex domain as an unverified CERT report. Does not collect or change analyst decisions.",
     PhishingReportInput,
     (input) => phishingReport(engine, input),
+  );
+  register(
+    "create_monitor",
+    "Store a local monitor for one in-scope investigation, its sources and an interval hint. Does not collect, schedule, or send alerts. A webhook URL is optional and off unless provided.",
+    MonitorCreateInput,
+    (input) => createMonitor(engine, input),
+    false,
+  );
+  register(
+    "run_monitor",
+    "Re-check scope and run one monitor with sources the current configuration already allows. Writes a local snapshot, diff and alerts. New entities stay unreviewed. There is no scheduler; call this from cron or CI. A configured webhook is contacted only when network is already enabled.",
+    MonitorRunInput,
+    (input, signal) => runMonitor(engine, input, signal),
+    false,
+    true,
+  );
+  register(
+    "monitor_changes",
+    "Read one page of stored monitor changes and the evidence identifiers behind them. Does not collect or send alerts.",
+    MonitorChangesInput,
+    (input) => monitorChanges(engine.store, input),
+  );
+  register(
+    "list_monitors",
+    "List stored monitors and the status of the latest run. Does not collect or send alerts.",
+    MonitorListInput,
+    (input) => listMonitors(engine.store, input),
   );
   register(
     "show_entity",

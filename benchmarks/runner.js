@@ -6,6 +6,7 @@ import { Engine } from "../src/engine.js";
 import { Store, hash } from "../src/store.js";
 import { explainEntity } from "../src/state.js";
 import { blockedCandidate, generateLookalikes } from "../src/phishing.js";
+import { diffAssets } from "../src/monitor.js";
 
 export async function runBenchmark(
   fixtures = JSON.parse(
@@ -117,6 +118,32 @@ export async function runBenchmark(
           assessment.ownership !== "not_established"
         )
           checkFailures++;
+      }
+      if (fixture.monitor) {
+        const spec = fixture.monitor;
+        const diff = diffAssets(
+          spec.previous,
+          spec.current,
+          spec.thresholds ?? {},
+          spec.coverage ?? {},
+          spec.target,
+        );
+        const alertRules = diff.alerts.map((item) => item.rule).sort();
+        const expectedRules = [...(spec.alert_rules ?? [])].sort();
+        if (JSON.stringify(alertRules) !== JSON.stringify(expectedRules))
+          checkFailures++;
+        const actual = {};
+        for (const change of diff.changes) {
+          actual[change.change] ??= [];
+          actual[change.change].push(change.asset_key);
+        }
+        for (const [kind, keys] of Object.entries(spec.changes ?? {})) {
+          const got = [...(actual[kind] ?? [])].sort();
+          const want = [...keys].sort();
+          if (JSON.stringify(got) !== JSON.stringify(want)) checkFailures++;
+          delete actual[kind];
+        }
+        if (Object.values(actual).some((keys) => keys.length)) checkFailures++;
       }
       if (fixture.lookalike) {
         const spec = fixture.lookalike;

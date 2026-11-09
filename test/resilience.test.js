@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { Store, hash } from "../src/store.js";
 import { Engine } from "../src/engine.js";
 import { compareRuns, explainEntity, sourceFamily } from "../src/state.js";
+import { SCHEMA_VERSION } from "../src/review.js";
 import { ProviderGate } from "../src/providers.js";
 import { Config } from "../src/schema.js";
 import { runProcess, OperationError } from "../src/transport.js";
@@ -412,8 +413,11 @@ test("provenance retains source families without claiming independence; database
   store.close();
   store = fileStore(path);
   assert.equal(store.query().total, 1);
-  assert.equal(store.db.prepare("PRAGMA user_version").get().user_version, 5);
-  store.db.exec("PRAGMA user_version=6");
+  assert.equal(
+    store.db.prepare("PRAGMA user_version").get().user_version,
+    SCHEMA_VERSION,
+  );
+  store.db.exec(`PRAGMA user_version=${SCHEMA_VERSION + 1}`);
   store.close();
   assert.throws(() => fileStore(path), /DATABASE_VERSION_TOO_NEW/);
 });

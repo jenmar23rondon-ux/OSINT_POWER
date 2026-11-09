@@ -193,7 +193,7 @@ test("planner exposes measured novelty and HTTP cost after real recorded collect
 test("labeled investigation benchmark meets entity, relationship and semantic regression gates", async () => {
   const report = await runBenchmark();
   assert.equal(report.status, "passed");
-  assert.equal(report.cases.length, 18);
+  assert.equal(report.cases.length, 19);
   assert.equal(report.metrics.entities.false_positives, 0);
   assert.equal(report.metrics.relations.false_positives, 0);
   assert.equal(report.metrics.semantic_failures, 0);

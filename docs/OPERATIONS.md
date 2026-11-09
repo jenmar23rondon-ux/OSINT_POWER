@@ -145,24 +145,60 @@ The core report includes at most 50 entities, 50 relationships and 20 recent run
 
 ## MCP additions
 
-| Tool                  | Behavior                                                                 |
-| --------------------- | ------------------------------------------------------------------------ |
-| start_workflow        | Create a queued job without collection                                   |
-| resume_run            | Execute pending steps of a durable job                                   |
-| cancel_run            | Request cancellation                                                     |
-| get_job / list_jobs   | Inspect durable state                                                    |
-| doctor                | Local diagnostics                                                        |
-| source_health         | Persisted quotas and cooldowns                                           |
-| compare_runs          | Paginated immutable evidence comparison                                  |
-| explain_entity        | Provenance and source-family explanation                                 |
-| plan_investigation    | Rank eligible actions without execution                                  |
-| list_review_queue     | Unreviewed entities, candidate links, contradictions                     |
-| record_decision       | Append an analyst decision; does not confirm identity                    |
-| show_entity           | Candidates, contradictions, independence, decision history               |
-| run_phishing_workflow | Suspected lookalikes; execute stores leads and may query passive sources |
-| phishing_report       | Unverified lead report; no collection                                    |
+| Tool                  | Behavior                                                                   |
+| --------------------- | -------------------------------------------------------------------------- |
+| start_workflow        | Create a queued job without collection                                     |
+| resume_run            | Execute pending steps of a durable job                                     |
+| cancel_run            | Request cancellation                                                       |
+| get_job / list_jobs   | Inspect durable state                                                      |
+| doctor                | Local diagnostics                                                          |
+| source_health         | Persisted quotas and cooldowns                                             |
+| compare_runs          | Paginated immutable evidence comparison                                    |
+| explain_entity        | Provenance and source-family explanation                                   |
+| plan_investigation    | Rank eligible actions without execution                                    |
+| list_review_queue     | Unreviewed entities, candidate links, contradictions                       |
+| record_decision       | Append an analyst decision; does not confirm identity                      |
+| show_entity           | Candidates, contradictions, independence, decision history                 |
+| run_phishing_workflow | Suspected lookalikes; execute stores leads and may query passive sources   |
+| phishing_report       | Unverified lead report; no collection                                      |
+| create_monitor        | Store a monitor definition. No collection and no webhook unless one is set |
+| run_monitor           | Re-check scope, collect allowed sources, snapshot and diff                 |
+| monitor_changes       | Read one page of stored changes and their evidence identifiers             |
+| list_monitors         | List definitions and the latest run status                                 |
 
-There are **25 MCP tools** in total, including export_evidence, the three review tools and the two phishing tools. Existing tool names and output schemas are unchanged. execute=true on the seven workflows uses durable jobs. The phishing scan is synchronous and is not a durable job. The legacy passive_pipeline is still a synchronous convenience command, without durable workflow recovery. MCP response-envelope changes are documented in the [v0.4 migration guide](V0.4.md).
+There are **29 MCP tools** in total, including export_evidence, the three review tools, the two phishing tools and the four monitor tools. Existing tool names and output schemas are unchanged. execute=true on the seven workflows uses durable jobs. The phishing scan and `monitor run` are synchronous and are not durable jobs. The legacy passive_pipeline is still a synchronous convenience command, without durable workflow recovery. MCP response-envelope changes are documented in the [v0.4 migration guide](V0.4.md).
+
+## Incremental monitor
+
+```bash
+node src/cli.js monitor add --name edge --workflow company --target example.com --sources crtsh,naabu --interval 24h
+node src/cli.js monitor run --id MONITOR_UUID --max-calls 10
+node src/cli.js monitor diff --id MONITOR_UUID --format markdown --output changes.md
+node src/cli.js monitor list
+```
+
+`interval_hint` is documentation for the operator. Cron or CI must invoke `monitor run`. Opening the application does not schedule anything.
+
+Each run authorizes the target again and skips sources that are disabled, blocked by `network: false`, or blocked because they are active while `active` is false. It does not add adapters or turn those gates off. A deferred run collected nothing and does not replace the previous snapshot.
+
+The diff reports added, removed and changed assets, plus coverage gaps. Removed means the asset was in the previous snapshot and absent from this comparable collection. It is not proof of deletion. If a producing source was skipped, failed, truncated, or stopped by the call budget, absence is a coverage gap and the previous asset is carried forward. Asset types that were not collected at all are carried forward and are not diffed.
+
+Default alerts are `notable` or higher:
+
+| Rule                       | Meaning                                                                                                |
+| -------------------------- | ------------------------------------------------------------------------------------------------------ |
+| new_certificate_brand_term | New certificate whose names include the apex label or a configured brand term of at least 4 characters |
+| new_lookalike_with_mx      | New or newly mail-enabled suspected lookalike. MX does not prove a mailbox                             |
+| new_exposed_service        | Newly observed service. An open port or HTTP response is not a confirmed vulnerability                 |
+| new_exposure_record        | New breach association or secret location. Not proof of a valid credential                             |
+
+New subdomains and attribute edits are informational unless the minimum is lowered. Set `include_apex_label` false to stop treating the monitored domain's first label as a brand term. The first label is used only when it has at least 4 characters.
+
+New entities from a run stay in the review queue until an analyst decides. The monitor never writes `review_decisions` and never changes a phishing lead from `suspected`.
+
+Alerts are rows in `monitor_alerts` and are included in the JSON result. Markdown export is a local file and is not sent. A webhook URL is stored only when `monitor add` or `create_monitor` receives one. The run posts that URL only when network access is already enabled, through the same provider reservation gate as other HTTP calls, with redirects refused. No alerts means no request. A failed post is recorded as `hook_failed` and the local alert remains. Delivery is best-effort: a crash after the post and before the snapshot commit can repeat the post on the next comparable run.
+
+SQLite schema v6 creates `monitors`, `monitor_runs`, `monitor_assets`, `monitor_changes` and `monitor_alerts` with `CREATE TABLE IF NOT EXISTS`. Existing evidence, review and phishing rows are not rewritten. A database whose `user_version` is newer than v6 is rejected with `DATABASE_VERSION_TOO_NEW`. Snapshots keep at most 2000 assets. A partial or deferred monitor command exits nonzero, matching the other collection commands. Package version remains 0.4.0.
 
 ## Pinned native integration lab
 

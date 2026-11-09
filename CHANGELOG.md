@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+Added local incremental monitors. `monitor add|run|diff|list` and the MCP tools `create_monitor`, `run_monitor`, `monitor_changes` and `list_monitors` store a definition, snapshot a run, and diff subdomains, hosts, certificates, DNS records, phishing lookalikes and exposures. Significance rules record an explicit basis. Alerts stay local unless an optional webhook is configured, and that hook is skipped while network access is disabled. There is no scheduler. New entities remain unreviewed. SQLite schema v6 adds the monitor tables without rewriting existing rows and rejects a newer database. Package version remains 0.4.0. Existing MCP tool names and output schemas are unchanged.
+
 Added persistent analyst review decisions (`accept`, `reject`, `needs-more-evidence`) with append-only history, candidate entity links, contradiction flags and independent-source corroboration counts. A shared name or handle never confirms an identity. SQLite schema v5 adds the review tables without rewriting existing evidence. Three MCP tools and CLI commands expose the queue, decisions and entity view. Package version remains 0.4.0. Existing MCP tool names and output schemas are unchanged.
 
 Added a scope-gated phishing lead workflow. It generates deterministic lookalikes of one in-scope apex and can enrich only those names from configured crt.sh, Cert Spotter, domain RDAP, Wayback and active-gated DNS. Candidates stay `suspected`, enter the review queue, and are reported as unverified leads. `phishing-scan`, `phishing-report`, `run_phishing_workflow` and `phishing_report` are additive. Package version remains 0.4.0.

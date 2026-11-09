@@ -13,7 +13,7 @@
   <a href="#quick-start">Quick start</a> · <a href="docs/WORKFLOWS.md">Seven workflows</a> · <a href="docs/AI.md">Connect AI</a> · <a href="docs/ADAPTERS.md">Adapters</a> · <a href="docs/ROADMAP.md">Roadmap</a>
 </p>
 
-OSINT POWER is an evidence-focused reconnaissance framework for scoped security assessments and research. It normalizes public-source observations, stores provenance in SQLite, and exposes a CLI and **25 MCP tools**. It works without a model or an AI API key.
+OSINT POWER is an evidence-focused reconnaissance framework for scoped security assessments and research. It normalizes public-source observations, stores provenance in SQLite, and exposes a CLI and **29 MCP tools**. It works without a model or an AI API key.
 
 **Status: v0.4.0, historical discovery and verifiable evidence packages.** Seven workflows include explicit budgets, source status and partial results. External binaries are installed separately. Live connectors and import bridges are distinguished in the matrix below.
 
@@ -22,7 +22,7 @@ OSINT POWER is an evidence-focused reconnaissance framework for scoped security 
 - **Cert Spotter and Wayback CDX:** one bounded provider page per call, persistent continuation, explicit restart and historical URL relationships.
 - **Precise AI responses:** a separate output contract for each MCP tool; execution, collection completeness and retryability are explicit.
 - **Evidence packages:** deterministic exports with normalized excerpts, provenance, configuration digests and offline integrity verification.
-- **Measurable quality:** 17 labeled synthetic scenarios covering scope, duplicates, shared infrastructure, identity ambiguity, conflicting assertions and stale records.
+- **Measurable quality:** 19 labeled synthetic scenarios covering scope, duplicates, shared infrastructure, identity ambiguity, conflicting assertions, stale records and monitor diffs.
 - **Evidence assessments:** existence, ownership, identity and freshness remain separate. The planner exposes observed source novelty and request cost.
 
 See the **[v0.4 guide and migration notes](docs/V0.4.md)**.
@@ -42,6 +42,16 @@ node src/cli.js review-queue
 node src/cli.js show-entity --id ENTITY_HASH
 node src/cli.js decide --subject entity --id ENTITY_HASH --decision needs-more-evidence --reason "Shared handle only." --analyst analyst-1
 ```
+
+A monitor stores one in-scope investigation, the sources to repeat, and an interval hint. Nothing in this project runs it on a timer: call `monitor run` from cron or CI. Each run re-checks scope, uses only sources the current configuration allows, and writes a local diff. New entities stay unreviewed. Alerts are local JSON or Markdown. A webhook is off unless you set one, and it is not contacted while network access is disabled.
+
+```bash
+node src/cli.js monitor add --name edge --workflow company --target example.com --sources crtsh,naabu --interval 24h
+node src/cli.js monitor run --id MONITOR_UUID
+node src/cli.js monitor diff --id MONITOR_UUID --format markdown --output changes.md
+```
+
+Removal means the asset was absent from this run's comparable observations, not that it was deleted. Skipped or failed sources are coverage gaps. A certificate name, MX record, or open port is not ownership, a mailbox, or a confirmed vulnerability.
 
 ## Quick start
 

@@ -36,7 +36,7 @@ Adapt registration to your host. stdout is exclusively the MCP protocol; diagnos
 4. Request a small entity page and then evidence for a specific conclusion.
 5. Review graph/report results and three next actions.
 
-There are 25 tools, including export_evidence for immutable bundle pages, `list_review_queue`, `record_decision` and `show_entity` for analyst review, and `run_phishing_workflow` plus `phishing_report` for suspected lookalikes. A shared name or handle is a candidate, not a confirmed identity. A lookalike is a suspected lead, not confirmed phishing. Job, diagnostic, provenance and planning tools are documented in [operations](OPERATIONS.md). The [workflow guide](WORKFLOWS.md) explains the seven modes, execution budgets and the phishing workflow.
+There are 29 tools, including export_evidence for immutable bundle pages, `list_review_queue`, `record_decision` and `show_entity` for analyst review, `run_phishing_workflow` plus `phishing_report` for suspected lookalikes, and `create_monitor`, `run_monitor`, `monitor_changes` and `list_monitors` for local diffs. A shared name or handle is a candidate, not a confirmed identity. A lookalike is a suspected lead, not confirmed phishing. A monitor alert is a heuristic, not a confirmation, and `run_monitor` does not record an analyst decision. Job, diagnostic, provenance and planning tools are documented in [operations](OPERATIONS.md). The [workflow guide](WORKFLOWS.md) explains the seven modes, execution budgets, the phishing workflow and monitors.
 
 ## Response contract
 

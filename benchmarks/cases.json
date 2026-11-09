@@ -404,5 +404,160 @@
       },
       "homoglyph": true
     }
+  },
+  {
+    "id": "monitor-diff-significance",
+    "tags": ["monitor", "diff", "alerts"],
+    "steps": [],
+    "entities": [],
+    "relations": [],
+    "monitor": {
+      "target": "example.com",
+      "coverage": {
+        "subdomain": "comparable",
+        "certificate": "comparable",
+        "lookalike": "comparable",
+        "exposure": "comparable",
+        "host": "partial",
+        "dns": "not_collected"
+      },
+      "previous": [
+        {
+          "asset_key": "subdomain:api.example.com",
+          "asset_type": "subdomain",
+          "value": "api.example.com",
+          "attributes": { "name": "api.example.com", "historical": false },
+          "observation_ids": [
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ],
+          "entity_ids": [
+            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ]
+        },
+        {
+          "asset_key": "lookalike:example.net",
+          "asset_type": "lookalike",
+          "value": "example.net",
+          "attributes": {
+            "technique": "tld_swap",
+            "similarity": 0.9,
+            "has_mx": false,
+            "mx_collected": true,
+            "status": "suspected"
+          },
+          "observation_ids": [
+            "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+          ],
+          "entity_ids": [
+            "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+          ]
+        },
+        {
+          "asset_key": "host:192.0.2.10",
+          "asset_type": "host",
+          "value": "192.0.2.10",
+          "attributes": {
+            "address": "192.0.2.10",
+            "names": ["api.example.com"]
+          },
+          "observation_ids": [
+            "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+          ],
+          "entity_ids": [
+            "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+          ]
+        }
+      ],
+      "current": [
+        {
+          "asset_key": "subdomain:api.example.com",
+          "asset_type": "subdomain",
+          "value": "api.example.com",
+          "attributes": { "name": "api.example.com", "historical": false },
+          "observation_ids": [
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ],
+          "entity_ids": [
+            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ]
+        },
+        {
+          "asset_key": "subdomain:new.example.com",
+          "asset_type": "subdomain",
+          "value": "new.example.com",
+          "attributes": { "name": "new.example.com", "historical": false },
+          "observation_ids": [
+            "1111111111111111111111111111111111111111111111111111111111111111"
+          ],
+          "entity_ids": [
+            "2222222222222222222222222222222222222222222222222222222222222222"
+          ]
+        },
+        {
+          "asset_key": "certificate:crtsh:42",
+          "asset_type": "certificate",
+          "value": "login-example.com",
+          "attributes": {
+            "source": "crtsh",
+            "record": "42",
+            "names": ["login-example.com"]
+          },
+          "observation_ids": [
+            "3333333333333333333333333333333333333333333333333333333333333333"
+          ],
+          "entity_ids": [
+            "4444444444444444444444444444444444444444444444444444444444444444"
+          ]
+        },
+        {
+          "asset_key": "lookalike:example.net",
+          "asset_type": "lookalike",
+          "value": "example.net",
+          "attributes": {
+            "technique": "tld_swap",
+            "similarity": 0.9,
+            "has_mx": true,
+            "mx_collected": true,
+            "status": "suspected"
+          },
+          "observation_ids": [
+            "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+          ],
+          "entity_ids": [
+            "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+          ]
+        },
+        {
+          "asset_key": "exposure:service:api.example.com:8443",
+          "asset_type": "exposure",
+          "value": "api.example.com:8443",
+          "attributes": {
+            "kind": "service",
+            "host": "api.example.com",
+            "port": 8443
+          },
+          "observation_ids": [
+            "5555555555555555555555555555555555555555555555555555555555555555"
+          ],
+          "entity_ids": [
+            "6666666666666666666666666666666666666666666666666666666666666666"
+          ]
+        }
+      ],
+      "alert_rules": [
+        "new_certificate_brand_term",
+        "new_exposed_service",
+        "new_lookalike_with_mx"
+      ],
+      "changes": {
+        "added": [
+          "subdomain:new.example.com",
+          "certificate:crtsh:42",
+          "exposure:service:api.example.com:8443"
+        ],
+        "changed": ["lookalike:example.net"],
+        "coverage_gap": ["host:192.0.2.10"]
+      }
+    }
   }
 ]

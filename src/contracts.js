@@ -1,6 +1,12 @@
 import { z } from "zod";
 import { Config, EntityType, Observation, WorkflowInput } from "./schema.js";
 import { PhishingReportResult, PhishingWorkflowResult } from "./phishing.js";
+import {
+  MonitorChangesResult,
+  MonitorCreated,
+  MonitorListResult,
+  MonitorRunResult,
+} from "./monitor.js";
 
 const text = z.string(),
   count = z.number().int().nonnegative(),
@@ -581,6 +587,10 @@ export const RESULT_SCHEMAS = {
   }),
   run_phishing_workflow: PhishingWorkflowResult,
   phishing_report: PhishingReportResult,
+  create_monitor: MonitorCreated,
+  run_monitor: MonitorRunResult,
+  monitor_changes: MonitorChangesResult,
+  list_monitors: MonitorListResult,
 };
 
 const transient =
@@ -612,7 +622,8 @@ export function toolResponse(name, result, thrown = false) {
       name,
     ) ||
     (name === "workflow" && result.mode === "execute") ||
-    (name === "run_phishing_workflow" && result.mode === "execute");
+    (name === "run_phishing_workflow" && result.mode === "execute") ||
+    (name === "run_monitor" && result.mode === "execute");
   const failed =
     thrown ||
     (collecting &&
