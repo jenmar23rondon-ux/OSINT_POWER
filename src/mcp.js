@@ -32,6 +32,7 @@ import {
   phishingReport,
   runPhishingWorkflow,
 } from "./phishing.js";
+import { StixExportInput, exportStix } from "./stix.js";
 import {
   MonitorChangesInput,
   MonitorCreateInput,
@@ -300,6 +301,12 @@ export function createServer(engine) {
     "List stored monitors and the status of the latest run. Does not collect or send alerts.",
     MonitorListInput,
     (input) => listMonitors(engine.store, input),
+  );
+  register(
+    "export_stix",
+    "Read stored, in-scope evidence as a STIX 2.1 bundle. Suspected phishing lookalikes stay suspected indicators. Does not collect, write the database, or turn a candidate into a confirmed identity.",
+    StixExportInput,
+    (input) => exportStix(engine.store, engine.scope, input),
   );
   register(
     "show_entity",

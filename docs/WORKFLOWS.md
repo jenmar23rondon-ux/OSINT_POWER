@@ -164,7 +164,7 @@ Enrichment runs only for names this command just generated. It uses configured c
 
 The JSON, Markdown and offline HTML reports label the set as unverified leads and list the basis and source of each signal: name similarity, registration within 400 days, MX presence, a certificate name that contains the brand label, and an address shared by two candidates enriched in the same run. Recommended notification or takedown text is advisory and still requires the analyst decision.
 
-MCP tools are `run_phishing_workflow` and `phishing_report`. The scan is synchronous. It is not a durable resumable job.
+MCP tools are `run_phishing_workflow` and `phishing_report`. The scan is synchronous. It is not a durable resumable job. `export-stix` can include those stored leads as STIX indicators labeled suspected. Accepting one in review does not change that label. See [PRODUCTION.md](PRODUCTION.md).
 
 ## Incremental monitor
 

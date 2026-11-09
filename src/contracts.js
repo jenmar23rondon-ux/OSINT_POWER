@@ -7,6 +7,7 @@ import {
   MonitorListResult,
   MonitorRunResult,
 } from "./monitor.js";
+import { StixExportResult } from "./stix.js";
 
 const text = z.string(),
   count = z.number().int().nonnegative(),
@@ -591,6 +592,7 @@ export const RESULT_SCHEMAS = {
   run_monitor: MonitorRunResult,
   monitor_changes: MonitorChangesResult,
   list_monitors: MonitorListResult,
+  export_stix: StixExportResult,
 };
 
 const transient =

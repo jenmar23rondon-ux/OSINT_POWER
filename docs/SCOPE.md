@@ -21,7 +21,7 @@ Upstream binaries can use native configuration and internal requests the wrapper
 
 SQLite, cache, configuration and run history are local, ignored by Git and not encrypted. History records adapter, target, timing, status and summaries. Imports record an input hash. Raw subprocess stdout/stderr is not stored in reports.
 
-The database is bound to its initial scope fingerprint. Select a new database for different subjects or assets. Empty people defaults preserve v0.1 scope fingerprints. Stop processes before backup and apply your retention policy to the complete workspace.
+The database is bound to its initial scope fingerprint. Select a new database for different subjects or assets. Empty people defaults preserve v0.1 scope fingerprints. Stop processes before backup and apply your retention policy to the complete workspace. STIX export omits out-of-scope entities and does not relabel a suspected lead as confirmed. The file it writes is still investigation data. See [PRODUCTION.md](PRODUCTION.md).
 
 HIBP stores breach metadata. Secret importers discard raw values and keep locations/rules. Before publishing, review source documents, personal data, filenames and exports; sanitization is best effort for arbitrary free text.
 

@@ -1,0 +1,432 @@
+{
+  "type": "bundle",
+  "id": "bundle--3233757a-9241-5977-a1aa-a65657f46c3f",
+  "objects": [
+    {
+      "type": "identity",
+      "spec_version": "2.1",
+      "id": "identity--fbdb57af-5367-53a1-afa7-b838ffc8f03a",
+      "created": "2026-06-01T00:00:00.000Z",
+      "modified": "2026-06-02T00:00:00.000Z",
+      "created_by_ref": "identity--fcedc5bf-1f52-5351-88e3-6e6e1546f903",
+      "name": "example.com",
+      "identity_class": "organization",
+      "description": "Organization under investigation in this OSINT POWER workspace (example.com). This identity records the configured scope. It does not confirm legal ownership of every related observable."
+    },
+    {
+      "type": "identity",
+      "spec_version": "2.1",
+      "id": "identity--fcedc5bf-1f52-5351-88e3-6e6e1546f903",
+      "created": "2026-06-01T00:00:00.000Z",
+      "modified": "2026-06-02T00:00:00.000Z",
+      "name": "OSINT POWER",
+      "identity_class": "system",
+      "description": "Local read-only exporter. This identity produced the bundle from stored evidence and is not the investigated organization."
+    },
+    {
+      "type": "domain-name",
+      "spec_version": "2.1",
+      "id": "domain-name--15bbb413-de5f-50f8-a029-bb1525199f15",
+      "value": "other.example.com"
+    },
+    {
+      "type": "domain-name",
+      "spec_version": "2.1",
+      "id": "domain-name--9cf56fde-0fa4-52fe-a05e-c491c4dde622",
+      "value": "api.example.com"
+    },
+    {
+      "type": "domain-name",
+      "spec_version": "2.1",
+      "id": "domain-name--b14a7890-344c-519d-8af9-a32fa9862d8d",
+      "value": "example.com"
+    },
+    {
+      "type": "domain-name",
+      "spec_version": "2.1",
+      "id": "domain-name--ed308b0f-6c96-5021-863f-979a3cf11ff5",
+      "value": "examp1e.com"
+    },
+    {
+      "type": "ipv4-addr",
+      "spec_version": "2.1",
+      "id": "ipv4-addr--ec5ff9c7-123c-59b7-bc4c-b9c185482e90",
+      "value": "192.0.2.10"
+    },
+    {
+      "type": "email-addr",
+      "spec_version": "2.1",
+      "id": "email-addr--1940aaa1-47e2-51bd-b059-d796107863a7",
+      "value": "ops@example.com"
+    },
+    {
+      "type": "url",
+      "spec_version": "2.1",
+      "id": "url--c3a5be3f-19e9-590b-b2f9-c6918114950a",
+      "value": "https://api.example.com/login"
+    },
+    {
+      "type": "x509-certificate",
+      "spec_version": "2.1",
+      "id": "x509-certificate--204ec08a-99a6-5058-bd53-1bfeeff9e070",
+      "validity_not_before": "2026-01-01T00:00:00.000Z",
+      "validity_not_after": "2026-12-01T00:00:00.000Z"
+    },
+    {
+      "type": "x509-certificate",
+      "spec_version": "2.1",
+      "id": "x509-certificate--7950fd87-2efb-5d2d-9e72-2ee244442a3c"
+    },
+    {
+      "type": "x509-certificate",
+      "spec_version": "2.1",
+      "id": "x509-certificate--b2f4636a-9eee-5c44-9745-943b53208e16",
+      "subject": "api.example.com",
+      "issuer": "Example CA",
+      "x509_v3_extensions": {
+        "subject_alternative_name": "api.example.com"
+      }
+    },
+    {
+      "type": "indicator",
+      "spec_version": "2.1",
+      "id": "indicator--b3facf48-9f0b-59f3-ba9e-d98446ffb74a",
+      "created": "2026-06-01T00:00:00.000Z",
+      "modified": "2026-06-02T00:00:00.000Z",
+      "created_by_ref": "identity--fcedc5bf-1f52-5351-88e3-6e6e1546f903",
+      "name": "Suspected phishing lookalike: examp1e.com",
+      "description": "Suspected phishing lookalike of example.com. Not confirmed. Stored lead status: suspected. Stored basis: One character omitted from example. Technique: omission. Similarity: 0.5. Stored confidence 0.5 rescaled to STIX confidence 50 and capped at 85. Signals: name_similarity present. An analyst accept does not confirm phishing.",
+      "indicator_types": ["anomalous-activity"],
+      "pattern": "[domain-name:value = 'examp1e.com']",
+      "pattern_type": "stix",
+      "pattern_version": "2.1",
+      "valid_from": "2026-06-01T00:00:00.000Z",
+      "confidence": 50,
+      "labels": ["suspected"]
+    },
+    {
+      "type": "observed-data",
+      "spec_version": "2.1",
+      "id": "observed-data--47c8ae46-add7-56cd-9cd2-7995cc986ec1",
+      "created": "2026-06-01T00:00:00.000Z",
+      "modified": "2026-06-01T00:00:00.000Z",
+      "created_by_ref": "identity--fcedc5bf-1f52-5351-88e3-6e6e1546f903",
+      "first_observed": "2026-06-01T00:00:00.000Z",
+      "last_observed": "2026-06-01T00:00:00.000Z",
+      "number_observed": 1,
+      "object_refs": [
+        "domain-name--9cf56fde-0fa4-52fe-a05e-c491c4dde622",
+        "x509-certificate--204ec08a-99a6-5058-bd53-1bfeeff9e070"
+      ],
+      "confidence": 70,
+      "external_references": [
+        {
+          "source_name": "crtsh",
+          "external_id": "e0ecf207f0ff70f16dab72dad55807a480b5a9c61afe09dcff997348bf5bb8c0",
+          "description": "source_family=certificate_transparency"
+        }
+      ]
+    },
+    {
+      "type": "observed-data",
+      "spec_version": "2.1",
+      "id": "observed-data--4f94d9a1-64ca-5f54-a2a0-a770fff15ab4",
+      "created": "2026-06-01T00:00:00.000Z",
+      "modified": "2026-06-01T00:00:00.000Z",
+      "created_by_ref": "identity--fcedc5bf-1f52-5351-88e3-6e6e1546f903",
+      "first_observed": "2026-06-01T00:00:00.000Z",
+      "last_observed": "2026-06-01T00:00:00.000Z",
+      "number_observed": 1,
+      "object_refs": ["domain-name--ed308b0f-6c96-5021-863f-979a3cf11ff5"],
+      "confidence": 50,
+      "labels": ["suspected"],
+      "external_references": [
+        {
+          "source_name": "lookalike",
+          "external_id": "06b89b17682d754948de787a38e471f880c13c92b70da5c5ebaf40024850637b",
+          "description": "source_family=configured_or_derived"
+        }
+      ]
+    },
+    {
+      "type": "observed-data",
+      "spec_version": "2.1",
+      "id": "observed-data--539e8407-76f3-5bcb-9f89-3a66caa8bec3",
+      "created": "2026-06-01T00:00:00.000Z",
+      "modified": "2026-06-01T00:00:00.000Z",
+      "created_by_ref": "identity--fcedc5bf-1f52-5351-88e3-6e6e1546f903",
+      "first_observed": "2026-06-01T00:00:00.000Z",
+      "last_observed": "2026-06-01T00:00:00.000Z",
+      "number_observed": 1,
+      "object_refs": ["ipv4-addr--ec5ff9c7-123c-59b7-bc4c-b9c185482e90"],
+      "confidence": 70,
+      "external_references": [
+        {
+          "source_name": "dnsx",
+          "external_id": "d533ca5f21a4dde469a25aa9bce8fded6c2c5c95f23c54b3124c2d64473fb7d6",
+          "description": "source_family=dns"
+        }
+      ]
+    },
+    {
+      "type": "observed-data",
+      "spec_version": "2.1",
+      "id": "observed-data--a5f0f989-8949-58a5-98db-4fdec85b4b36",
+      "created": "2026-06-02T00:00:00.000Z",
+      "modified": "2026-06-02T00:00:00.000Z",
+      "created_by_ref": "identity--fcedc5bf-1f52-5351-88e3-6e6e1546f903",
+      "first_observed": "2026-06-02T00:00:00.000Z",
+      "last_observed": "2026-06-02T00:00:00.000Z",
+      "number_observed": 1,
+      "object_refs": [
+        "domain-name--15bbb413-de5f-50f8-a029-bb1525199f15",
+        "x509-certificate--7950fd87-2efb-5d2d-9e72-2ee244442a3c"
+      ],
+      "confidence": 70,
+      "external_references": [
+        {
+          "source_name": "crtsh",
+          "external_id": "3e64b95cca1d57b8c9963bf09ad62f1a80c5d397aa39cf91dc1a82dcd7be2aa5",
+          "description": "source_family=certificate_transparency"
+        }
+      ]
+    },
+    {
+      "type": "observed-data",
+      "spec_version": "2.1",
+      "id": "observed-data--b99ff1c7-a01a-5a30-82d8-f958baa09e80",
+      "created": "2026-06-01T00:00:00.000Z",
+      "modified": "2026-06-01T00:00:00.000Z",
+      "created_by_ref": "identity--fcedc5bf-1f52-5351-88e3-6e6e1546f903",
+      "first_observed": "2026-06-01T00:00:00.000Z",
+      "last_observed": "2026-06-01T00:00:00.000Z",
+      "number_observed": 1,
+      "object_refs": [
+        "url--c3a5be3f-19e9-590b-b2f9-c6918114950a",
+        "x509-certificate--b2f4636a-9eee-5c44-9745-943b53208e16"
+      ],
+      "confidence": 70,
+      "external_references": [
+        {
+          "source_name": "httpx",
+          "external_id": "125c9eab82dbbeaf2657519c0f9cf2d0762fe5ede49d3d90ebbca1d0740d0fe7",
+          "description": "source_family=direct_observation"
+        }
+      ]
+    },
+    {
+      "type": "observed-data",
+      "spec_version": "2.1",
+      "id": "observed-data--c957e9cb-ca07-528c-8467-9ff9ffbd65f2",
+      "created": "2026-06-01T00:00:00.000Z",
+      "modified": "2026-06-01T00:00:00.000Z",
+      "created_by_ref": "identity--fcedc5bf-1f52-5351-88e3-6e6e1546f903",
+      "first_observed": "2026-06-01T00:00:00.000Z",
+      "last_observed": "2026-06-01T00:00:00.000Z",
+      "number_observed": 1,
+      "object_refs": ["email-addr--1940aaa1-47e2-51bd-b059-d796107863a7"],
+      "confidence": 50,
+      "external_references": [
+        {
+          "source_name": "workflow",
+          "external_id": "e5ed1d3162c5f2ca8d943aba0bcb99d2ca8be28a00b1f55c3b0b35ab1d332f73",
+          "description": "source_family=configured_or_derived"
+        }
+      ]
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--1ec44bdb-19bd-52be-b973-b16bf496a3c6",
+      "created": "2026-06-01T00:00:00.000Z",
+      "modified": "2026-06-01T00:00:00.000Z",
+      "created_by_ref": "identity--fcedc5bf-1f52-5351-88e3-6e6e1546f903",
+      "relationship_type": "related-to",
+      "source_ref": "indicator--b3facf48-9f0b-59f3-ba9e-d98446ffb74a",
+      "target_ref": "domain-name--b14a7890-344c-519d-8af9-a32fa9862d8d",
+      "description": "Suspected lookalike of in-scope example.com. Not confirmed phishing and not proof of ownership."
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--46e4cf06-0439-52d4-ad6c-2fc1067f6ddd",
+      "created": "2026-06-01T00:00:00.000Z",
+      "modified": "2026-06-01T00:00:00.000Z",
+      "created_by_ref": "identity--fcedc5bf-1f52-5351-88e3-6e6e1546f903",
+      "relationship_type": "resolves-to",
+      "source_ref": "domain-name--9cf56fde-0fa4-52fe-a05e-c491c4dde622",
+      "target_ref": "ipv4-addr--ec5ff9c7-123c-59b7-bc4c-b9c185482e90",
+      "description": "Stored relation: resolves_to. This records evidence and does not confirm ownership or identity. Observation d533ca5f21a4dde469a25aa9bce8fded6c2c5c95f23c54b3124c2d64473fb7d6 from dnsx (dns).",
+      "external_references": [
+        {
+          "source_name": "dnsx",
+          "external_id": "d533ca5f21a4dde469a25aa9bce8fded6c2c5c95f23c54b3124c2d64473fb7d6",
+          "description": "stored_relation=resolves_to"
+        }
+      ]
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--4f3cfff6-6677-54a8-ad13-afe027a16f93",
+      "created": "2026-06-01T00:00:00.000Z",
+      "modified": "2026-06-01T00:00:00.000Z",
+      "created_by_ref": "identity--fcedc5bf-1f52-5351-88e3-6e6e1546f903",
+      "relationship_type": "related-to",
+      "source_ref": "domain-name--9cf56fde-0fa4-52fe-a05e-c491c4dde622",
+      "target_ref": "x509-certificate--204ec08a-99a6-5058-bd53-1bfeeff9e070",
+      "description": "Certificate name observed with this stored record. A certificate-transparency record id is not a serial number. Certificate presence is not proof of ownership.",
+      "external_references": [
+        {
+          "source_name": "crtsh",
+          "external_id": "e0ecf207f0ff70f16dab72dad55807a480b5a9c61afe09dcff997348bf5bb8c0",
+          "description": "source_family=certificate_transparency"
+        }
+      ]
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--5308ff3e-1283-5f80-91eb-319f41d20777",
+      "created": "2026-06-01T00:00:00.000Z",
+      "modified": "2026-06-01T00:00:00.000Z",
+      "created_by_ref": "identity--fcedc5bf-1f52-5351-88e3-6e6e1546f903",
+      "relationship_type": "related-to",
+      "source_ref": "identity--fbdb57af-5367-53a1-afa7-b838ffc8f03a",
+      "target_ref": "domain-name--b14a7890-344c-519d-8af9-a32fa9862d8d",
+      "description": "Configured investigation scope. This relationship does not confirm legal ownership."
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--91dd9550-aa1d-5ce7-a712-17066163fe1c",
+      "created": "2026-06-01T00:00:00.000Z",
+      "modified": "2026-06-01T00:00:00.000Z",
+      "created_by_ref": "identity--fcedc5bf-1f52-5351-88e3-6e6e1546f903",
+      "relationship_type": "related-to",
+      "source_ref": "domain-name--9cf56fde-0fa4-52fe-a05e-c491c4dde622",
+      "target_ref": "url--c3a5be3f-19e9-590b-b2f9-c6918114950a",
+      "description": "Stored relation: serves. This records evidence and does not confirm ownership or identity. Observation 125c9eab82dbbeaf2657519c0f9cf2d0762fe5ede49d3d90ebbca1d0740d0fe7 from httpx (direct_observation).",
+      "external_references": [
+        {
+          "source_name": "httpx",
+          "external_id": "125c9eab82dbbeaf2657519c0f9cf2d0762fe5ede49d3d90ebbca1d0740d0fe7",
+          "description": "stored_relation=serves"
+        }
+      ]
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--991d4b79-df7b-52f0-8fed-88e13676bb75",
+      "created": "2026-06-01T00:00:00.000Z",
+      "modified": "2026-06-01T00:00:00.000Z",
+      "created_by_ref": "identity--fcedc5bf-1f52-5351-88e3-6e6e1546f903",
+      "relationship_type": "based-on",
+      "source_ref": "indicator--b3facf48-9f0b-59f3-ba9e-d98446ffb74a",
+      "target_ref": "observed-data--4f94d9a1-64ca-5f54-a2a0-a770fff15ab4",
+      "description": "Indicator is based on this stored observation. The lead remains suspected."
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--c1361a40-5c29-5c64-96a4-3598f0fef403",
+      "created": "2026-06-01T00:00:00.000Z",
+      "modified": "2026-06-01T00:00:00.000Z",
+      "created_by_ref": "identity--fcedc5bf-1f52-5351-88e3-6e6e1546f903",
+      "relationship_type": "related-to",
+      "source_ref": "url--c3a5be3f-19e9-590b-b2f9-c6918114950a",
+      "target_ref": "x509-certificate--b2f4636a-9eee-5c44-9745-943b53208e16",
+      "description": "Certificate name observed with this stored record. A certificate-transparency record id is not a serial number. Certificate presence is not proof of ownership.",
+      "external_references": [
+        {
+          "source_name": "httpx",
+          "external_id": "125c9eab82dbbeaf2657519c0f9cf2d0762fe5ede49d3d90ebbca1d0740d0fe7",
+          "description": "source_family=direct_observation"
+        }
+      ]
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--cf3bdd64-8198-5ee2-8fd0-6be426873d8c",
+      "created": "2026-06-02T00:00:00.000Z",
+      "modified": "2026-06-02T00:00:00.000Z",
+      "created_by_ref": "identity--fcedc5bf-1f52-5351-88e3-6e6e1546f903",
+      "relationship_type": "related-to",
+      "source_ref": "domain-name--15bbb413-de5f-50f8-a029-bb1525199f15",
+      "target_ref": "x509-certificate--7950fd87-2efb-5d2d-9e72-2ee244442a3c",
+      "description": "Certificate name observed with this stored record. A certificate-transparency record id is not a serial number. Certificate presence is not proof of ownership.",
+      "external_references": [
+        {
+          "source_name": "crtsh",
+          "external_id": "3e64b95cca1d57b8c9963bf09ad62f1a80c5d397aa39cf91dc1a82dcd7be2aa5",
+          "description": "source_family=certificate_transparency"
+        }
+      ]
+    },
+    {
+      "type": "opinion",
+      "spec_version": "2.1",
+      "id": "opinion--22628683-791f-56bd-8a82-e9da3b122a78",
+      "created": "2026-06-02T00:00:00.000Z",
+      "modified": "2026-06-02T00:00:00.000Z",
+      "created_by_ref": "identity--fcedc5bf-1f52-5351-88e3-6e6e1546f903",
+      "opinion": "agree",
+      "explanation": "This records a stored analyst decision. It does not confirm identity, ownership, or phishing. Stored decision: accept. Reason: Defensive notice only.",
+      "authors": ["analyst-1"],
+      "object_refs": ["indicator--b3facf48-9f0b-59f3-ba9e-d98446ffb74a"]
+    },
+    {
+      "type": "note",
+      "spec_version": "2.1",
+      "id": "note--24b61972-b661-5cf8-80a2-dff75cf3cf03",
+      "created": "2026-06-01T00:00:00.000Z",
+      "modified": "2026-06-02T00:00:00.000Z",
+      "created_by_ref": "identity--fcedc5bf-1f52-5351-88e3-6e6e1546f903",
+      "abstract": "Export limitations",
+      "content": "Export reads stored evidence. It does not collect, review, monitor, or change phishing state. Out-of-scope entities are omitted. A suspected lookalike is included only when its protected apex is in scope, and only as a suspected indicator. Suspected leads and candidate links stay suspected or candidate. An analyst accept is an opinion, not a confirmation. Indicator confidence rescales the stored heuristic and is capped at 85. It is not a calibrated probability. Identifiers are UUIDv5 values from stored content. The bundle is deterministic for the same database and filters, and it is not a signed attestation. Entity types without a STIX 2.1 cyber-observable are notes. Certificate objects contain stored names, issuers and validity only; a certificate-transparency record id is not a serial number. At most 200 entities and 10 observations per entity are exported. A truncated bundle is a valid subset, not the whole workspace. With no investigation filter and a review filter of any or unreviewed, the configured apex may be added as a domain-name. That object is scope context, not a new sighting.",
+      "authors": ["OSINT POWER"],
+      "object_refs": ["identity--fbdb57af-5367-53a1-afa7-b838ffc8f03a"]
+    },
+    {
+      "type": "note",
+      "spec_version": "2.1",
+      "id": "note--36251f5e-f066-5b2e-9142-c32d5a6184e5",
+      "created": "2026-06-01T00:00:00.000Z",
+      "modified": "2026-06-01T00:00:00.000Z",
+      "created_by_ref": "identity--fcedc5bf-1f52-5351-88e3-6e6e1546f903",
+      "abstract": "Stored username",
+      "content": "Stored username is a note because STIX 2.1 has no cyber-observable for this type. Value: ops. This is not a confirmation of identity, ownership, or impact.",
+      "authors": ["OSINT POWER"],
+      "object_refs": ["identity--fbdb57af-5367-53a1-afa7-b838ffc8f03a"]
+    },
+    {
+      "type": "note",
+      "spec_version": "2.1",
+      "id": "note--85b2c79c-1b16-5c46-b63b-2f258e9270e6",
+      "created": "2026-06-01T00:00:00.000Z",
+      "modified": "2026-06-01T00:00:00.000Z",
+      "created_by_ref": "identity--fcedc5bf-1f52-5351-88e3-6e6e1546f903",
+      "abstract": "Stored link status: candidate",
+      "content": "Stored link status: candidate. Basis: shared_handle. Shared handle only. A shared name or handle is not a confirmed identity.",
+      "authors": ["OSINT POWER"],
+      "object_refs": [
+        "domain-name--9cf56fde-0fa4-52fe-a05e-c491c4dde622",
+        "email-addr--1940aaa1-47e2-51bd-b059-d796107863a7"
+      ]
+    },
+    {
+      "type": "note",
+      "spec_version": "2.1",
+      "id": "note--f522f8da-c005-5f5d-a03b-d5e30cad81bc",
+      "created": "2026-06-02T00:00:00.000Z",
+      "modified": "2026-06-02T00:00:00.000Z",
+      "created_by_ref": "identity--fcedc5bf-1f52-5351-88e3-6e6e1546f903",
+      "abstract": "Analyst decision: accept",
+      "content": "Analyst decision: accept. Analyst: analyst-1. Reason: Defensive notice only.. This records a stored analyst decision. It does not confirm identity, ownership, or phishing.",
+      "authors": ["analyst-1"],
+      "object_refs": ["indicator--b3facf48-9f0b-59f3-ba9e-d98446ffb74a"]
+    }
+  ]
+}
