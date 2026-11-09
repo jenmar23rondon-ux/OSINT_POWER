@@ -24,9 +24,22 @@ const settings = {
   version: 1,
   scope: { domains: ["example.com"], usernames: ["alice"] },
 };
+function releaseStore(store) {
+  try {
+    // Drop the WAL sidecars before unlink. Windows keeps the directory locked
+    // while those files are still open.
+    store.db.exec("PRAGMA wal_checkpoint(TRUNCATE)");
+  } catch {
+    // The handle may already be closed.
+  }
+  store.close();
+}
+function removeTemp(dir) {
+  rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+}
 function workspace(t, path) {
   const store = new Store(path);
-  t.after(() => store.close());
+  t.after(() => releaseStore(store));
   return { store, engine: new Engine(settings, store) };
 }
 function line(row) {
@@ -83,8 +96,8 @@ test("analyst decisions are append-only and survive reopening the database", (t)
   let store = new Store(path);
   const engine = new Engine(settings, store);
   t.after(() => {
-    store.close();
-    rmSync(dir, { recursive: true, force: true });
+    releaseStore(store);
+    removeTemp(dir);
   });
   load(engine, [
     {
@@ -144,7 +157,7 @@ test("analyst decisions are append-only and survive reopening the database", (t)
   );
   assert.equal(explainEntity(store, id).assessment.review_status, "unreviewed");
   assertContract("record_decision", revised);
-  store.close();
+  releaseStore(store);
   store = new Store(path);
   const view = showEntity(store, { entity_id: id });
   assert.equal(view.decision_history.length, 2);
@@ -494,7 +507,7 @@ test("review queue pages are stable and an accept drops entities with no open is
 
 test("schema v5 migrates an existing database without rewriting its evidence", (t) => {
   const dir = mkdtempSync(join(tmpdir(), "osint-migrate-"));
-  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  t.after(() => removeTemp(dir));
   const path = join(dir, "legacy.sqlite");
   const id = hash(["domain", "kept.example.com"]);
   const legacy = new DatabaseSync(path);
@@ -513,7 +526,7 @@ test("schema v5 migrates an existing database without rewriting its evidence", (
   legacy.exec("PRAGMA user_version=4");
   legacy.close();
   let store = new Store(path);
-  t.after(() => store.close());
+  t.after(() => releaseStore(store));
   assert.equal(
     store.db.prepare("PRAGMA user_version").get().user_version,
     SCHEMA_VERSION,
@@ -538,10 +551,10 @@ test("schema v5 migrates an existing database without rewriting its evidence", (
     reason: "Legacy row is out of the current question.",
     analyst_id: "analyst-1",
   });
-  store.close();
+  releaseStore(store);
   store = new Store(path);
   assert.equal(showEntity(store, { entity_id: id }).decision_history.length, 1);
-  store.close();
+  releaseStore(store);
   const bumped = new DatabaseSync(path);
   bumped.exec("PRAGMA user_version=6");
   bumped.close();
@@ -561,7 +574,7 @@ test("schema v5 migrates an existing database without rewriting its evidence", (
 
 test("CLI review commands record decisions and keep same-handle links unconfirmed", (t) => {
   const dir = mkdtempSync(join(tmpdir(), "osint-review-cli-"));
-  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  t.after(() => removeTemp(dir));
   const config = join(dir, "config.json");
   const db = join(dir, "state.sqlite");
   const file = join(dir, "findings.jsonl");
@@ -631,7 +644,7 @@ test(
     });
     t.after(async () => {
       await client.close();
-      rmSync(dir, { recursive: true, force: true });
+      removeTemp(dir);
     });
     await client.connect(transport);
     const list = await client.listTools();
