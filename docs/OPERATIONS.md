@@ -28,7 +28,7 @@ A SQLite lease prevents two workers using the same workspace from running the sa
 
 Checkpointed steps and completed child runs are reused. A crash after a remote request but before its result was committed may cause that read-only collection to run again: execution is **at least once**, not an exactly-once network guarantee. Provider reservations are retained conservatively.
 
-Cancellation is terminal for that job. Queued jobs cancel without collection. Active workers poll cancellation and abort HTTP, DNS resolution and direct subprocesses. An upstream binary can have internal child processes the wrapper does not sandbox; use external process/network isolation when needed.
+Cancellation is terminal for that job. Queued jobs cancel without collection. Active workers poll cancellation and abort HTTP, DNS resolution, and native subprocesses. A native timeout or cancellation kills the whole child tree: POSIX signals the detached process group with SIGTERM and then SIGKILL; Windows runs `taskkill /T` and then `taskkill /T /F`. Output beyond the byte cap is truncated with an `[OSINT_POWER_OUTPUT_TRUNCATED]` marker and reported as `RESPONSE_TOO_LARGE`. Each process runs at most four native binaries at once. CPU niceness and Linux `prlimit` CPU-time are best-effort and are not a memory sandbox. Upstream tools can still open their own network connections, and a grandchild that starts a new session is outside the POSIX group. Use host egress controls and a cgroup, job object, or container when that isolation is required.
 
 There is no background scheduler, daemon, automatic task resubmission or cross-machine lease service.
 

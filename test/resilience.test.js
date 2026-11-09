@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Store, hash } from "../src/store.js";
@@ -208,15 +208,22 @@ test("queued job can be cancelled without collection; subprocess cancellation st
   });
   assert.equal(engine.jobs.cancel({ id: job.id }).status, "cancelled");
   const controller = new AbortController();
+  const directory = mkdtempSync(join(tmpdir(), "osint-power-cancel-"));
+  const script = join(directory, "hang.cjs");
+  writeFileSync(script, "setInterval(() => {}, 1000)\n");
   const pending = runProcess(
     process.execPath,
-    ["-e", "setInterval(()=>{},1000)"],
+    [script],
     { timeoutMs: 5000, maxBytes: 100 },
     "",
-    { signal: controller.signal },
+    { signal: controller.signal, allow: [process.execPath] },
   );
   controller.abort(new OperationError("CANCELLED"));
-  await assert.rejects(pending, /CANCELLED/);
+  try {
+    await assert.rejects(pending, /CANCELLED/);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
 });
 test("immutable run comparison separates additions, evidence changes and unobserved records", (t) => {
   const store = new Store();

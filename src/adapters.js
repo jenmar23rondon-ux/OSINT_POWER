@@ -1,6 +1,16 @@
-import { fetchText, runProcess } from "./transport.js";
+import { fetchText, runProcess, assertSafeTarget } from "./transport.js";
 import { collectExtra } from "./collectors.js";
 import { collectDiscovery, HISTORICAL_ADAPTERS } from "./discovery.js";
+
+const NATIVE_ADAPTERS = new Set([
+  "sherlock",
+  "theharvester",
+  "subfinder",
+  "amass",
+  "dnsx",
+  "httpx",
+  "naabu",
+]);
 
 export const ADAPTERS = {
   certspotter: {
@@ -89,6 +99,7 @@ export const ADAPTERS = {
   },
 };
 export function commandFor(adapter, target, limits) {
+  assertSafeTarget(target);
   const rate = String(limits.requestRate);
   const seconds = String(Math.max(1, Math.floor(limits.timeoutMs / 1000)));
   if (adapter === "subfinder")
@@ -165,6 +176,11 @@ export function commandFor(adapter, target, limits) {
   throw new Error("UNKNOWN_BINARY");
 }
 export async function collect(adapter, target, config, dependencies = {}) {
+  if (NATIVE_ADAPTERS.has(adapter)) {
+    // Reuse Scope.target. Do not invent a second, weaker allowlist.
+    if (dependencies.scope) target = dependencies.scope.target(adapter, target);
+    assertSafeTarget(target);
+  }
   if (HISTORICAL_ADAPTERS.includes(adapter))
     return collectDiscovery(adapter, target, config, dependencies);
   if (
@@ -197,5 +213,7 @@ export async function collect(adapter, target, config, dependencies = {}) {
     );
   }
   const { command, args, stdin } = commandFor(adapter, target, config.limits);
-  return runner(command, args, config.limits, stdin);
+  return runner(command, args, config.limits, stdin ?? "", {
+    targets: [target],
+  });
 }

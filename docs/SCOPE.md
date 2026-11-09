@@ -29,8 +29,8 @@ HIBP stores breach metadata. Secret importers discard raw values and keep locati
 
 No exploitation, credential-validity testing, account actions, password retrieval, automatic identity confirmation or employee attack-target scoring is implemented. Public professional context is not proof of employment or identity. IP location and registry country do not establish an office.
 
-The Docker image runs as an unprivileged user. Set CPU, memory and egress restrictions on the host. External binaries are not automatically installed or considered sandboxed merely because Node launches them.
+The Docker image runs as an unprivileged user. Set CPU, memory and egress restrictions on the host. External binaries are not automatically installed or considered sandboxed merely because Node launches them. The wrapper kills the native process tree on timeout and cancellation, caps concurrent runs and output bytes, and refuses non-allowlisted commands. It does not apply a hard memory limit and it does not intercept connections those tools open.
 
 ## Persistent state and exports
 
-Job checkpoints, leases, quotas, normalized per-run captures and input hashes are local SQLite data. Snapshots preserve evidence history; they are not encrypted. HTML/JSON exports may contain professional and infrastructure details and should follow the same retention/access policy. Cancellation targets the direct process and supported network/DNS operations; it is not a process-tree sandbox. Native quotas apply to invocations rather than requests inside an upstream tool.
+Job checkpoints, leases, quotas, normalized per-run captures and input hashes are local SQLite data. Snapshots preserve evidence history; they are not encrypted. HTML/JSON exports may contain professional and infrastructure details and should follow the same retention/access policy. Cancellation and timeouts kill the native process group on POSIX and the process tree on Windows, and they abort supported HTTP and DNS operations. That is not a sandbox: tools can still contact their own providers, and hard memory limits belong on the host. Native quotas apply to invocations rather than requests inside an upstream tool.
