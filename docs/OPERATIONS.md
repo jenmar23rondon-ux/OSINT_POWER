@@ -165,8 +165,9 @@ The core report includes at most 50 entities, 50 relationships and 20 recent run
 | run_monitor           | Re-check scope, collect allowed sources, snapshot and diff                 |
 | monitor_changes       | Read one page of stored changes and their evidence identifiers             |
 | list_monitors         | List definitions and the latest run status                                 |
+| export_stix           | Read-only STIX 2.1 bundle; suspected leads stay suspected                  |
 
-There are **29 MCP tools** in total, including export_evidence, the three review tools, the two phishing tools and the four monitor tools. Existing tool names and output schemas are unchanged. execute=true on the seven workflows uses durable jobs. The phishing scan and `monitor run` are synchronous and are not durable jobs. The legacy passive_pipeline is still a synchronous convenience command, without durable workflow recovery. MCP response-envelope changes are documented in the [v0.4 migration guide](V0.4.md).
+There are **30 MCP tools** in total, including export_evidence, export_stix, the three review tools, the two phishing tools and the four monitor tools. Existing tool names and output schemas are unchanged. execute=true on the seven workflows uses durable jobs. The phishing scan and `monitor run` are synchronous and are not durable jobs. The legacy passive_pipeline is still a synchronous convenience command, without durable workflow recovery. MCP response-envelope changes are documented in the [v0.4 migration guide](V0.4.md). Backup, retention, STIX filters, and the release checklist are in [PRODUCTION.md](PRODUCTION.md).
 
 ## Incremental monitor
 
@@ -198,7 +199,11 @@ New entities from a run stay in the review queue until an analyst decides. The m
 
 Alerts are rows in `monitor_alerts` and are included in the JSON result. Markdown export is a local file and is not sent. A webhook URL is stored only when `monitor add` or `create_monitor` receives one. The run posts that URL only when network access is already enabled, through the same provider reservation gate as other HTTP calls, with redirects refused. No alerts means no request. A failed post is recorded as `hook_failed` and the local alert remains. Delivery is best-effort: a crash after the post and before the snapshot commit can repeat the post on the next comparable run.
 
-SQLite schema v6 creates `monitors`, `monitor_runs`, `monitor_assets`, `monitor_changes` and `monitor_alerts` with `CREATE TABLE IF NOT EXISTS`. Existing evidence, review and phishing rows are not rewritten. A database whose `user_version` is newer than v6 is rejected with `DATABASE_VERSION_TOO_NEW`. Snapshots keep at most 2000 assets. A partial or deferred monitor command exits nonzero, matching the other collection commands. Package version remains 0.4.0.
+SQLite schema v6 creates `monitors`, `monitor_runs`, `monitor_assets`, `monitor_changes` and `monitor_alerts` with `CREATE TABLE IF NOT EXISTS`. Existing evidence, review and phishing rows are not rewritten. A database whose `user_version` is newer than v6 is rejected with `DATABASE_VERSION_TOO_NEW`. Snapshots keep at most 2000 assets. A partial or deferred monitor command exits nonzero, matching the other collection commands. Package version remains 0.4.0. STIX export does not add a table or bump `user_version`.
+
+## STIX export
+
+`export-stix` and `validate-stix` are read-only. Filters, the suspected-indicator rule, backup, and the release checklist are documented in [PRODUCTION.md](PRODUCTION.md). An analyst `accept` in the bundle is an opinion. It does not confirm phishing, identity, or ownership.
 
 ## Pinned native integration lab
 

@@ -27,6 +27,8 @@ Use workflow with people/company/places/users/emails/exposures/correlation. Defa
 
 Use `run_phishing_workflow` only for an apex domain already in scope. Treat every returned domain as a suspected lead. Do not describe it as confirmed phishing, and do not draft a takedown or brand notice until an analyst records a decision. Do not request page fetches, form submissions, credential use, or phishing-kit downloads.
 
+Use `export_stix` only to read evidence already stored for the configured scope. A suspected indicator is still suspected after export. An opinion of `agree` records an analyst accept; it does not confirm phishing, identity, or ownership. Do not describe a candidate link as a confirmed identity.
+
 Use `create_monitor` and `run_monitor` only for an investigation already in scope. `run_monitor` does not schedule itself. Treat monitor alerts as heuristics with the stated basis. Do not describe a certificate, MX record, or exposed service as confirmed phishing, ownership, or a vulnerability, and do not record an analyst decision on behalf of the operator.
 
 Do not interpret a DNS MX as mailbox existence or catch-all, an ASN as ownership, or a breach as a current credential. Correlation supports defensive evidence review, not employee attack-target rankings.

@@ -10,6 +10,8 @@ import { planInvestigation } from "./planning.js";
 import { compareRuns, explainEntity } from "./state.js";
 import { JobListInput } from "./schema.js";
 import { completeEvidence, verifyEvidence } from "./bundles.js";
+import { exportStix } from "./stix.js";
+import { validateStixBundle } from "./stix-validate.js";
 import { recordDecision, reviewQueue, showEntity } from "./review.js";
 import {
   phishingHTML,
@@ -32,6 +34,10 @@ const HELP = {
       "bundle --id SNAPSHOT_UUID --output evidence.json (complete capture, at most 10000 observations/40 MB)",
     "verify-bundle":
       "verify-bundle --file evidence.json (offline integrity verification)",
+    "export-stix":
+      "export-stix [--target DOMAIN] [--investigation NAME_OR_UUID] [--review any|accepted|rejected|needs-more-evidence|unreviewed] [--since ISO] [--until ISO] [--output bundle.json]",
+    "validate-stix":
+      "validate-stix --file bundle.json (offline STIX 2.1 checks; no network)",
     doctor: "doctor [--skip-probes] (local diagnostics only)",
     plan: "plan --workflow company --target example.com (ranked actions; no collection)",
     resume: "resume --id JOB_UUID [--max-calls 10]",
@@ -117,6 +123,10 @@ try {
           "webhook",
           "minimum",
           "run",
+          "investigation",
+          "review",
+          "since",
+          "until",
         ].map((k) => [k, { type: "string" }]),
       ),
     },
@@ -146,6 +156,23 @@ try {
     if (!v.file || statSync(v.file).size > 50_000_000)
       throw new Error("INVALID_BUNDLE_FILE");
     result = verifyEvidence(JSON.parse(readFileSync(v.file, "utf8")));
+  } else if (command === "validate-stix") {
+    if (!v.file || statSync(v.file).size > 50_000_000)
+      throw new Error("INVALID_STIX_FILE");
+    let bundle;
+    try {
+      bundle = JSON.parse(readFileSync(v.file, "utf8"));
+    } catch {
+      throw new Error("INVALID_STIX_FILE");
+    }
+    const errors = validateStixBundle(bundle).slice(0, 50);
+    result = {
+      status: errors.length ? "failed" : "completed",
+      valid: errors.length === 0,
+      error_count: errors.length,
+      errors,
+      object_count: Array.isArray(bundle?.objects) ? bundle.objects.length : 0,
+    };
   } else if (command === "demo") {
     const config = JSON.parse(
       readFileSync(new URL("../config.example.json", import.meta.url), "utf8"),
@@ -326,7 +353,29 @@ try {
         target: v.target,
         restart: v.restart,
       });
-    else if (command === "bundle") {
+    else if (command === "export-stix") {
+      const exported = exportStix(engine.store, engine.scope, {
+        ...(v.investigation ? { investigation: v.investigation } : {}),
+        ...(v.target ? { target: v.target } : {}),
+        ...(v.review ? { review_status: v.review } : {}),
+        ...(v.since ? { since: v.since } : {}),
+        ...(v.until ? { until: v.until } : {}),
+      });
+      if (v.output) {
+        writeFileSync(
+          v.output,
+          JSON.stringify(exported.bundle, null, 2) + "\n",
+          { mode: 0o600, flag: "wx" },
+        );
+        const { bundle, ...summary } = exported;
+        result = {
+          status: "completed",
+          path: v.output,
+          object_count: bundle.objects.length,
+          ...summary,
+        };
+      } else result = exported;
+    } else if (command === "bundle") {
       if (!v.output) throw new Error("OUTPUT_PATH_REQUIRED");
       const bundle = completeEvidence(engine.store, v.id);
       writeFileSync(v.output, JSON.stringify(bundle, null, 2) + "\n", {

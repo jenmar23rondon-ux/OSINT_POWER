@@ -52,10 +52,14 @@ Deterministic lookalikes of one in-scope apex, then passive enrichment of only t
 
 Local monitor definitions, per-run snapshots and diffs for subdomains, hosts, certificates, DNS, phishing lookalikes and exposures. Alerts are local records with an explicit basis. A webhook is opt-in and off by default. There is no scheduler: the operator's cron or CI calls `monitor run`. New entities stay unreviewed. SQLite schema v6 is additive. Package version remains 0.4.0.
 
+## STIX export and production notes
+
+Read-only STIX 2.1 export (`export-stix`, `export_stix`) and an offline bundle validator. Suspected and candidate records are not rewritten as confirmed. The operational runbook and release checklist are documentation only: version stays 0.4.0, and the checklist does not create a tag or a GitHub release. Schema stays v6.
+
 ## Next investigation improvements
 
 - Broaden the labeled corpus with reviewed, publishable datasets and independently maintained gold labels.
 - Calibrate source assessments from evaluation data; current confidence remains heuristic.
 - Source-specific watermarks beyond the current per-run snapshot. The monitor does not advance Cert Spotter or Wayback cursors by itself.
 - Add analyst decisions to the offline HTML report. Decisions, candidate links and contradictions are available through CLI and MCP.
-- Harden per-tool process/resource/egress isolation and publish reproducible release artifacts.
+- Harden per-tool process/resource/egress isolation. The release checklist is documented; signed archives and a published GitHub release are still future work.

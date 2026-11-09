@@ -7,6 +7,7 @@ import { ResumeInput, JobInput } from "../src/schema.js";
 import { DoctorInput } from "../src/doctor.js";
 import { RESULT_SCHEMAS, outputSchema } from "../src/contracts.js";
 import { BundleInput } from "../src/bundles.js";
+import { StixExportInput } from "../src/stix.js";
 
 mkdirSync(new URL("../schema/", import.meta.url), { recursive: true });
 for (const [name, schema] of Object.entries({
@@ -20,6 +21,7 @@ for (const [name, schema] of Object.entries({
   job: JobInput,
   doctor: DoctorInput,
   bundle: BundleInput,
+  "stix-export": StixExportInput,
 }))
   writeFileSync(
     new URL(`../schema/${name}.schema.json`, import.meta.url),

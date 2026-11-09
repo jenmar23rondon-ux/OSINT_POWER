@@ -13,7 +13,7 @@
   <a href="#quick-start">Quick start</a> · <a href="docs/WORKFLOWS.md">Seven workflows</a> · <a href="docs/AI.md">Connect AI</a> · <a href="docs/ADAPTERS.md">Adapters</a> · <a href="docs/ROADMAP.md">Roadmap</a>
 </p>
 
-OSINT POWER is an evidence-focused reconnaissance framework for scoped security assessments and research. It normalizes public-source observations, stores provenance in SQLite, and exposes a CLI and **29 MCP tools**. It works without a model or an AI API key.
+OSINT POWER is an evidence-focused reconnaissance framework for scoped security assessments and research. It normalizes public-source observations, stores provenance in SQLite, and exposes a CLI and **30 MCP tools**. It works without a model or an AI API key.
 
 **Status: v0.4.0, historical discovery and verifiable evidence packages.** Seven workflows include explicit budgets, source status and partial results. External binaries are installed separately. Live connectors and import bridges are distinguished in the matrix below.
 
@@ -29,7 +29,7 @@ See the **[v0.4 guide and migration notes](docs/V0.4.md)**.
 
 Analyst decisions are stored beside that evidence. A shared name or handle, including the same handle on a GitHub profile and in an email address, stays a **candidate** until a non-name identifier is supported by independent sources. Mirrors, a shared upstream, and the same collector run do not count as separate corroboration.
 
-Suspicious lookalikes of an in-scope apex are a separate workflow. They are stored as **suspected** leads, with the basis for each signal, and they are not confirmed phishing. An analyst decision is required before notification or takedown.
+Suspicious lookalikes of an in-scope apex are a separate workflow. They are stored as **suspected** leads, with the basis for each signal, and they are not confirmed phishing. An analyst decision is required before notification or takedown. `export-stix` can turn the stored workspace into a STIX 2.1 bundle; suspected leads stay suspected indicators, and out-of-scope rows are left out. See [production operations](docs/PRODUCTION.md).
 
 ```bash
 node src/cli.js phishing-scan --target example.com
@@ -104,6 +104,8 @@ node src/cli.js run --adapter wayback --target example.com
 node src/cli.js run --adapter wayback --target example.com --restart
 node src/cli.js bundle --id SNAPSHOT_UUID --output evidence.json
 node src/cli.js verify-bundle --file evidence.json
+node src/cli.js export-stix --target example.com --output bundle.json
+node src/cli.js validate-stix --file bundle.json
 npm run benchmark
 ```
 
@@ -233,6 +235,7 @@ Adapt registration to your host's format. See [AI integration](docs/AI.md) and t
 | `plan_investigation`                           | Rank configured actions using coverage, freshness and budgets                            |
 | `get_report`                                   | Bounded report, history and next actions                                                 |
 | `export_evidence`                              | Paginated immutable evidence package with integrity digests                              |
+| `export_stix`                                  | Read-only STIX 2.1 bundle of in-scope evidence; suspected leads stay suspected           |
 | `run_phishing_workflow`                        | Suspected lookalikes for one in-scope apex; passive enrichment only when execute is true |
 | `phishing_report`                              | Unverified CERT-style lead report for stored candidates                                  |
 
