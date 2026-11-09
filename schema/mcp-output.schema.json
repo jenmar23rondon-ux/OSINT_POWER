@@ -8633,5 +8633,899 @@
       "result"
     ],
     "additionalProperties": false
+  },
+  "run_phishing_workflow": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "schema_version": {
+        "type": "string",
+        "const": "0.4"
+      },
+      "ok": {
+        "type": "boolean"
+      },
+      "execution_status": {
+        "type": "string",
+        "enum": [
+          "succeeded",
+          "failed"
+        ]
+      },
+      "collection_status": {
+        "type": "string",
+        "enum": [
+          "completed",
+          "partial",
+          "failed",
+          "deferred",
+          "cancelled",
+          "not_applicable"
+        ]
+      },
+      "coverage": {
+        "type": "object",
+        "properties": {
+          "complete": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "complete",
+          "truncated"
+        ],
+        "additionalProperties": false
+      },
+      "retry": {
+        "type": "object",
+        "properties": {
+          "retryable": {
+            "type": "boolean"
+          },
+          "retry_after_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "retryable",
+          "retry_after_ms"
+        ],
+        "additionalProperties": false
+      },
+      "result": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "workflow": {
+                "type": "string",
+                "const": "phishing"
+              },
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "plan",
+                  "execute"
+                ]
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "planned",
+                  "completed",
+                  "partial"
+                ]
+              },
+              "target": {
+                "type": "string"
+              },
+              "protected_domain": {
+                "type": "string"
+              },
+              "persisted": {
+                "type": "boolean"
+              },
+              "network": {
+                "type": "boolean"
+              },
+              "active": {
+                "type": "boolean"
+              },
+              "run_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "candidates": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "entity_id": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "domain": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 253
+                    },
+                    "technique": {
+                      "type": "string",
+                      "enum": [
+                        "homoglyph",
+                        "digit",
+                        "tld_swap",
+                        "keyword",
+                        "hyphenation",
+                        "omission",
+                        "transposition",
+                        "duplication",
+                        "adjacent"
+                      ]
+                    },
+                    "similarity": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 0.95
+                    },
+                    "status": {
+                      "type": "string",
+                      "const": "suspected"
+                    },
+                    "confidence": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 0.85
+                    },
+                    "basis": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 500
+                    },
+                    "analyst_decision": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "accept",
+                            "reject",
+                            "needs-more-evidence"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "signals": {
+                      "minItems": 5,
+                      "maxItems": 5,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "signal": {
+                            "type": "string",
+                            "enum": [
+                              "name_similarity",
+                              "recently_registered",
+                              "has_mx",
+                              "certificate_brand_terms",
+                              "shares_infrastructure"
+                            ]
+                          },
+                          "present": {
+                            "type": "boolean"
+                          },
+                          "collected": {
+                            "type": "boolean"
+                          },
+                          "basis": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 500
+                          },
+                          "source": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 80
+                          },
+                          "evidence": {
+                            "type": "object",
+                            "propertyNames": {
+                              "type": "string"
+                            },
+                            "additionalProperties": {
+                              "$ref": "#/$defs/__schema0"
+                            }
+                          }
+                        },
+                        "required": [
+                          "signal",
+                          "present",
+                          "collected",
+                          "basis",
+                          "source",
+                          "evidence"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "enrichment": {
+                      "minItems": 5,
+                      "maxItems": 5,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "source": {
+                            "type": "string",
+                            "enum": [
+                              "crtsh",
+                              "certspotter",
+                              "wayback",
+                              "rdap",
+                              "dns"
+                            ]
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "completed",
+                              "not_run",
+                              "network_disabled",
+                              "active_disabled",
+                              "adapter_disabled",
+                              "budget_exhausted",
+                              "failed",
+                              "not_found"
+                            ]
+                          },
+                          "basis": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 500
+                          },
+                          "requests": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "evidence": {
+                            "type": "object",
+                            "propertyNames": {
+                              "type": "string"
+                            },
+                            "additionalProperties": {
+                              "$ref": "#/$defs/__schema0"
+                            }
+                          }
+                        },
+                        "required": [
+                          "source",
+                          "status",
+                          "basis",
+                          "requests",
+                          "evidence"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "entity_id",
+                    "domain",
+                    "technique",
+                    "similarity",
+                    "status",
+                    "confidence",
+                    "basis",
+                    "analyst_decision",
+                    "signals",
+                    "enrichment"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "returned": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "variant_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "truncated": {
+                "type": "boolean"
+              },
+              "calls": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "http_requests": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "coverage_complete": {
+                "type": "boolean",
+                "const": false
+              },
+              "budget": {
+                "type": "object",
+                "properties": {
+                  "maxCandidates": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "maxCalls": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "maxCandidates",
+                  "maxCalls"
+                ],
+                "additionalProperties": false
+              },
+              "review": {
+                "type": "object",
+                "properties": {
+                  "queued": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "queued",
+                  "note"
+                ],
+                "additionalProperties": false
+              },
+              "limitations": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "next_actions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "rank": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "action": {
+                      "type": "string"
+                    },
+                    "reason": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "rank",
+                    "action",
+                    "reason"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "workflow",
+              "mode",
+              "status",
+              "target",
+              "protected_domain",
+              "persisted",
+              "network",
+              "active",
+              "run_id",
+              "candidates",
+              "returned",
+              "variant_count",
+              "truncated",
+              "calls",
+              "http_requests",
+              "coverage_complete",
+              "budget",
+              "review",
+              "limitations",
+              "next_actions"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "required": [
+      "schema_version",
+      "ok",
+      "execution_status",
+      "collection_status",
+      "coverage",
+      "retry",
+      "result"
+    ],
+    "additionalProperties": false,
+    "$defs": {
+      "__schema0": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          },
+          {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/__schema0"
+            }
+          },
+          {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "$ref": "#/$defs/__schema0"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "phishing_report": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "schema_version": {
+        "type": "string",
+        "const": "0.4"
+      },
+      "ok": {
+        "type": "boolean"
+      },
+      "execution_status": {
+        "type": "string",
+        "enum": [
+          "succeeded",
+          "failed"
+        ]
+      },
+      "collection_status": {
+        "type": "string",
+        "enum": [
+          "completed",
+          "partial",
+          "failed",
+          "deferred",
+          "cancelled",
+          "not_applicable"
+        ]
+      },
+      "coverage": {
+        "type": "object",
+        "properties": {
+          "complete": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "complete",
+          "truncated"
+        ],
+        "additionalProperties": false
+      },
+      "retry": {
+        "type": "object",
+        "properties": {
+          "retryable": {
+            "type": "boolean"
+          },
+          "retry_after_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "retryable",
+          "retry_after_ms"
+        ],
+        "additionalProperties": false
+      },
+      "result": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "project": {
+                "type": "string",
+                "const": "OSINT_POWER"
+              },
+              "title": {
+                "type": "string",
+                "const": "Phishing intelligence report"
+              },
+              "classification": {
+                "type": "string",
+                "const": "unverified_leads"
+              },
+              "generated_at": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+              },
+              "protected_domain": {
+                "type": "string"
+              },
+              "candidates": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "entity_id": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "domain": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 253
+                    },
+                    "technique": {
+                      "type": "string",
+                      "enum": [
+                        "homoglyph",
+                        "digit",
+                        "tld_swap",
+                        "keyword",
+                        "hyphenation",
+                        "omission",
+                        "transposition",
+                        "duplication",
+                        "adjacent"
+                      ]
+                    },
+                    "similarity": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 0.95
+                    },
+                    "status": {
+                      "type": "string",
+                      "const": "suspected"
+                    },
+                    "confidence": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 0.85
+                    },
+                    "basis": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 500
+                    },
+                    "analyst_decision": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "accept",
+                            "reject",
+                            "needs-more-evidence"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "signals": {
+                      "minItems": 5,
+                      "maxItems": 5,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "signal": {
+                            "type": "string",
+                            "enum": [
+                              "name_similarity",
+                              "recently_registered",
+                              "has_mx",
+                              "certificate_brand_terms",
+                              "shares_infrastructure"
+                            ]
+                          },
+                          "present": {
+                            "type": "boolean"
+                          },
+                          "collected": {
+                            "type": "boolean"
+                          },
+                          "basis": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 500
+                          },
+                          "source": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 80
+                          },
+                          "evidence": {
+                            "type": "object",
+                            "propertyNames": {
+                              "type": "string"
+                            },
+                            "additionalProperties": {
+                              "$ref": "#/$defs/__schema0"
+                            }
+                          }
+                        },
+                        "required": [
+                          "signal",
+                          "present",
+                          "collected",
+                          "basis",
+                          "source",
+                          "evidence"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "enrichment": {
+                      "minItems": 5,
+                      "maxItems": 5,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "source": {
+                            "type": "string",
+                            "enum": [
+                              "crtsh",
+                              "certspotter",
+                              "wayback",
+                              "rdap",
+                              "dns"
+                            ]
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "completed",
+                              "not_run",
+                              "network_disabled",
+                              "active_disabled",
+                              "adapter_disabled",
+                              "budget_exhausted",
+                              "failed",
+                              "not_found"
+                            ]
+                          },
+                          "basis": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 500
+                          },
+                          "requests": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "evidence": {
+                            "type": "object",
+                            "propertyNames": {
+                              "type": "string"
+                            },
+                            "additionalProperties": {
+                              "$ref": "#/$defs/__schema0"
+                            }
+                          }
+                        },
+                        "required": [
+                          "source",
+                          "status",
+                          "basis",
+                          "requests",
+                          "evidence"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "entity_id",
+                    "domain",
+                    "technique",
+                    "similarity",
+                    "status",
+                    "confidence",
+                    "basis",
+                    "analyst_decision",
+                    "signals",
+                    "enrichment"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "returned": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "truncated": {
+                "type": "boolean"
+              },
+              "recommended_actions": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "limitations": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "markdown": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "project",
+              "title",
+              "classification",
+              "generated_at",
+              "protected_domain",
+              "candidates",
+              "returned",
+              "truncated",
+              "recommended_actions",
+              "limitations",
+              "markdown"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "required": [
+      "schema_version",
+      "ok",
+      "execution_status",
+      "collection_status",
+      "coverage",
+      "retry",
+      "result"
+    ],
+    "additionalProperties": false,
+    "$defs": {
+      "__schema0": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          },
+          {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/__schema0"
+            }
+          },
+          {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "$ref": "#/$defs/__schema0"
+            }
+          }
+        ]
+      }
+    }
   }
 }

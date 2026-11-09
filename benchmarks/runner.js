@@ -5,6 +5,7 @@ import { performance } from "node:perf_hooks";
 import { Engine } from "../src/engine.js";
 import { Store, hash } from "../src/store.js";
 import { explainEntity } from "../src/state.js";
+import { blockedCandidate, generateLookalikes } from "../src/phishing.js";
 
 export async function runBenchmark(
   fixtures = JSON.parse(
@@ -114,6 +115,47 @@ export async function runBenchmark(
         if (
           assessment.identity !== expected.identity ||
           assessment.ownership !== "not_established"
+        )
+          checkFailures++;
+      }
+      if (fixture.lookalike) {
+        const spec = fixture.lookalike;
+        const options = {
+          maxCandidates: spec.maxCandidates ?? 40,
+          reject: (name) => blockedCandidate(engine.scope, name),
+        };
+        const produced = generateLookalikes(spec.protected, options);
+        const again = generateLookalikes(spec.protected, options);
+        if (JSON.stringify(produced) !== JSON.stringify(again)) checkFailures++;
+        const byDomain = new Map(
+          produced.candidates.map((candidate) => [candidate.domain, candidate]),
+        );
+        for (const domain of spec.includes ?? [])
+          if (!byDomain.has(domain)) checkFailures++;
+        for (const domain of spec.excludes ?? [])
+          if (byDomain.has(domain)) checkFailures++;
+        for (const [domain, score] of Object.entries(spec.scores ?? {}))
+          if (byDomain.get(domain)?.similarity !== score) checkFailures++;
+        if (
+          produced.candidates.some(
+            (candidate) =>
+              candidate.similarity <= 0 || candidate.similarity > 0.95,
+          )
+        )
+          checkFailures++;
+        if (
+          spec.homoglyph &&
+          !produced.candidates.some(
+            (candidate) =>
+              candidate.technique === "homoglyph" &&
+              candidate.domain.startsWith("xn--"),
+          )
+        )
+          checkFailures++;
+        if (
+          produced.candidates.some(
+            (candidate) => candidate.domain === spec.protected,
+          )
         )
           checkFailures++;
       }

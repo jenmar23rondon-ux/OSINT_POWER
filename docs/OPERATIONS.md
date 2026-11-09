@@ -145,22 +145,24 @@ The core report includes at most 50 entities, 50 relationships and 20 recent run
 
 ## MCP additions
 
-| Tool                | Behavior                                                   |
-| ------------------- | ---------------------------------------------------------- |
-| start_workflow      | Create a queued job without collection                     |
-| resume_run          | Execute pending steps of a durable job                     |
-| cancel_run          | Request cancellation                                       |
-| get_job / list_jobs | Inspect durable state                                      |
-| doctor              | Local diagnostics                                          |
-| source_health       | Persisted quotas and cooldowns                             |
-| compare_runs        | Paginated immutable evidence comparison                    |
-| explain_entity      | Provenance and source-family explanation                   |
-| plan_investigation  | Rank eligible actions without execution                    |
-| list_review_queue   | Unreviewed entities, candidate links, contradictions       |
-| record_decision     | Append an analyst decision; does not confirm identity      |
-| show_entity         | Candidates, contradictions, independence, decision history |
+| Tool                  | Behavior                                                                 |
+| --------------------- | ------------------------------------------------------------------------ |
+| start_workflow        | Create a queued job without collection                                   |
+| resume_run            | Execute pending steps of a durable job                                   |
+| cancel_run            | Request cancellation                                                     |
+| get_job / list_jobs   | Inspect durable state                                                    |
+| doctor                | Local diagnostics                                                        |
+| source_health         | Persisted quotas and cooldowns                                           |
+| compare_runs          | Paginated immutable evidence comparison                                  |
+| explain_entity        | Provenance and source-family explanation                                 |
+| plan_investigation    | Rank eligible actions without execution                                  |
+| list_review_queue     | Unreviewed entities, candidate links, contradictions                     |
+| record_decision       | Append an analyst decision; does not confirm identity                    |
+| show_entity           | Candidates, contradictions, independence, decision history               |
+| run_phishing_workflow | Suspected lookalikes; execute stores leads and may query passive sources |
+| phishing_report       | Unverified lead report; no collection                                    |
 
-There are **23 MCP tools** in total, including export_evidence and the three review tools. Existing tool names and output schemas are unchanged. execute=true uses durable jobs. The legacy passive_pipeline is still a synchronous convenience command, without durable workflow recovery. MCP response-envelope changes are documented in the [v0.4 migration guide](V0.4.md).
+There are **25 MCP tools** in total, including export_evidence, the three review tools and the two phishing tools. Existing tool names and output schemas are unchanged. execute=true on the seven workflows uses durable jobs. The phishing scan is synchronous and is not a durable job. The legacy passive_pipeline is still a synchronous convenience command, without durable workflow recovery. MCP response-envelope changes are documented in the [v0.4 migration guide](V0.4.md).
 
 ## Pinned native integration lab
 

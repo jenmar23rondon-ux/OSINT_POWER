@@ -11,6 +11,11 @@ import { compareRuns, explainEntity } from "./state.js";
 import { JobListInput } from "./schema.js";
 import { completeEvidence, verifyEvidence } from "./bundles.js";
 import { recordDecision, reviewQueue, showEntity } from "./review.js";
+import {
+  phishingHTML,
+  phishingReport,
+  runPhishingWorkflow,
+} from "./phishing.js";
 
 const HELP = {
   project: "OSINT_POWER",
@@ -36,6 +41,10 @@ const HELP = {
       "decide --subject entity|finding --id HASH --decision accept|reject|needs-more-evidence --reason TEXT --analyst ID",
     "show-entity":
       "show-entity --id ENTITY_HASH (candidates, contradictions, independence, decision history)",
+    "phishing-scan":
+      "phishing-scan --target example.com [--execute] [--max-candidates 20] [--max-calls 10] (suspected lookalikes; not confirmed phishing)",
+    "phishing-report":
+      "phishing-report --target example.com [--format json|markdown|html --output PATH]",
     health: "health (persisted provider quotas and cooldowns)",
     workflow:
       "workflow --workflow company --target example.com [--execute | --queue] [--max-targets 3] [--max-calls 10]",
@@ -87,6 +96,7 @@ try {
           "reason",
           "analyst",
           "subject",
+          "max-candidates",
         ].map((k) => [k, { type: "string" }]),
       ),
     },
@@ -195,7 +205,41 @@ try {
       });
     else if (command === "show-entity")
       result = showEntity(engine.store, { entity_id: v.id });
-    else if (command === "run")
+    else if (command === "phishing-scan")
+      result = await runPhishingWorkflow(engine, {
+        target: v.target,
+        execute: v.execute,
+        ...(v["max-candidates"]
+          ? { maxCandidates: Number(v["max-candidates"]) }
+          : {}),
+        ...(v["max-calls"] ? { maxCalls: Number(v["max-calls"]) } : {}),
+      });
+    else if (command === "phishing-report") {
+      const format = v.format ?? "json";
+      if (!["json", "markdown", "html"].includes(format))
+        throw new Error("INVALID_REPORT_FORMAT");
+      if (format === "html" && !v.output)
+        throw new Error("OUTPUT_PATH_REQUIRED");
+      const body = phishingReport(engine, { target: v.target });
+      if (v.output) {
+        writeFileSync(
+          v.output,
+          format === "html"
+            ? phishingHTML(body)
+            : format === "markdown"
+              ? body.markdown
+              : JSON.stringify(body, null, 2) + "\n",
+          { mode: 0o600, flag: "wx" },
+        );
+        result = {
+          status: "completed",
+          format,
+          path: v.output,
+          classification: body.classification,
+          returned: body.returned,
+        };
+      } else result = body;
+    } else if (command === "run")
       result = await engine.run({
         adapter: v.adapter,
         target: v.target,
