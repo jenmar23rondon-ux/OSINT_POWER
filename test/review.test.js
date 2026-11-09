@@ -77,9 +77,15 @@ const email = {
 
 test("analyst decisions are append-only and survive reopening the database", (t) => {
   const dir = mkdtempSync(join(tmpdir(), "osint-review-"));
-  t.after(() => rmSync(dir, { recursive: true, force: true }));
   const path = join(dir, "state.sqlite");
-  let { store, engine } = workspace(t, path);
+  // The reopened handle must be the one closed before cleanup. Windows denies
+  // removal while SQLite still has the file.
+  let store = new Store(path);
+  const engine = new Engine(settings, store);
+  t.after(() => {
+    store.close();
+    rmSync(dir, { recursive: true, force: true });
+  });
   load(engine, [
     {
       type: "domain",
