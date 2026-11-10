@@ -9,6 +9,7 @@ import { initializeState, capture } from "./state.js";
 import { SCHEMA_VERSION, initializeReview } from "./review.js";
 import { initializePhishing } from "./phishing.js";
 import { initializeMonitor } from "./monitor.js";
+import { initializeCases } from "./cases.js";
 
 function canonical(value) {
   if (Array.isArray(value)) return value.map(canonical);
@@ -47,6 +48,7 @@ export class Store {
     initializeReview(this.db);
     initializePhishing(this.db);
     initializeMonitor(this.db);
+    initializeCases(this.db);
   }
   bindScope(scope) {
     const fingerprint = hash(scope);

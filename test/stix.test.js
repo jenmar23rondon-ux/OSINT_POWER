@@ -328,7 +328,10 @@ test("export is a deterministic read of in-scope evidence", (t) => {
   assert.deepEqual(again, exported);
   assert.deepEqual(counts(store), before);
   assert.equal(version, SCHEMA_VERSION);
-  assert.equal(store.db.prepare("PRAGMA user_version").get().user_version, 6);
+  assert.equal(
+    store.db.prepare("PRAGMA user_version").get().user_version,
+    SCHEMA_VERSION,
+  );
   assert.equal(validateStixBundle(exported.bundle).length, 0);
   assert.equal(toolResponse("export_stix", exported).ok, true);
   const text = JSON.stringify(exported.bundle);
@@ -572,7 +575,7 @@ test(
     });
     await client.connect(transport);
     const names = (await client.listTools()).tools.map((tool) => tool.name);
-    assert.equal(names.length, 32);
+    assert.equal(names.length, 42);
     assert.equal(names.includes("export_stix"), true);
     assert.equal(names.includes("collect"), true);
     await client.callTool({

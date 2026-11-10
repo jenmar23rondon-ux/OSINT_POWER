@@ -27,6 +27,8 @@ Use workflow with people/company/places/users/emails/exposures/correlation. Defa
 
 Use `run_phishing_workflow` only for an apex domain already in scope. Treat every returned domain as a suspected lead. Do not describe it as confirmed phishing, and do not draft a takedown or brand notice until an analyst records a decision. Do not request page fetches, form submissions, credential use, or phishing-kit downloads.
 
+Use `create_hypothesis`, `evaluate_hypothesis`, `case_report` and `export_case_stix` only on evidence already stored. Do not describe a hypothesis as a finding or as confirmed unless `close_hypothesis` recorded `analyst-confirmed`, and even then say that an analyst recorded it. Do not run a suggested step whose `requires_gate` is `network`, `active`, or `adapter`.
+
 Use `assess_evidence` and `explain_asset` only to read evidence already stored. Keep historical existence, current activity, ownership, conflicts and the analyst decision separate. Do not describe a shared IP, CDN, hosting ASN, certificate, or archive capture as ownership or as proof the asset is active. Do not describe a candidate identity link as confirmed. A returned next action is a suggestion; do not treat it as a collector you already ran, and do not run it unless the operator asked and the current scope, network, active-mode and adapter gates allow that exact target.
 
 Use `export_stix` only to read evidence already stored for the configured scope. A suspected indicator is still suspected after export. An opinion of `agree` records an analyst accept; it does not confirm phishing, identity, or ownership. Do not describe a candidate link as a confirmed identity.

@@ -54,11 +54,15 @@ Local monitor definitions, per-run snapshots and diffs for subdomains, hosts, ce
 
 ## STIX export and production notes
 
-Read-only STIX 2.1 export (`export-stix`, `export_stix`) and an offline bundle validator. Suspected and candidate records are not rewritten as confirmed. The operational runbook and release checklist are documentation only: version stays 0.4.0, and the checklist does not create a tag or a GitHub release. Schema stays v6.
+Read-only STIX 2.1 export (`export-stix`, `export_stix`) and an offline bundle validator. Suspected and candidate records are not rewritten as confirmed. The operational runbook and release checklist are documentation only: version stays 0.4.0, and the checklist does not create a tag or a GitHub release. That export does not add a table.
 
 ## Evidence intelligence
 
-Read-only `assess`, `assess_evidence` and `explain_asset` turn stored in-scope domains, IPs, ASNs, URLs and technologies into separate historical, activity, attribution, conflict, independence and review statuses. Suggestions stay inside the current gates and do not collect. Schema stays v6. Package version remains 0.4.0. The synthetic benchmark reports v0.4 versus this reader for attribution precision, recall and false attributions.
+Read-only `assess`, `assess_evidence` and `explain_asset` turn stored in-scope domains, IPs, ASNs, URLs and technologies into separate historical, activity, attribution, conflict, independence and review statuses. Suggestions stay inside the current gates and do not collect. That reader does not add a table. Package version remains 0.4.0. The synthetic benchmark reports v0.4 versus this reader for attribution precision, recall and false attributions.
+
+## Intelligence agent and case review
+
+Local hypotheses and cases. `evaluate_hypothesis` reads stored evidence and the evidence-intelligence assessment, then returns supporting, contradicting and missing evidence. It can store `open`, `supported-pending-review` or `weakened`. `analyst-confirmed` and `rejected` come only from `close_hypothesis`. A hypothesis is not a finding. Suggested collection steps carry `requires_gate` when network, active mode, or an adapter is missing, and they are not executed. Case reports keep analyst decisions, candidates, hypotheses and limitations apart. `export_case_stix` reuses the STIX exporter and writes hypotheses as notes. SQLite schema v7 is additive. Package version remains 0.4.0.
 
 ## Next investigation improvements
 

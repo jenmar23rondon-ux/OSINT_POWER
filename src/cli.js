@@ -26,6 +26,18 @@ import {
   runMonitor,
 } from "./monitor.js";
 import { assessAssets, explainAsset } from "./evidence-intelligence.js";
+import {
+  caseReport,
+  caseSummary,
+  closeHypothesis,
+  createCase,
+  createHypothesis,
+  evaluateHypothesis,
+  exportCaseStix,
+  listCases,
+  listHypotheses,
+  updateHypothesis,
+} from "./cases.js";
 
 const HELP = {
   project: "OSINT_POWER",
@@ -68,6 +80,24 @@ const HELP = {
     "monitor diff":
       "monitor diff --id MONITOR_UUID [--run RUN_UUID] [--format json|markdown --output PATH]",
     "monitor list": "monitor list [--limit 25] [--offset 0]",
+    "hypothesis create":
+      "hypothesis create --statement TEXT --claim current-activity|historical-existence|organization-attribution|entity-association --entities HASH[,HASH] [--evidence HASH] [--case UUID] [--note TEXT] (stores an open hypothesis; not a finding)",
+    "hypothesis update":
+      "hypothesis update --id UUID [--statement TEXT] [--claim CLAIM] [--entities HASH,HASH] [--evidence HASH] [--case UUID] [--note TEXT]",
+    "hypothesis close":
+      "hypothesis close --id UUID --status rejected|analyst-confirmed --reason TEXT --analyst ID (analyst-confirmed only from this command)",
+    "hypothesis list":
+      "hypothesis list [--case UUID] [--status STATUS] [--limit 25] [--cursor UUID]",
+    "hypothesis evaluate":
+      "hypothesis evaluate --id UUID (read-only assessment; suggestions are not executed)",
+    "case create":
+      "case create --title TEXT --summary TEXT [--investigation NAME] [--target DOMAIN] [--hypothesis UUID] [--decision UUID] [--note TEXT]",
+    "case list": "case list [--limit 25] [--cursor UUID]",
+    "case summary": "case summary --id UUID",
+    "case report":
+      "case report --id UUID [--format json|markdown --output PATH] (separates decisions, candidates, hypotheses, limitations)",
+    "case export-stix":
+      "case export-stix --id UUID [--output bundle.json] (reuses STIX export; hypotheses stay notes)",
     health: "health (persisted provider quotas and cooldowns)",
     workflow:
       "workflow --workflow company --target example.com [--execute | --queue] [--max-targets 3] [--max-calls 10]",
@@ -130,6 +160,17 @@ try {
           "review",
           "since",
           "until",
+          "statement",
+          "claim",
+          "entities",
+          "evidence",
+          "case",
+          "note",
+          "title",
+          "summary",
+          "hypothesis",
+          "decision",
+          "status",
         ].map((k) => [k, { type: "string" }]),
       ),
     },
@@ -142,6 +183,20 @@ try {
     if (
       positionals.length !== 2 ||
       !["add", "run", "diff", "list"].includes(subcommand)
+    )
+      throw new Error("UNKNOWN_COMMAND");
+  } else if (command === "hypothesis") {
+    if (
+      positionals.length !== 2 ||
+      !["create", "update", "close", "list", "evaluate"].includes(subcommand)
+    )
+      throw new Error("UNKNOWN_COMMAND");
+  } else if (command === "case") {
+    if (
+      positionals.length !== 2 ||
+      !["create", "list", "summary", "report", "export-stix"].includes(
+        subcommand,
+      )
     )
       throw new Error("UNKNOWN_COMMAND");
   } else if (positionals.length > 1) throw new Error("UNEXPECTED_ARGUMENT");
@@ -338,6 +393,114 @@ try {
       } else if (format === "markdown")
         result = { ...body, markdown: monitorMarkdown(body) };
       else result = body;
+    } else if (command === "hypothesis" || command === "case") {
+      const gates = {
+        network: engine.config.network === true,
+        active: engine.config.active === true,
+        enabledAdapters: engine.config.enabledAdapters ?? [],
+      };
+      const hashes = (value) =>
+        (value ?? "")
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean);
+      if (command === "hypothesis" && subcommand === "create")
+        result = createHypothesis(engine.store, engine.scope, {
+          statement: v.statement,
+          claim: v.claim,
+          entity_ids: hashes(v.entities),
+          ...(v.evidence ? { evidence_ids: hashes(v.evidence) } : {}),
+          ...(v.case ? { case_id: v.case } : {}),
+          ...(v.note ? { note: v.note } : {}),
+        });
+      else if (command === "hypothesis" && subcommand === "update")
+        result = updateHypothesis(engine.store, engine.scope, {
+          id: v.id,
+          ...(v.statement ? { statement: v.statement } : {}),
+          ...(v.claim ? { claim: v.claim } : {}),
+          ...(v.entities ? { entity_ids: hashes(v.entities) } : {}),
+          ...(v.evidence ? { evidence_ids: hashes(v.evidence) } : {}),
+          ...(v.case ? { case_id: v.case } : {}),
+          ...(v.note ? { note: v.note } : {}),
+        });
+      else if (command === "hypothesis" && subcommand === "close")
+        result = closeHypothesis(engine.store, {
+          id: v.id,
+          status: v.status,
+          reason: v.reason,
+          analyst_id: v.analyst,
+        });
+      else if (command === "hypothesis" && subcommand === "list")
+        result = listHypotheses(engine.store, {
+          ...(v.case ? { case_id: v.case } : {}),
+          ...(v.status ? { status: v.status } : {}),
+          ...(v.limit ? { limit: Number(v.limit) } : {}),
+          ...(v.cursor ? { cursor: v.cursor } : {}),
+        });
+      else if (command === "hypothesis" && subcommand === "evaluate")
+        result = evaluateHypothesis(engine.store, engine.scope, gates, {
+          id: v.id,
+        });
+      else if (command === "case" && subcommand === "create")
+        result = createCase(engine.store, engine.scope, {
+          title: v.title,
+          summary: v.summary,
+          ...(v.investigation ? { investigations: [v.investigation] } : {}),
+          ...(v.target ? { targets: [v.target] } : {}),
+          ...(v.hypothesis ? { hypothesis_ids: [v.hypothesis] } : {}),
+          ...(v.decision ? { decision_ids: [v.decision] } : {}),
+          ...(v.note ? { notes: [v.note] } : {}),
+        });
+      else if (command === "case" && subcommand === "list")
+        result = listCases(engine.store, {
+          ...(v.limit ? { limit: Number(v.limit) } : {}),
+          ...(v.cursor ? { cursor: v.cursor } : {}),
+        });
+      else if (command === "case" && subcommand === "summary")
+        result = caseSummary(engine.store, engine.scope, { case_id: v.id });
+      else if (command === "case" && subcommand === "report") {
+        const format = v.format ?? "json";
+        if (!["json", "markdown"].includes(format))
+          throw new Error("INVALID_REPORT_FORMAT");
+        const body = caseReport(engine.store, engine.scope, gates, {
+          case_id: v.id,
+          format,
+        });
+        if (v.output) {
+          writeFileSync(
+            v.output,
+            format === "markdown"
+              ? body.markdown
+              : JSON.stringify(body, null, 2) + "\n",
+            { mode: 0o600, flag: "wx" },
+          );
+          result = {
+            status: "completed",
+            format,
+            path: v.output,
+            hypotheses: body.sections.hypotheses.length,
+            decisions: body.sections.confirmed_analyst_decisions.length,
+          };
+        } else result = body;
+      } else if (command === "case" && subcommand === "export-stix") {
+        const exported = exportCaseStix(engine.store, engine.scope, {
+          case_id: v.id,
+        });
+        if (v.output) {
+          writeFileSync(
+            v.output,
+            JSON.stringify(exported.bundle, null, 2) + "\n",
+            { mode: 0o600, flag: "wx" },
+          );
+          const { bundle, ...rest } = exported;
+          result = {
+            status: "completed",
+            path: v.output,
+            object_count: bundle.objects.length,
+            ...rest,
+          };
+        } else result = exported;
+      } else throw new Error("UNKNOWN_COMMAND");
     } else if (command === "phishing-report") {
       const format = v.format ?? "json";
       if (!["json", "markdown", "html"].includes(format))

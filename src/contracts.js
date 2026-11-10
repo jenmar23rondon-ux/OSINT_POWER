@@ -9,6 +9,14 @@ import {
 } from "./monitor.js";
 import { StixExportResult } from "./stix.js";
 import { AssessResult, ExplainAssetResult } from "./evidence-intelligence.js";
+import {
+  CaseListResult,
+  CaseReportResult,
+  CaseSummaryResult,
+  EvaluateHypothesisResult,
+  HypothesisListResult,
+  HypothesisResult,
+} from "./cases.js";
 
 const text = z.string(),
   count = z.number().int().nonnegative(),
@@ -596,6 +604,16 @@ export const RESULT_SCHEMAS = {
   monitor_changes: MonitorChangesResult,
   list_monitors: MonitorListResult,
   export_stix: StixExportResult,
+  create_hypothesis: HypothesisResult,
+  update_hypothesis: HypothesisResult,
+  close_hypothesis: HypothesisResult,
+  list_hypotheses: HypothesisListResult,
+  evaluate_hypothesis: EvaluateHypothesisResult,
+  create_case: CaseSummaryResult,
+  list_cases: CaseListResult,
+  case_summary: CaseSummaryResult,
+  case_report: CaseReportResult,
+  export_case_stix: StixExportResult,
 };
 
 const transient =

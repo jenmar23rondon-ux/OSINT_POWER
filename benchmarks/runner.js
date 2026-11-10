@@ -8,6 +8,8 @@ import { explainEntity } from "../src/state.js";
 import { assessAssets } from "../src/evidence-intelligence.js";
 import { blockedCandidate, generateLookalikes } from "../src/phishing.js";
 import { diffAssets } from "../src/monitor.js";
+import { createHypothesis, evaluateHypothesis } from "../src/cases.js";
+import { recordDecision } from "../src/review.js";
 
 export async function runBenchmark(
   fixtures = JSON.parse(
@@ -16,6 +18,18 @@ export async function runBenchmark(
 ) {
   const cases = [],
     sourceYield = new Map();
+  const hypothesisScore = {
+    labeled: 0,
+    true_positives: 0,
+    false_positives: 0,
+    false_negatives: 0,
+    false_confirmations: 0,
+    weakened_expected: 0,
+    weakened_matches: 0,
+    adversarial: 0,
+    adversarial_passed: 0,
+    scope_rejections: 0,
+  };
   const attribution = {
     baseline_v0_4: {
       labeled: 0,
@@ -94,16 +108,6 @@ export async function runBenchmark(
         metric.http_requests += requests - beforeRequests;
         sourceYield.set(step.adapter, metric);
       }
-      const actualEntities = store.db
-        .prepare("SELECT type,value FROM entities")
-        .all()
-        .map((r) => JSON.stringify([r.type, r.value]));
-      const actualRelations = store.db
-        .prepare(
-          "SELECT a.type AS at,a.value AS av,e.relation,b.type AS bt,b.value AS bv FROM edges e JOIN entities a ON a.id=e.from_id JOIN entities b ON b.id=e.to_id",
-        )
-        .all()
-        .map((r) => JSON.stringify([r.at, r.av, r.relation, r.bt, r.bv]));
       const measure = (actual, gold) => {
         const a = new Set(actual),
           g = new Set(gold.map((v) => JSON.stringify(v)));
@@ -309,6 +313,133 @@ export async function runBenchmark(
           score(attribution.baseline_v0_4, legacyVerified, goldVerified);
         }
       }
+      const hypothesisSpecs = [
+        ...(fixture.hypothesis ? [fixture.hypothesis] : []),
+        ...(fixture.hypotheses ?? []),
+      ];
+      for (const spec of hypothesisSpecs) {
+        const before = checkFailures;
+        if (spec.adversarial) hypothesisScore.adversarial++;
+        if (spec.inject) store.ingest(spec.inject);
+        const entityIds = (spec.entities ?? []).map(([type, value]) =>
+          hash([type, value]),
+        );
+        let created = null;
+        try {
+          created = createHypothesis(store, engine.scope, {
+            statement: spec.statement,
+            claim: spec.claim,
+            entity_ids: entityIds,
+          });
+        } catch (error) {
+          if (spec.error && error.message === spec.error) {
+            if (spec.error === "OUT_OF_SCOPE")
+              hypothesisScore.scope_rejections++;
+          } else checkFailures++;
+          created = null;
+        }
+        if (spec.error && created) checkFailures++;
+        if (created && !spec.error) {
+          if (spec.record_accept)
+            recordDecision(store, {
+              subject_kind: "entity",
+              subject_id: entityIds[0],
+              decision: "accept",
+              reason:
+                "Benchmark analyst accept does not confirm the hypothesis.",
+              analyst_id: "analyst-1",
+            });
+          const evaluation = evaluateHypothesis(
+            store,
+            engine.scope,
+            {
+              network: engine.config.network,
+              active: engine.config.active,
+              enabledAdapters: engine.config.enabledAdapters,
+            },
+            { id: created.hypothesis.id },
+            { asOf: spec.as_of },
+          );
+          if (evaluation.finding !== false) checkFailures++;
+          if (
+            evaluation.executes !== false ||
+            evaluation.network !== false ||
+            evaluation.collection !== false
+          )
+            checkFailures++;
+          if (evaluation.next_steps.some((item) => item.executes !== false))
+            checkFailures++;
+          if (
+            evaluation.next_steps.some(
+              (item) => item.requires_gate && item.within_gates !== false,
+            )
+          )
+            checkFailures++;
+          if (
+            spec.assessed_status &&
+            evaluation.assessed_status !== spec.assessed_status
+          )
+            checkFailures++;
+          if (
+            spec.confirmed !== undefined &&
+            evaluation.confirmed !== spec.confirmed
+          )
+            checkFailures++;
+          if (evaluation.confirmed && !spec.confirmed)
+            hypothesisScore.false_confirmations++;
+          if (
+            spec.supporting_min !== undefined &&
+            evaluation.supporting.length < spec.supporting_min
+          )
+            checkFailures++;
+          if (
+            spec.contradicting_min !== undefined &&
+            evaluation.contradicting.length < spec.contradicting_min
+          )
+            checkFailures++;
+          if (
+            spec.missing_min !== undefined &&
+            evaluation.missing.length < spec.missing_min
+          )
+            checkFailures++;
+          if (
+            spec.requires_gate &&
+            !evaluation.next_steps.some(
+              (item) =>
+                item.requires_gate === spec.requires_gate &&
+                item.within_gates === false &&
+                item.executes === false,
+            )
+          )
+            checkFailures++;
+          if (evaluation.stored_status === "analyst-confirmed") checkFailures++;
+          const predicted =
+            evaluation.assessed_status === "supported-pending-review";
+          const gold = spec.support === true;
+          hypothesisScore.labeled++;
+          if (predicted && gold) hypothesisScore.true_positives++;
+          else if (predicted && !gold) {
+            hypothesisScore.false_positives++;
+          } else if (!predicted && gold) hypothesisScore.false_negatives++;
+          if (spec.assessed_status === "weakened") {
+            hypothesisScore.weakened_expected++;
+            if (evaluation.assessed_status === "weakened")
+              hypothesisScore.weakened_matches++;
+          }
+        }
+        if (spec.adversarial && checkFailures === before)
+          hypothesisScore.adversarial_passed++;
+      }
+      const actualEntities = store.db
+        .prepare("SELECT type,value FROM entities")
+        .all()
+        .map((r) => JSON.stringify([r.type, r.value]));
+      const actualRelations = store.db
+        .prepare(
+          "SELECT a.type AS at,a.value AS av,e.relation,b.type AS bt,b.value AS bv FROM edges e JOIN entities a ON a.id=e.from_id JOIN entities b ON b.id=e.to_id",
+        )
+        .all()
+        .map((r) => JSON.stringify([r.at, r.av, r.relation, r.bt, r.bv]));
       const entities = measure(actualEntities, fixture.entities),
         relations = measure(actualRelations, fixture.relations);
       cases.push({
@@ -371,6 +502,7 @@ export async function runBenchmark(
         baseline_v0_4: rate(attribution.baseline_v0_4),
         evidence_intelligence: rate(attribution.evidence_intelligence),
       },
+      hypothesis: rate(hypothesisScore),
     },
     source_yield: [...sourceYield.values()].sort((a, b) =>
       a.source.localeCompare(b.source),
@@ -378,6 +510,7 @@ export async function runBenchmark(
     limitations: [
       "Synthetic fixtures are regression controls, not real-world accuracy estimates.",
       "Attribution scores compare verified organization-domain claims. v0.4 explain_entity never verifies ownership. Shared infrastructure and candidate identity links are not true positives.",
+      "Hypothesis scores compare assessed support with the fixture label. supported-pending-review is not analyst-confirmed. A false confirmation is an evaluation that reports confirmed without that label. Adversarial cases include shared infrastructure, shared handles, contradictions, and an out-of-scope attachment.",
       "Source yield is order-dependent. Mock HTTP counts exclude native tools' internal requests.",
       "No external network, real people, credentials or model calls are used.",
     ],
