@@ -43,6 +43,12 @@ import {
   monitorChanges,
   runMonitor,
 } from "./monitor.js";
+import {
+  AssessInput,
+  ExplainAssetInput,
+  assessAssets,
+  explainAsset,
+} from "./evidence-intelligence.js";
 
 export function createServer(engine) {
   const server = new McpServer({ name: "osint-power", version: "0.4.0" });
@@ -213,6 +219,18 @@ export function createServer(engine) {
     "Compare immutable captured evidence with pagination and coverage-gap detection. Absence is never proof of removal.",
     CompareInput,
     (input) => compareRuns(engine.store, input),
+  );
+  register(
+    "assess_evidence",
+    "Read a page of cross-source assessments for in-scope domains, IPs, ASNs, URLs and technologies. Each dimension keeps its evidence ids. Shared infrastructure and shared names are not ownership or identity. The next action is a suggestion and does not collect or record a decision.",
+    AssessInput,
+    (input) => assessAssets(engine.store, engine.scope, engine.config, input),
+  );
+  register(
+    "explain_asset",
+    "Read one in-scope asset assessment: historical existence, current activity, ownership, conflicts, source independence, analyst review and a suggestion that does not execute. A candidate is not a confirmed finding.",
+    ExplainAssetInput,
+    (input) => explainAsset(engine.store, engine.scope, engine.config, input),
   );
   register(
     "explain_entity",

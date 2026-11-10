@@ -8,6 +8,7 @@ import {
   MonitorRunResult,
 } from "./monitor.js";
 import { StixExportResult } from "./stix.js";
+import { AssessResult, ExplainAssetResult } from "./evidence-intelligence.js";
 
 const text = z.string(),
   count = z.number().int().nonnegative(),
@@ -480,6 +481,8 @@ export const RESULT_SCHEMAS = {
     sources: row({ before: sources, after: sources }),
     interpretation: text,
   }),
+  assess_evidence: AssessResult,
+  explain_asset: ExplainAssetResult,
   explain_entity: row({
     entity,
     evidence,

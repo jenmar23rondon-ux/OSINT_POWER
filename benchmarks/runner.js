@@ -5,6 +5,7 @@ import { performance } from "node:perf_hooks";
 import { Engine } from "../src/engine.js";
 import { Store, hash } from "../src/store.js";
 import { explainEntity } from "../src/state.js";
+import { assessAssets } from "../src/evidence-intelligence.js";
 import { blockedCandidate, generateLookalikes } from "../src/phishing.js";
 import { diffAssets } from "../src/monitor.js";
 
@@ -15,6 +16,22 @@ export async function runBenchmark(
 ) {
   const cases = [],
     sourceYield = new Map();
+  const attribution = {
+    baseline_v0_4: {
+      labeled: 0,
+      true_positives: 0,
+      false_positives: 0,
+      false_negatives: 0,
+      false_attributions: 0,
+    },
+    evidence_intelligence: {
+      labeled: 0,
+      true_positives: 0,
+      false_positives: 0,
+      false_negatives: 0,
+      false_attributions: 0,
+    },
+  };
   const started = performance.now();
   for (const fixture of fixtures) {
     const store = new Store();
@@ -186,6 +203,112 @@ export async function runBenchmark(
         )
           checkFailures++;
       }
+      if (fixture.intelligence) {
+        const spec = fixture.intelligence;
+        const page = assessAssets(
+          store,
+          engine.scope,
+          {
+            network: engine.config.network,
+            active: engine.config.active,
+            enabledAdapters: engine.config.enabledAdapters,
+          },
+          { limit: 100 },
+          { asOf: spec.as_of },
+        );
+        const labeled = spec.assets ?? [];
+        const verifiedGold = new Set(
+          labeled
+            .filter((asset) => asset.ownership === "verified")
+            .map((asset) => `${asset.type}:${asset.value}`),
+        );
+        for (const item of page.items) {
+          if (item.next_action.executes !== false) checkFailures++;
+          if (
+            item.ownership.status === "verified" &&
+            !verifiedGold.has(`${item.type}:${item.value}`)
+          )
+            checkFailures++;
+        }
+        if (
+          spec.confirmed_links !== undefined &&
+          page.identity_resolution.confirmed_count !== spec.confirmed_links
+        )
+          checkFailures++;
+        if (
+          spec.candidate_links_min !== undefined &&
+          page.identity_resolution.candidate_count < spec.candidate_links_min
+        )
+          checkFailures++;
+        const expectAsset = (actual, wanted) => {
+          if (!actual) return false;
+          if (wanted.ownership && actual.ownership.status !== wanted.ownership)
+            return false;
+          if (wanted.basis && actual.ownership.basis !== wanted.basis)
+            return false;
+          if (
+            wanted.independent_sources !== undefined &&
+            actual.ownership.independent_sources !== wanted.independent_sources
+          )
+            return false;
+          if (
+            wanted.historical &&
+            actual.historical_existence.status !== wanted.historical
+          )
+            return false;
+          if (
+            wanted.activity &&
+            actual.current_activity.status !== wanted.activity
+          )
+            return false;
+          if (
+            wanted.independent_groups !== undefined &&
+            actual.source_independence.independent_groups !==
+              wanted.independent_groups
+          )
+            return false;
+          if (
+            wanted.conflicts_min !== undefined &&
+            actual.conflicts.length < wanted.conflicts_min
+          )
+            return false;
+          if (
+            wanted.next_action &&
+            actual.next_action.action !== wanted.next_action
+          )
+            return false;
+          return true;
+        };
+        const score = (bucket, predicted, goldVerified) => {
+          bucket.labeled++;
+          if (predicted && goldVerified) bucket.true_positives++;
+          else if (predicted && !goldVerified) {
+            bucket.false_positives++;
+            bucket.false_attributions++;
+          } else if (!predicted && goldVerified) bucket.false_negatives++;
+        };
+        for (const wanted of labeled) {
+          const actual = page.items.find(
+            (item) => item.type === wanted.type && item.value === wanted.value,
+          );
+          if (!expectAsset(actual, wanted)) checkFailures++;
+          const goldVerified = wanted.ownership === "verified";
+          score(
+            attribution.evidence_intelligence,
+            actual?.ownership.status === "verified",
+            goldVerified,
+          );
+          let legacyVerified = false;
+          try {
+            legacyVerified =
+              explainEntity(store, hash([wanted.type, wanted.value])).assessment
+                .ownership === "verified";
+          } catch {
+            legacyVerified = false;
+          }
+          score(attribution.baseline_v0_4, legacyVerified, goldVerified);
+        }
+      }
       const entities = measure(actualEntities, fixture.entities),
         relations = measure(actualRelations, fixture.relations);
       cases.push({
@@ -208,6 +331,15 @@ export async function runBenchmark(
       store.close();
     }
   }
+  const rate = (score) => ({
+    ...score,
+    precision:
+      score.true_positives /
+      Math.max(1, score.true_positives + score.false_positives),
+    recall:
+      score.true_positives /
+      Math.max(1, score.true_positives + score.false_negatives),
+  });
   const aggregate = (kind) => {
     const n = cases.reduce(
       (all, c) => ({
@@ -235,12 +367,17 @@ export async function runBenchmark(
       semantic_failures: cases.reduce((n, c) => n + c.semantic_failures, 0),
       http_requests: cases.reduce((n, c) => n + c.http_requests, 0),
       elapsed_ms: Math.round(performance.now() - started),
+      attribution: {
+        baseline_v0_4: rate(attribution.baseline_v0_4),
+        evidence_intelligence: rate(attribution.evidence_intelligence),
+      },
     },
     source_yield: [...sourceYield.values()].sort((a, b) =>
       a.source.localeCompare(b.source),
     ),
     limitations: [
       "Synthetic fixtures are regression controls, not real-world accuracy estimates.",
+      "Attribution scores compare verified organization-domain claims. v0.4 explain_entity never verifies ownership. Shared infrastructure and candidate identity links are not true positives.",
       "Source yield is order-dependent. Mock HTTP counts exclude native tools' internal requests.",
       "No external network, real people, credentials or model calls are used.",
     ],

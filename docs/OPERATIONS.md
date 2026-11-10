@@ -155,6 +155,8 @@ The core report includes at most 50 entities, 50 relationships and 20 recent run
 | source_health         | Persisted quotas and cooldowns                                             |
 | compare_runs          | Paginated immutable evidence comparison                                    |
 | explain_entity        | Provenance and source-family explanation                                   |
+| assess_evidence       | Read-only cross-source assessment page; suggestions do not collect         |
+| explain_asset         | One asset's assessment, conflicts, review state and suggestion             |
 | plan_investigation    | Rank eligible actions without execution                                    |
 | list_review_queue     | Unreviewed entities, candidate links, contradictions                       |
 | record_decision       | Append an analyst decision; does not confirm identity                      |
@@ -167,7 +169,7 @@ The core report includes at most 50 entities, 50 relationships and 20 recent run
 | list_monitors         | List definitions and the latest run status                                 |
 | export_stix           | Read-only STIX 2.1 bundle; suspected leads stay suspected                  |
 
-There are **30 MCP tools** in total, including export_evidence, export_stix, the three review tools, the two phishing tools and the four monitor tools. Existing tool names and output schemas are unchanged. execute=true on the seven workflows uses durable jobs. The phishing scan and `monitor run` are synchronous and are not durable jobs. The legacy passive_pipeline is still a synchronous convenience command, without durable workflow recovery. MCP response-envelope changes are documented in the [v0.4 migration guide](V0.4.md). Backup, retention, STIX filters, and the release checklist are in [PRODUCTION.md](PRODUCTION.md).
+There are **32 MCP tools** in total, including export_evidence, export_stix, the three review tools, `assess_evidence`, `explain_asset`, the two phishing tools and the four monitor tools. Existing tool names and output schemas are unchanged. execute=true on the seven workflows uses durable jobs. The phishing scan and `monitor run` are synchronous and are not durable jobs. The legacy passive_pipeline is still a synchronous convenience command, without durable workflow recovery. MCP response-envelope changes are documented in the [v0.4 migration guide](V0.4.md). Backup, retention, STIX filters, and the release checklist are in [PRODUCTION.md](PRODUCTION.md).
 
 ## Incremental monitor
 

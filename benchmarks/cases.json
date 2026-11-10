@@ -559,5 +559,829 @@
         "coverage_gap": ["host:192.0.2.10"]
       }
     }
+  },
+  {
+    "id": "independent-org-attribution",
+    "tags": ["attribution", "evidence-intelligence"],
+    "steps": [
+      {
+        "adapter": "jsonl",
+        "data": {
+          "type": "domain",
+          "value": "example.com",
+          "source": "annual-report",
+          "confidence": 0.6,
+          "timestamp": "2026-10-20T00:00:00.000Z",
+          "evidence": { "company": "example.com" }
+        }
+      },
+      {
+        "adapter": "jsonl",
+        "data": {
+          "type": "domain",
+          "value": "example.com",
+          "source": "registry-extract",
+          "confidence": 0.6,
+          "timestamp": "2026-10-21T00:00:00.000Z",
+          "evidence": { "company": "example.com" }
+        }
+      }
+    ],
+    "entities": [["domain", "example.com"]],
+    "relations": [],
+    "intelligence": {
+      "as_of": "2026-11-10T00:00:00.000Z",
+      "assets": [
+        {
+          "type": "domain",
+          "value": "example.com",
+          "ownership": "verified",
+          "basis": "independent_in_scope_org_domain",
+          "independent_sources": 2,
+          "independent_groups": 2,
+          "historical": "not_documented",
+          "activity": "not_confirmed",
+          "next_action": "request human review before attribution"
+        }
+      ]
+    }
+  },
+  {
+    "id": "independent-technology-attribution",
+    "tags": ["attribution", "evidence-intelligence"],
+    "steps": [
+      {
+        "adapter": "jsonl",
+        "data": {
+          "type": "technology",
+          "value": "Example Docs",
+          "source": "handbook",
+          "confidence": 0.6,
+          "timestamp": "2026-10-20T00:00:00.000Z",
+          "evidence": { "company": "example.com" }
+        }
+      },
+      {
+        "adapter": "jsonl",
+        "data": {
+          "type": "technology",
+          "value": "Example Docs",
+          "source": "careers",
+          "confidence": 0.6,
+          "timestamp": "2026-10-21T00:00:00.000Z",
+          "evidence": { "company": "example.com" }
+        }
+      }
+    ],
+    "entities": [["technology", "Example Docs"]],
+    "relations": [],
+    "intelligence": {
+      "as_of": "2026-11-10T00:00:00.000Z",
+      "assets": [
+        {
+          "type": "technology",
+          "value": "Example Docs",
+          "ownership": "verified",
+          "basis": "independent_in_scope_org_domain",
+          "independent_sources": 2,
+          "historical": "not_documented",
+          "activity": "not_confirmed"
+        }
+      ]
+    }
+  },
+  {
+    "id": "same-run-sources-count-once",
+    "tags": ["attribution", "independence", "adversarial"],
+    "steps": [
+      {
+        "adapter": "jsonl",
+        "data": [
+          {
+            "type": "domain",
+            "value": "once.example.com",
+            "source": "alpha",
+            "confidence": 0.6,
+            "timestamp": "2026-10-20T00:00:00.000Z",
+            "evidence": { "company": "example.com" }
+          },
+          {
+            "type": "domain",
+            "value": "once.example.com",
+            "source": "beta",
+            "confidence": 0.6,
+            "timestamp": "2026-10-20T00:00:00.000Z",
+            "evidence": { "company": "example.com" }
+          }
+        ]
+      }
+    ],
+    "entities": [["domain", "once.example.com"]],
+    "relations": [],
+    "intelligence": {
+      "as_of": "2026-11-10T00:00:00.000Z",
+      "assets": [
+        {
+          "type": "domain",
+          "value": "once.example.com",
+          "ownership": "unverified",
+          "basis": "duplicate_or_single_source",
+          "independent_sources": 1,
+          "independent_groups": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "duplicate-upstream-counts-once",
+    "tags": ["attribution", "independence", "adversarial"],
+    "steps": [
+      {
+        "adapter": "jsonl",
+        "data": {
+          "type": "domain",
+          "value": "up.example.com",
+          "source": "adapter-a",
+          "confidence": 0.6,
+          "timestamp": "2026-10-20T00:00:00.000Z",
+          "evidence": { "company": "example.com", "upstream": "iana" }
+        }
+      },
+      {
+        "adapter": "jsonl",
+        "data": {
+          "type": "domain",
+          "value": "up.example.com",
+          "source": "adapter-b",
+          "confidence": 0.6,
+          "timestamp": "2026-10-21T00:00:00.000Z",
+          "evidence": { "company": "example.com", "upstream": "iana" }
+        }
+      }
+    ],
+    "entities": [["domain", "up.example.com"]],
+    "relations": [],
+    "intelligence": {
+      "as_of": "2026-11-10T00:00:00.000Z",
+      "assets": [
+        {
+          "type": "domain",
+          "value": "up.example.com",
+          "ownership": "unverified",
+          "basis": "duplicate_or_single_source",
+          "independent_sources": 1,
+          "independent_groups": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "mirrored-source-counts-once",
+    "tags": ["attribution", "independence", "adversarial"],
+    "steps": [
+      {
+        "adapter": "jsonl",
+        "data": {
+          "type": "domain",
+          "value": "mirror.example.com",
+          "source": "origin",
+          "confidence": 0.6,
+          "timestamp": "2026-10-20T00:00:00.000Z",
+          "evidence": { "company": "example.com" }
+        }
+      },
+      {
+        "adapter": "jsonl",
+        "data": {
+          "type": "domain",
+          "value": "mirror.example.com",
+          "source": "copy",
+          "confidence": 0.6,
+          "timestamp": "2026-10-21T00:00:00.000Z",
+          "evidence": { "company": "example.com", "mirror_of": "origin" }
+        }
+      }
+    ],
+    "entities": [["domain", "mirror.example.com"]],
+    "relations": [],
+    "intelligence": {
+      "as_of": "2026-11-10T00:00:00.000Z",
+      "assets": [
+        {
+          "type": "domain",
+          "value": "mirror.example.com",
+          "ownership": "unverified",
+          "basis": "duplicate_or_single_source",
+          "independent_sources": 1,
+          "independent_groups": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "shared-ip-not-ownership",
+    "tags": ["attribution", "shared-infrastructure", "adversarial"],
+    "steps": [
+      {
+        "adapter": "jsonl",
+        "data": [
+          {
+            "type": "domain",
+            "value": "a.example.com",
+            "source": "dnsx",
+            "confidence": 0.8,
+            "timestamp": "2026-10-20T00:00:00.000Z",
+            "evidence": {}
+          },
+          {
+            "type": "domain",
+            "value": "b.example.com",
+            "source": "dnsx",
+            "confidence": 0.8,
+            "timestamp": "2026-10-20T00:00:00.000Z",
+            "evidence": {}
+          },
+          {
+            "type": "ip",
+            "value": "192.0.2.77",
+            "source": "dnsx",
+            "confidence": 0.8,
+            "timestamp": "2026-10-20T00:00:00.000Z",
+            "evidence": { "host": "a.example.com", "company": "example.com" }
+          }
+        ]
+      },
+      {
+        "adapter": "jsonl",
+        "data": {
+          "type": "ip",
+          "value": "192.0.2.77",
+          "source": "dns-mirror",
+          "confidence": 0.8,
+          "timestamp": "2026-10-21T00:00:00.000Z",
+          "evidence": { "host": "b.example.com", "company": "example.com" }
+        }
+      }
+    ],
+    "entities": [
+      ["domain", "a.example.com"],
+      ["domain", "b.example.com"],
+      ["ip", "192.0.2.77"]
+    ],
+    "relations": [
+      ["domain", "a.example.com", "resolves_to", "ip", "192.0.2.77"],
+      ["domain", "b.example.com", "resolves_to", "ip", "192.0.2.77"]
+    ],
+    "intelligence": {
+      "as_of": "2026-11-10T00:00:00.000Z",
+      "assets": [
+        {
+          "type": "domain",
+          "value": "a.example.com",
+          "ownership": "unverified",
+          "basis": "no_org_domain_claim",
+          "activity": "confirmed"
+        },
+        {
+          "type": "domain",
+          "value": "b.example.com",
+          "ownership": "unverified",
+          "activity": "confirmed"
+        },
+        {
+          "type": "ip",
+          "value": "192.0.2.77",
+          "ownership": "unverified",
+          "basis": "shared_ip",
+          "independent_sources": 2,
+          "activity": "confirmed"
+        }
+      ]
+    }
+  },
+  {
+    "id": "cdn-not-ownership",
+    "tags": ["attribution", "cdn", "adversarial"],
+    "steps": [
+      {
+        "adapter": "jsonl",
+        "data": [
+          {
+            "type": "domain",
+            "value": "cdn.example.com",
+            "source": "edge-a",
+            "confidence": 0.6,
+            "timestamp": "2026-10-20T00:00:00.000Z",
+            "evidence": {
+              "company": "example.com",
+              "technology": ["cloudflare"]
+            }
+          },
+          {
+            "type": "ip",
+            "value": "192.0.2.88",
+            "source": "httpx",
+            "confidence": 0.8,
+            "timestamp": "2026-10-20T00:00:00.000Z",
+            "evidence": {
+              "host": "cdn.example.com",
+              "company": "example.com",
+              "technology": ["Cloudflare"],
+              "status": 200
+            }
+          }
+        ]
+      },
+      {
+        "adapter": "jsonl",
+        "data": [
+          {
+            "type": "domain",
+            "value": "cdn.example.com",
+            "source": "edge-b",
+            "confidence": 0.6,
+            "timestamp": "2026-10-21T00:00:00.000Z",
+            "evidence": {
+              "company": "example.com",
+              "technology": ["cloudflare"]
+            }
+          },
+          {
+            "type": "ip",
+            "value": "192.0.2.88",
+            "source": "edge-b",
+            "confidence": 0.8,
+            "timestamp": "2026-10-21T00:00:00.000Z",
+            "evidence": {
+              "host": "cdn.example.com",
+              "company": "example.com",
+              "technology": ["cloudflare"],
+              "status": 200
+            }
+          }
+        ]
+      }
+    ],
+    "entities": [
+      ["domain", "cdn.example.com"],
+      ["ip", "192.0.2.88"]
+    ],
+    "relations": [
+      ["domain", "cdn.example.com", "resolves_to", "ip", "192.0.2.88"]
+    ],
+    "intelligence": {
+      "as_of": "2026-11-10T00:00:00.000Z",
+      "assets": [
+        {
+          "type": "domain",
+          "value": "cdn.example.com",
+          "ownership": "unverified",
+          "basis": "cdn",
+          "independent_sources": 2
+        },
+        {
+          "type": "ip",
+          "value": "192.0.2.88",
+          "ownership": "unverified",
+          "basis": "cdn",
+          "independent_sources": 2,
+          "activity": "confirmed"
+        }
+      ]
+    }
+  },
+  {
+    "id": "hosting-asn-not-ownership",
+    "tags": ["attribution", "asn", "adversarial"],
+    "steps": [
+      {
+        "adapter": "jsonl",
+        "data": {
+          "type": "asn",
+          "value": "AS64500",
+          "source": "routing",
+          "confidence": 0.8,
+          "timestamp": "2026-10-20T00:00:00.000Z",
+          "evidence": {
+            "host": "a.example.com",
+            "ip": "192.0.2.40",
+            "company": "example.com"
+          }
+        }
+      },
+      {
+        "adapter": "jsonl",
+        "data": {
+          "type": "asn",
+          "value": "AS64500",
+          "source": "rdap",
+          "confidence": 0.8,
+          "timestamp": "2026-10-21T00:00:00.000Z",
+          "evidence": {
+            "host": "a.example.com",
+            "ip": "192.0.2.40",
+            "company": "example.com"
+          }
+        }
+      }
+    ],
+    "entities": [["asn", "AS64500"]],
+    "relations": [],
+    "intelligence": {
+      "as_of": "2026-11-10T00:00:00.000Z",
+      "assets": [
+        {
+          "type": "asn",
+          "value": "AS64500",
+          "ownership": "unverified",
+          "basis": "hosting_or_registry",
+          "independent_sources": 2,
+          "historical": "not_documented",
+          "activity": "not_confirmed"
+        }
+      ]
+    }
+  },
+  {
+    "id": "certificate-not-ownership",
+    "tags": ["attribution", "historical", "adversarial"],
+    "steps": [
+      {
+        "adapter": "crtsh",
+        "collect": true,
+        "data": [{ "id": 9, "name_value": "certs.example.com" }]
+      }
+    ],
+    "entities": [["domain", "certs.example.com"]],
+    "relations": [],
+    "intelligence": {
+      "as_of": "2026-11-10T00:00:00.000Z",
+      "assets": [
+        {
+          "type": "domain",
+          "value": "certs.example.com",
+          "ownership": "unverified",
+          "basis": "no_org_domain_claim",
+          "historical": "documented",
+          "activity": "not_confirmed",
+          "next_action": "request human review before attribution"
+        }
+      ]
+    }
+  },
+  {
+    "id": "historical-archive-not-active",
+    "tags": ["historical", "activity", "evidence-intelligence"],
+    "steps": [
+      {
+        "adapter": "wayback",
+        "collect": true,
+        "data": [
+          ["timestamp", "original", "statuscode", "digest"],
+          [
+            "20190101000000",
+            "https://old.example.com/legacy",
+            "200",
+            "digest-a"
+          ]
+        ]
+      }
+    ],
+    "entities": [
+      ["domain", "old.example.com"],
+      ["url", "https://old.example.com/legacy"]
+    ],
+    "relations": [
+      [
+        "domain",
+        "old.example.com",
+        "historically_served",
+        "url",
+        "https://old.example.com/legacy"
+      ]
+    ],
+    "intelligence": {
+      "as_of": "2026-11-10T00:00:00.000Z",
+      "assets": [
+        {
+          "type": "domain",
+          "value": "old.example.com",
+          "historical": "documented",
+          "activity": "not_confirmed",
+          "ownership": "unverified"
+        },
+        {
+          "type": "url",
+          "value": "https://old.example.com/legacy",
+          "historical": "documented",
+          "activity": "not_confirmed",
+          "ownership": "unverified"
+        }
+      ]
+    }
+  },
+  {
+    "id": "historical-conflicts-with-recent",
+    "tags": ["contradiction", "historical", "adversarial"],
+    "steps": [
+      {
+        "adapter": "wayback",
+        "collect": true,
+        "data": [
+          ["timestamp", "original", "statuscode", "digest"],
+          [
+            "20190601000000",
+            "https://old.example.com/legacy",
+            "200",
+            "digest-b"
+          ]
+        ]
+      },
+      {
+        "adapter": "jsonl",
+        "data": {
+          "type": "url",
+          "value": "https://old.example.com/legacy",
+          "source": "httpx",
+          "confidence": 0.8,
+          "timestamp": "2026-10-20T00:00:00.000Z",
+          "evidence": { "status": 404 }
+        }
+      }
+    ],
+    "entities": [
+      ["domain", "old.example.com"],
+      ["url", "https://old.example.com/legacy"]
+    ],
+    "relations": [
+      [
+        "domain",
+        "old.example.com",
+        "historically_served",
+        "url",
+        "https://old.example.com/legacy"
+      ],
+      [
+        "domain",
+        "old.example.com",
+        "serves",
+        "url",
+        "https://old.example.com/legacy"
+      ]
+    ],
+    "intelligence": {
+      "as_of": "2026-11-10T00:00:00.000Z",
+      "assets": [
+        {
+          "type": "domain",
+          "value": "old.example.com",
+          "historical": "documented",
+          "activity": "confirmed",
+          "ownership": "unverified",
+          "conflicts_min": 1
+        },
+        {
+          "type": "url",
+          "value": "https://old.example.com/legacy",
+          "historical": "documented",
+          "activity": "confirmed",
+          "ownership": "unverified",
+          "conflicts_min": 1,
+          "next_action": "request human review before attribution"
+        }
+      ]
+    }
+  },
+  {
+    "id": "recent-dns-contradiction",
+    "tags": ["contradiction", "activity", "adversarial"],
+    "steps": [
+      {
+        "adapter": "jsonl",
+        "data": {
+          "type": "domain",
+          "value": "app.example.com",
+          "source": "dnsx",
+          "confidence": 0.8,
+          "timestamp": "2026-10-20T00:00:00.000Z",
+          "evidence": {}
+        }
+      },
+      {
+        "adapter": "jsonl",
+        "data": {
+          "type": "domain",
+          "value": "app.example.com",
+          "source": "dnsx",
+          "confidence": 0.8,
+          "timestamp": "2026-10-21T00:00:00.000Z",
+          "evidence": { "status": "nxdomain" }
+        }
+      }
+    ],
+    "entities": [["domain", "app.example.com"]],
+    "relations": [],
+    "intelligence": {
+      "as_of": "2026-11-10T00:00:00.000Z",
+      "assets": [
+        {
+          "type": "domain",
+          "value": "app.example.com",
+          "activity": "contradicted",
+          "historical": "not_documented",
+          "ownership": "unverified",
+          "next_action": "request human review before attribution"
+        }
+      ]
+    }
+  },
+  {
+    "id": "foreign-org-contradiction",
+    "tags": ["attribution", "contradiction", "adversarial"],
+    "steps": [
+      {
+        "adapter": "jsonl",
+        "data": {
+          "type": "domain",
+          "value": "example.com",
+          "source": "filing-a",
+          "confidence": 0.6,
+          "timestamp": "2026-10-20T00:00:00.000Z",
+          "evidence": { "company": "example.com" }
+        }
+      },
+      {
+        "adapter": "jsonl",
+        "data": {
+          "type": "domain",
+          "value": "example.com",
+          "source": "filing-b",
+          "confidence": 0.6,
+          "timestamp": "2026-10-21T00:00:00.000Z",
+          "evidence": { "company": "elsewhere.invalid" }
+        }
+      }
+    ],
+    "entities": [["domain", "example.com"]],
+    "relations": [],
+    "intelligence": {
+      "as_of": "2026-11-10T00:00:00.000Z",
+      "assets": [
+        {
+          "type": "domain",
+          "value": "example.com",
+          "ownership": "contradicted",
+          "basis": "foreign_org_domain",
+          "conflicts_min": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "shared-handle-stays-candidate",
+    "tags": ["identity", "adversarial"],
+    "steps": [
+      {
+        "adapter": "jsonl",
+        "data": [
+          {
+            "type": "username",
+            "value": "alex",
+            "source": "site-a",
+            "confidence": 0.4,
+            "timestamp": "2026-10-20T00:00:00.000Z",
+            "evidence": { "name": "Alex Example" }
+          },
+          {
+            "type": "profile",
+            "value": "https://github.com/alex",
+            "source": "site-a",
+            "confidence": 0.4,
+            "timestamp": "2026-10-20T00:00:00.000Z",
+            "evidence": { "username": "alex", "name": "Alex Example" }
+          },
+          {
+            "type": "profile",
+            "value": "https://gitlab.com/alex",
+            "source": "site-b",
+            "confidence": 0.4,
+            "timestamp": "2026-10-21T00:00:00.000Z",
+            "evidence": { "username": "alex", "name": "Alex Example" }
+          }
+        ]
+      }
+    ],
+    "entities": [
+      ["username", "alex"],
+      ["profile", "https://github.com/alex"],
+      ["profile", "https://gitlab.com/alex"]
+    ],
+    "relations": [
+      [
+        "username",
+        "alex",
+        "username_match",
+        "profile",
+        "https://github.com/alex"
+      ],
+      [
+        "username",
+        "alex",
+        "username_match",
+        "profile",
+        "https://gitlab.com/alex"
+      ]
+    ],
+    "intelligence": {
+      "as_of": "2026-11-10T00:00:00.000Z",
+      "confirmed_links": 0,
+      "candidate_links_min": 1,
+      "assets": []
+    }
+  },
+  {
+    "id": "inferred-technology-not-verified",
+    "tags": ["attribution", "adversarial"],
+    "steps": [
+      {
+        "adapter": "jsonl",
+        "data": {
+          "type": "technology",
+          "value": "Example Widget",
+          "source": "careers-a",
+          "confidence": 0.25,
+          "timestamp": "2026-10-20T00:00:00.000Z",
+          "evidence": { "company": "example.com", "inferred": true }
+        }
+      },
+      {
+        "adapter": "jsonl",
+        "data": {
+          "type": "technology",
+          "value": "Example Widget",
+          "source": "careers-b",
+          "confidence": 0.25,
+          "timestamp": "2026-10-21T00:00:00.000Z",
+          "evidence": { "company": "example.com", "inferred": true }
+        }
+      }
+    ],
+    "entities": [["technology", "Example Widget"]],
+    "relations": [],
+    "intelligence": {
+      "as_of": "2026-11-10T00:00:00.000Z",
+      "assets": [
+        {
+          "type": "technology",
+          "value": "Example Widget",
+          "ownership": "unverified",
+          "basis": "inferred_or_ineligible",
+          "independent_sources": 2
+        }
+      ]
+    }
+  },
+  {
+    "id": "public-company-text-not-ownership",
+    "tags": ["attribution", "identity", "adversarial"],
+    "steps": [
+      {
+        "adapter": "jsonl",
+        "data": {
+          "type": "domain",
+          "value": "brand.example.com",
+          "source": "profile-a",
+          "confidence": 0.6,
+          "timestamp": "2026-10-20T00:00:00.000Z",
+          "evidence": { "public_company": "Example Incorporated" }
+        }
+      },
+      {
+        "adapter": "jsonl",
+        "data": {
+          "type": "domain",
+          "value": "brand.example.com",
+          "source": "profile-b",
+          "confidence": 0.6,
+          "timestamp": "2026-10-21T00:00:00.000Z",
+          "evidence": { "public_company": "Example Incorporated" }
+        }
+      }
+    ],
+    "entities": [["domain", "brand.example.com"]],
+    "relations": [],
+    "intelligence": {
+      "as_of": "2026-11-10T00:00:00.000Z",
+      "assets": [
+        {
+          "type": "domain",
+          "value": "brand.example.com",
+          "ownership": "unverified",
+          "basis": "no_org_domain_claim",
+          "independent_sources": 0,
+          "independent_groups": 2
+        }
+      ]
+    }
   }
 ]
