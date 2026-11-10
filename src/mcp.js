@@ -70,6 +70,7 @@ import {
   listHypotheses,
   updateHypothesis,
 } from "./cases.js";
+import { InvestigationGraphInput, investigationGraph } from "./graph-export.js";
 
 export function createServer(engine) {
   const server = new McpServer({ name: "osint-power", version: "0.4.0" });
@@ -420,6 +421,12 @@ export function createServer(engine) {
     "Read a case report that separates confirmed analyst decisions, candidates, hypotheses, and limitations. Does not collect. Does not present a hypothesis as a finding.",
     CaseReportInput,
     (input) => caseReport(engine.store, engine.scope, gates(), input),
+  );
+  register(
+    "investigation_graph",
+    "Read one case or one investigation as a graph of entities, evidence, hypotheses and decisions. Candidate links stay candidates and are not rendered as confirmed. Does not collect, review, or confirm a hypothesis.",
+    InvestigationGraphInput,
+    (input) => investigationGraph(engine.store, engine.scope, gates(), input),
   );
   register(
     "export_case_stix",

@@ -64,6 +64,10 @@ Read-only `assess`, `assess_evidence` and `explain_asset` turn stored in-scope d
 
 Local hypotheses and cases. `evaluate_hypothesis` reads stored evidence and the evidence-intelligence assessment, then returns supporting, contradicting and missing evidence. It can store `open`, `supported-pending-review` or `weakened`. `analyst-confirmed` and `rejected` come only from `close_hypothesis`. A hypothesis is not a finding. Suggested collection steps carry `requires_gate` when network, active mode, or an adapter is missing, and they are not executed. Case reports keep analyst decisions, candidates, hypotheses and limitations apart. `export_case_stix` reuses the STIX exporter and writes hypotheses as notes. SQLite schema v7 is additive. Package version remains 0.4.0.
 
+## Benchmark corpus and investigation graph
+
+The labeled corpus is 52 synthetic scenarios. The runner reports per-category precision and recall, false attributions, scope-block rate, export reproducibility and secret-leak count. Those figures are regression controls. They were not independently reviewed by humans and are not a production accuracy claim. `investigation_graph` and `graph --case` or `graph --investigation` export a read-only graph as JSON or a self-contained offline HTML file. Candidates stay candidates. Package version remains 0.4.0. Schema remains v7.
+
 ## Next investigation improvements
 
 - Broaden the labeled corpus with reviewed, publishable datasets and independently maintained gold labels.

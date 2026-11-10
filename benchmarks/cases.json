@@ -21,7 +21,13 @@
       }
     ],
     "entities": [["domain", "api.example.com"]],
-    "relations": []
+    "relations": [],
+    "scope_bait": [
+      ["domain", "excluded.example.com"],
+      ["domain", "a.excluded.example.com"],
+      ["domain", "example.com.evil.invalid"],
+      ["domain", "otherexample.com"]
+    ]
   },
   {
     "id": "idn-normalization",
@@ -42,12 +48,22 @@
       {
         "adapter": "crtsh",
         "collect": true,
-        "data": [{ "id": 1, "name_value": "api.example.com" }]
+        "data": [
+          {
+            "id": 1,
+            "name_value": "api.example.com"
+          }
+        ]
       },
       {
         "adapter": "certspotter",
         "collect": true,
-        "data": [{ "id": "2", "dns_names": ["api.example.com"] }]
+        "data": [
+          {
+            "id": "2",
+            "dns_names": ["api.example.com"]
+          }
+        ]
       }
     ],
     "entities": [["domain", "api.example.com"]],
@@ -78,7 +94,10 @@
     "id": "historical-url",
     "tags": ["historical", "scope", "redaction"],
     "steps": [
-      { "adapter": "subfinder", "data": "old.example.com" },
+      {
+        "adapter": "subfinder",
+        "data": "old.example.com"
+      },
       {
         "adapter": "wayback",
         "collect": true,
@@ -86,7 +105,7 @@
           ["timestamp", "original", "statuscode", "digest"],
           [
             "20190101000000",
-            "https://old.example.com/legacy?token=private",
+            "https://old.example.com/legacy?token=benchmark-wayback-query-secret-01",
             "200",
             "digest-a"
           ],
@@ -106,13 +125,17 @@
         "url",
         "https://old.example.com/legacy"
       ]
-    ]
+    ],
+    "secrets": ["benchmark-wayback-query-secret-01"]
   },
   {
     "id": "live-url",
     "tags": ["direct-observation"],
     "steps": [
-      { "adapter": "subfinder", "data": "api.example.com" },
+      {
+        "adapter": "subfinder",
+        "data": "api.example.com"
+      },
       {
         "adapter": "httpx",
         "data": {
@@ -137,8 +160,14 @@
       {
         "adapter": "dnsx",
         "data": [
-          { "host": "a.example.com", "a": ["192.0.2.10"] },
-          { "host": "b.example.com", "a": ["192.0.2.10"] }
+          {
+            "host": "a.example.com",
+            "a": ["192.0.2.10"]
+          },
+          {
+            "host": "b.example.com",
+            "a": ["192.0.2.10"]
+          }
         ]
       }
     ],
@@ -210,7 +239,9 @@
         "target": "alex",
         "collect": true,
         "status": "failed",
-        "data": { "login": "someone-else" }
+        "data": {
+          "login": "someone-else"
+        }
       }
     ],
     "entities": [],
@@ -250,7 +281,12 @@
     "id": "breach-is-not-password-validity",
     "tags": ["breach", "email"],
     "steps": [
-      { "adapter": "theharvester", "data": { "emails": ["alex@example.com"] } },
+      {
+        "adapter": "theharvester",
+        "data": {
+          "emails": ["alex@example.com"]
+        }
+      },
       {
         "adapter": "hibp",
         "target": "alex@example.com",
@@ -259,7 +295,7 @@
           {
             "Name": "SyntheticBreach",
             "BreachDate": "2020-01-01",
-            "Passwords": ["discard-this"]
+            "Passwords": ["benchmark-hibp-password-discard-77"]
           }
         ]
       }
@@ -268,6 +304,7 @@
       ["email", "alex@example.com"],
       ["breach", "alex@example.com:SyntheticBreach"]
     ],
+    "secrets": ["benchmark-hibp-password-discard-77"],
     "relations": [
       [
         "email",
@@ -289,14 +326,19 @@
             "File": "config.txt",
             "StartLine": 7,
             "RuleID": "api-key",
-            "Secret": "never-retain-this",
-            "Match": "never-retain-this"
+            "Secret": "sk-benchmarkgitleakssecretvalue0001",
+            "Match": "sk-benchmarkgitleakssecretvalue0001",
+            "Commit": "ghp_benchmarkgitleakscommitvalue00000001"
           }
         ]
       }
     ],
     "entities": [["secret", "config.txt:7:api-key"]],
-    "relations": []
+    "relations": [],
+    "secrets": [
+      "sk-benchmarkgitleakssecretvalue0001",
+      "ghp_benchmarkgitleakscommitvalue00000001"
+    ]
   },
   {
     "id": "invalid-calendar-date",
@@ -353,7 +395,10 @@
             "source": "source-a",
             "confidence": 0.6,
             "timestamp": "2024-01-01T00:00:00.000Z",
-            "evidence": { "username": "alex", "public_company": "Example" }
+            "evidence": {
+              "username": "alex",
+              "public_company": "Example"
+            }
           },
           {
             "type": "profile",
@@ -426,7 +471,10 @@
           "asset_key": "subdomain:api.example.com",
           "asset_type": "subdomain",
           "value": "api.example.com",
-          "attributes": { "name": "api.example.com", "historical": false },
+          "attributes": {
+            "name": "api.example.com",
+            "historical": false
+          },
           "observation_ids": [
             "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
           ],
@@ -473,7 +521,10 @@
           "asset_key": "subdomain:api.example.com",
           "asset_type": "subdomain",
           "value": "api.example.com",
-          "attributes": { "name": "api.example.com", "historical": false },
+          "attributes": {
+            "name": "api.example.com",
+            "historical": false
+          },
           "observation_ids": [
             "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
           ],
@@ -485,7 +536,10 @@
           "asset_key": "subdomain:new.example.com",
           "asset_type": "subdomain",
           "value": "new.example.com",
-          "attributes": { "name": "new.example.com", "historical": false },
+          "attributes": {
+            "name": "new.example.com",
+            "historical": false
+          },
           "observation_ids": [
             "1111111111111111111111111111111111111111111111111111111111111111"
           ],
@@ -572,7 +626,9 @@
           "source": "annual-report",
           "confidence": 0.6,
           "timestamp": "2026-10-20T00:00:00.000Z",
-          "evidence": { "company": "example.com" }
+          "evidence": {
+            "company": "example.com"
+          }
         }
       },
       {
@@ -583,7 +639,9 @@
           "source": "registry-extract",
           "confidence": 0.6,
           "timestamp": "2026-10-21T00:00:00.000Z",
-          "evidence": { "company": "example.com" }
+          "evidence": {
+            "company": "example.com"
+          }
         }
       }
     ],
@@ -631,7 +689,9 @@
           "source": "handbook",
           "confidence": 0.6,
           "timestamp": "2026-10-20T00:00:00.000Z",
-          "evidence": { "company": "example.com" }
+          "evidence": {
+            "company": "example.com"
+          }
         }
       },
       {
@@ -642,7 +702,9 @@
           "source": "careers",
           "confidence": 0.6,
           "timestamp": "2026-10-21T00:00:00.000Z",
-          "evidence": { "company": "example.com" }
+          "evidence": {
+            "company": "example.com"
+          }
         }
       }
     ],
@@ -676,7 +738,9 @@
             "source": "alpha",
             "confidence": 0.6,
             "timestamp": "2026-10-20T00:00:00.000Z",
-            "evidence": { "company": "example.com" }
+            "evidence": {
+              "company": "example.com"
+            }
           },
           {
             "type": "domain",
@@ -684,7 +748,9 @@
             "source": "beta",
             "confidence": 0.6,
             "timestamp": "2026-10-20T00:00:00.000Z",
-            "evidence": { "company": "example.com" }
+            "evidence": {
+              "company": "example.com"
+            }
           }
         ]
       }
@@ -717,7 +783,10 @@
           "source": "adapter-a",
           "confidence": 0.6,
           "timestamp": "2026-10-20T00:00:00.000Z",
-          "evidence": { "company": "example.com", "upstream": "iana" }
+          "evidence": {
+            "company": "example.com",
+            "upstream": "iana"
+          }
         }
       },
       {
@@ -728,7 +797,10 @@
           "source": "adapter-b",
           "confidence": 0.6,
           "timestamp": "2026-10-21T00:00:00.000Z",
-          "evidence": { "company": "example.com", "upstream": "iana" }
+          "evidence": {
+            "company": "example.com",
+            "upstream": "iana"
+          }
         }
       }
     ],
@@ -773,7 +845,9 @@
           "source": "origin",
           "confidence": 0.6,
           "timestamp": "2026-10-20T00:00:00.000Z",
-          "evidence": { "company": "example.com" }
+          "evidence": {
+            "company": "example.com"
+          }
         }
       },
       {
@@ -784,7 +858,10 @@
           "source": "copy",
           "confidence": 0.6,
           "timestamp": "2026-10-21T00:00:00.000Z",
-          "evidence": { "company": "example.com", "mirror_of": "origin" }
+          "evidence": {
+            "company": "example.com",
+            "mirror_of": "origin"
+          }
         }
       }
     ],
@@ -833,7 +910,10 @@
             "source": "dnsx",
             "confidence": 0.8,
             "timestamp": "2026-10-20T00:00:00.000Z",
-            "evidence": { "host": "a.example.com", "company": "example.com" }
+            "evidence": {
+              "host": "a.example.com",
+              "company": "example.com"
+            }
           }
         ]
       },
@@ -845,7 +925,10 @@
           "source": "dns-mirror",
           "confidence": 0.8,
           "timestamp": "2026-10-21T00:00:00.000Z",
-          "evidence": { "host": "b.example.com", "company": "example.com" }
+          "evidence": {
+            "host": "b.example.com",
+            "company": "example.com"
+          }
         }
       }
     ],
@@ -1084,7 +1167,12 @@
       {
         "adapter": "crtsh",
         "collect": true,
-        "data": [{ "id": 9, "name_value": "certs.example.com" }]
+        "data": [
+          {
+            "id": 9,
+            "name_value": "certs.example.com"
+          }
+        ]
       }
     ],
     "entities": [["domain", "certs.example.com"]],
@@ -1204,7 +1292,9 @@
           "source": "httpx",
           "confidence": 0.8,
           "timestamp": "2026-10-20T00:00:00.000Z",
-          "evidence": { "status": 404 }
+          "evidence": {
+            "status": 404
+          }
         }
       }
     ],
@@ -1274,7 +1364,9 @@
           "source": "dnsx",
           "confidence": 0.8,
           "timestamp": "2026-10-21T00:00:00.000Z",
-          "evidence": { "status": "nxdomain" }
+          "evidence": {
+            "status": "nxdomain"
+          }
         }
       }
     ],
@@ -1319,7 +1411,9 @@
           "source": "filing-a",
           "confidence": 0.6,
           "timestamp": "2026-10-20T00:00:00.000Z",
-          "evidence": { "company": "example.com" }
+          "evidence": {
+            "company": "example.com"
+          }
         }
       },
       {
@@ -1330,7 +1424,9 @@
           "source": "filing-b",
           "confidence": 0.6,
           "timestamp": "2026-10-21T00:00:00.000Z",
-          "evidence": { "company": "elsewhere.invalid" }
+          "evidence": {
+            "company": "elsewhere.invalid"
+          }
         }
       }
     ],
@@ -1375,7 +1471,9 @@
             "source": "site-a",
             "confidence": 0.4,
             "timestamp": "2026-10-20T00:00:00.000Z",
-            "evidence": { "name": "Alex Example" }
+            "evidence": {
+              "name": "Alex Example"
+            }
           },
           {
             "type": "profile",
@@ -1383,7 +1481,10 @@
             "source": "site-a",
             "confidence": 0.4,
             "timestamp": "2026-10-20T00:00:00.000Z",
-            "evidence": { "username": "alex", "name": "Alex Example" }
+            "evidence": {
+              "username": "alex",
+              "name": "Alex Example"
+            }
           },
           {
             "type": "profile",
@@ -1391,7 +1492,10 @@
             "source": "site-b",
             "confidence": 0.4,
             "timestamp": "2026-10-21T00:00:00.000Z",
-            "evidence": { "username": "alex", "name": "Alex Example" }
+            "evidence": {
+              "username": "alex",
+              "name": "Alex Example"
+            }
           }
         ]
       }
@@ -1453,7 +1557,10 @@
           "source": "careers-a",
           "confidence": 0.25,
           "timestamp": "2026-10-20T00:00:00.000Z",
-          "evidence": { "company": "example.com", "inferred": true }
+          "evidence": {
+            "company": "example.com",
+            "inferred": true
+          }
         }
       },
       {
@@ -1464,7 +1571,10 @@
           "source": "careers-b",
           "confidence": 0.25,
           "timestamp": "2026-10-21T00:00:00.000Z",
-          "evidence": { "company": "example.com", "inferred": true }
+          "evidence": {
+            "company": "example.com",
+            "inferred": true
+          }
         }
       }
     ],
@@ -1495,7 +1605,9 @@
           "source": "profile-a",
           "confidence": 0.6,
           "timestamp": "2026-10-20T00:00:00.000Z",
-          "evidence": { "public_company": "Example Incorporated" }
+          "evidence": {
+            "public_company": "Example Incorporated"
+          }
         }
       },
       {
@@ -1506,7 +1618,9 @@
           "source": "profile-b",
           "confidence": 0.6,
           "timestamp": "2026-10-21T00:00:00.000Z",
-          "evidence": { "public_company": "Example Incorporated" }
+          "evidence": {
+            "public_company": "Example Incorporated"
+          }
         }
       }
     ],
@@ -1562,5 +1676,993 @@
       "error": "OUT_OF_SCOPE",
       "adversarial": true
     }
+  },
+  {
+    "id": "shared-cdn-sibling-not-ownership",
+    "category": "shared-cdn",
+    "tags": ["attribution", "cdn", "adversarial"],
+    "steps": [
+      {
+        "adapter": "jsonl",
+        "data": [
+          {
+            "type": "domain",
+            "value": "shop.example.com",
+            "source": "edge-a",
+            "confidence": 0.6,
+            "timestamp": "2026-10-20T00:00:00.000Z",
+            "evidence": {
+              "company": "example.com",
+              "technology": ["cloudflare"]
+            }
+          },
+          {
+            "type": "domain",
+            "value": "img.example.com",
+            "source": "edge-a",
+            "confidence": 0.6,
+            "timestamp": "2026-10-20T00:00:00.000Z",
+            "evidence": {
+              "company": "example.com",
+              "technology": ["cloudflare"]
+            }
+          },
+          {
+            "type": "ip",
+            "value": "192.0.2.154",
+            "source": "httpx",
+            "confidence": 0.8,
+            "timestamp": "2026-10-20T00:00:00.000Z",
+            "evidence": {
+              "host": "shop.example.com",
+              "company": "example.com",
+              "technology": ["Cloudflare"],
+              "status": 200
+            }
+          }
+        ]
+      },
+      {
+        "adapter": "jsonl",
+        "data": [
+          {
+            "type": "domain",
+            "value": "shop.example.com",
+            "source": "edge-b",
+            "confidence": 0.6,
+            "timestamp": "2026-10-21T00:00:00.000Z",
+            "evidence": {
+              "company": "example.com",
+              "technology": ["cloudflare"]
+            }
+          },
+          {
+            "type": "domain",
+            "value": "img.example.com",
+            "source": "edge-b",
+            "confidence": 0.6,
+            "timestamp": "2026-10-21T00:00:00.000Z",
+            "evidence": {
+              "company": "example.com",
+              "technology": ["cloudflare"]
+            }
+          },
+          {
+            "type": "ip",
+            "value": "192.0.2.154",
+            "source": "edge-b",
+            "confidence": 0.8,
+            "timestamp": "2026-10-21T00:00:00.000Z",
+            "evidence": {
+              "host": "img.example.com",
+              "company": "example.com",
+              "technology": ["cloudflare"],
+              "status": 200
+            }
+          }
+        ]
+      }
+    ],
+    "entities": [
+      ["domain", "shop.example.com"],
+      ["domain", "img.example.com"],
+      ["ip", "192.0.2.154"]
+    ],
+    "relations": [
+      ["domain", "shop.example.com", "resolves_to", "ip", "192.0.2.154"],
+      ["domain", "img.example.com", "resolves_to", "ip", "192.0.2.154"]
+    ],
+    "intelligence": {
+      "as_of": "2026-11-10T00:00:00.000Z",
+      "assets": [
+        {
+          "type": "domain",
+          "value": "shop.example.com",
+          "ownership": "unverified",
+          "basis": "cdn"
+        },
+        {
+          "type": "domain",
+          "value": "img.example.com",
+          "ownership": "unverified",
+          "basis": "cdn"
+        },
+        {
+          "type": "ip",
+          "value": "192.0.2.154",
+          "ownership": "unverified",
+          "basis": "shared_ip"
+        }
+      ]
+    },
+    "hypotheses": [
+      {
+        "statement": "shop.example.com is owned because it shares a CDN address with img.example.com",
+        "claim": "organization-attribution",
+        "entities": [["domain", "shop.example.com"]],
+        "as_of": "2026-11-10T00:00:00.000Z",
+        "assessed_status": "open",
+        "support": false,
+        "confirmed": false,
+        "missing_min": 1,
+        "adversarial": true
+      }
+    ]
+  },
+  {
+    "id": "shared-ip-second-pair-not-ownership",
+    "category": "shared-infrastructure",
+    "tags": ["attribution", "shared-infrastructure", "adversarial"],
+    "steps": [
+      {
+        "adapter": "jsonl",
+        "data": [
+          {
+            "type": "domain",
+            "value": "c.example.com",
+            "source": "dnsx",
+            "confidence": 0.8,
+            "timestamp": "2026-10-20T00:00:00.000Z",
+            "evidence": {}
+          },
+          {
+            "type": "domain",
+            "value": "d.example.com",
+            "source": "dnsx",
+            "confidence": 0.8,
+            "timestamp": "2026-10-20T00:00:00.000Z",
+            "evidence": {}
+          },
+          {
+            "type": "ip",
+            "value": "192.0.2.153",
+            "source": "dnsx",
+            "confidence": 0.8,
+            "timestamp": "2026-10-20T00:00:00.000Z",
+            "evidence": {
+              "host": "c.example.com"
+            }
+          },
+          {
+            "type": "ip",
+            "value": "192.0.2.153",
+            "source": "dns-other",
+            "confidence": 0.8,
+            "timestamp": "2026-10-21T00:00:00.000Z",
+            "evidence": {
+              "host": "d.example.com"
+            }
+          }
+        ]
+      }
+    ],
+    "entities": [
+      ["domain", "c.example.com"],
+      ["domain", "d.example.com"],
+      ["ip", "192.0.2.153"]
+    ],
+    "relations": [
+      ["domain", "c.example.com", "resolves_to", "ip", "192.0.2.153"],
+      ["domain", "d.example.com", "resolves_to", "ip", "192.0.2.153"]
+    ],
+    "intelligence": {
+      "as_of": "2026-11-10T00:00:00.000Z",
+      "assets": [
+        {
+          "type": "domain",
+          "value": "c.example.com",
+          "ownership": "unverified",
+          "basis": "no_org_domain_claim",
+          "activity": "confirmed"
+        },
+        {
+          "type": "domain",
+          "value": "d.example.com",
+          "ownership": "unverified",
+          "activity": "confirmed"
+        },
+        {
+          "type": "ip",
+          "value": "192.0.2.153",
+          "ownership": "unverified",
+          "basis": "shared_ip"
+        }
+      ]
+    },
+    "hypotheses": [
+      {
+        "statement": "192.0.2.153 is owned because two in-scope names use it",
+        "claim": "organization-attribution",
+        "entities": [["ip", "192.0.2.153"]],
+        "as_of": "2026-11-10T00:00:00.000Z",
+        "assessed_status": "open",
+        "support": false,
+        "confirmed": false,
+        "missing_min": 1,
+        "adversarial": true
+      }
+    ]
+  },
+  {
+    "id": "shared-asn-second-host-not-ownership",
+    "category": "shared-asn",
+    "tags": ["attribution", "asn", "adversarial"],
+    "steps": [
+      {
+        "adapter": "jsonl",
+        "data": {
+          "type": "asn",
+          "value": "AS64511",
+          "source": "routing",
+          "confidence": 0.8,
+          "timestamp": "2026-10-20T00:00:00.000Z",
+          "evidence": {
+            "host": "ns2.example.com",
+            "ip": "192.0.2.41",
+            "company": "example.com"
+          }
+        }
+      },
+      {
+        "adapter": "jsonl",
+        "data": {
+          "type": "asn",
+          "value": "AS64511",
+          "source": "rdap",
+          "confidence": 0.8,
+          "timestamp": "2026-10-21T00:00:00.000Z",
+          "evidence": {
+            "host": "ns2.example.com",
+            "ip": "192.0.2.41",
+            "company": "example.com"
+          }
+        }
+      }
+    ],
+    "entities": [["asn", "AS64511"]],
+    "relations": [],
+    "intelligence": {
+      "as_of": "2026-11-10T00:00:00.000Z",
+      "assets": [
+        {
+          "type": "asn",
+          "value": "AS64511",
+          "ownership": "unverified",
+          "basis": "hosting_or_registry",
+          "independent_sources": 2
+        }
+      ]
+    },
+    "hypotheses": [
+      {
+        "statement": "AS64511 is owned because ns2.example.com is announced there",
+        "claim": "organization-attribution",
+        "entities": [["asn", "AS64511"]],
+        "as_of": "2026-11-10T00:00:00.000Z",
+        "assessed_status": "open",
+        "support": false,
+        "confirmed": false,
+        "missing_min": 1,
+        "adversarial": true
+      }
+    ]
+  },
+  {
+    "id": "name-collision-site-profiles",
+    "category": "name-collision",
+    "tags": ["identity", "adversarial"],
+    "steps": [
+      {
+        "adapter": "jsonl",
+        "data": [
+          {
+            "type": "username",
+            "value": "alex",
+            "source": "site-a",
+            "confidence": 0.4,
+            "timestamp": "2026-10-20T00:00:00.000Z",
+            "evidence": {
+              "name": "Alex Example"
+            }
+          },
+          {
+            "type": "profile",
+            "value": "https://example.com/people/alex",
+            "source": "site-a",
+            "confidence": 0.4,
+            "timestamp": "2026-10-20T00:00:00.000Z",
+            "evidence": {
+              "username": "alex",
+              "name": "Alex Example"
+            }
+          },
+          {
+            "type": "profile",
+            "value": "https://example.com/staff/alex",
+            "source": "site-b",
+            "confidence": 0.4,
+            "timestamp": "2026-10-21T00:00:00.000Z",
+            "evidence": {
+              "username": "alex",
+              "name": "Alex Example"
+            }
+          }
+        ]
+      }
+    ],
+    "entities": [
+      ["username", "alex"],
+      ["profile", "https://example.com/people/alex"],
+      ["profile", "https://example.com/staff/alex"]
+    ],
+    "relations": [
+      [
+        "username",
+        "alex",
+        "username_match",
+        "profile",
+        "https://example.com/people/alex"
+      ],
+      [
+        "username",
+        "alex",
+        "username_match",
+        "profile",
+        "https://example.com/staff/alex"
+      ]
+    ],
+    "intelligence": {
+      "as_of": "2026-11-10T00:00:00.000Z",
+      "confirmed_links": 0,
+      "candidate_links_min": 1,
+      "assets": []
+    },
+    "hypotheses": [
+      {
+        "statement": "The two Alex Example profiles are the same person",
+        "claim": "entity-association",
+        "entities": [
+          ["username", "alex"],
+          ["profile", "https://example.com/people/alex"],
+          ["profile", "https://example.com/staff/alex"]
+        ],
+        "as_of": "2026-11-10T00:00:00.000Z",
+        "assessed_status": "open",
+        "support": false,
+        "confirmed": false,
+        "missing_min": 1,
+        "adversarial": true
+      }
+    ]
+  },
+  {
+    "id": "handle-collision-stays-candidate",
+    "category": "name-collision",
+    "tags": ["identity", "adversarial"],
+    "steps": [
+      {
+        "adapter": "jsonl",
+        "data": [
+          {
+            "type": "email",
+            "value": "alex@example.com",
+            "source": "directory-a",
+            "confidence": 0.4,
+            "timestamp": "2026-10-20T00:00:00.000Z",
+            "evidence": {
+              "name": "Alex Example",
+              "public_company": "North Desk"
+            }
+          },
+          {
+            "type": "profile",
+            "value": "https://example.com/u/alex",
+            "source": "directory-b",
+            "confidence": 0.4,
+            "timestamp": "2026-10-21T00:00:00.000Z",
+            "evidence": {
+              "username": "alex",
+              "name": "Alex Example",
+              "public_company": "South Desk"
+            }
+          }
+        ]
+      }
+    ],
+    "entities": [
+      ["email", "alex@example.com"],
+      ["profile", "https://example.com/u/alex"]
+    ],
+    "relations": [],
+    "intelligence": {
+      "as_of": "2026-11-10T00:00:00.000Z",
+      "confirmed_links": 0,
+      "candidate_links_min": 1,
+      "assets": []
+    },
+    "hypotheses": [
+      {
+        "statement": "alex@example.com and the profile are the same person because the handle matches",
+        "claim": "entity-association",
+        "entities": [
+          ["email", "alex@example.com"],
+          ["profile", "https://example.com/u/alex"]
+        ],
+        "as_of": "2026-11-10T00:00:00.000Z",
+        "assessed_status": "open",
+        "support": false,
+        "confirmed": false,
+        "missing_min": 1,
+        "adversarial": true
+      }
+    ]
+  },
+  {
+    "id": "mirrored-replay-counts-once",
+    "category": "mirrored-sources",
+    "tags": ["attribution", "independence", "adversarial"],
+    "steps": [
+      {
+        "adapter": "jsonl",
+        "data": {
+          "type": "domain",
+          "value": "replay-mirror.example.com",
+          "source": "origin-feed",
+          "confidence": 0.6,
+          "timestamp": "2026-10-20T00:00:00.000Z",
+          "evidence": {
+            "company": "example.com"
+          }
+        }
+      },
+      {
+        "adapter": "jsonl",
+        "data": {
+          "type": "domain",
+          "value": "replay-mirror.example.com",
+          "source": "mirror-feed",
+          "confidence": 0.6,
+          "timestamp": "2026-10-21T00:00:00.000Z",
+          "evidence": {
+            "company": "example.com",
+            "mirror_of": "origin-feed"
+          }
+        }
+      }
+    ],
+    "entities": [["domain", "replay-mirror.example.com"]],
+    "relations": [],
+    "intelligence": {
+      "as_of": "2026-11-10T00:00:00.000Z",
+      "assets": [
+        {
+          "type": "domain",
+          "value": "replay-mirror.example.com",
+          "ownership": "unverified",
+          "basis": "duplicate_or_single_source",
+          "independent_sources": 1,
+          "independent_groups": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "duplicate-import-counts-once",
+    "category": "duplicate-sources",
+    "tags": ["attribution", "duplicates", "adversarial"],
+    "steps": [
+      {
+        "adapter": "jsonl",
+        "data": [
+          {
+            "type": "domain",
+            "value": "dup.example.com",
+            "source": "alpha",
+            "confidence": 0.6,
+            "timestamp": "2026-10-20T00:00:00.000Z",
+            "evidence": {
+              "company": "example.com"
+            }
+          },
+          {
+            "type": "domain",
+            "value": "dup.example.com",
+            "source": "beta",
+            "confidence": 0.6,
+            "timestamp": "2026-10-20T00:00:00.000Z",
+            "evidence": {
+              "company": "example.com"
+            }
+          }
+        ]
+      }
+    ],
+    "entities": [["domain", "dup.example.com"]],
+    "relations": [],
+    "intelligence": {
+      "as_of": "2026-11-10T00:00:00.000Z",
+      "assets": [
+        {
+          "type": "domain",
+          "value": "dup.example.com",
+          "ownership": "unverified",
+          "basis": "duplicate_or_single_source",
+          "independent_sources": 1,
+          "independent_groups": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "stale-archive-versus-nxdomain",
+    "category": "stale-conflict",
+    "tags": ["historical", "activity", "adversarial"],
+    "steps": [
+      {
+        "adapter": "wayback",
+        "collect": true,
+        "data": [
+          ["timestamp", "original", "statuscode", "digest"],
+          [
+            "20150101000000",
+            "https://archive.example.com/old",
+            "200",
+            "digest-stale"
+          ]
+        ]
+      },
+      {
+        "adapter": "jsonl",
+        "data": {
+          "type": "domain",
+          "value": "archive.example.com",
+          "source": "dnsx",
+          "confidence": 0.8,
+          "timestamp": "2026-10-20T00:00:00.000Z",
+          "evidence": {
+            "status": "nxdomain"
+          }
+        }
+      }
+    ],
+    "entities": [
+      ["domain", "archive.example.com"],
+      ["url", "https://archive.example.com/old"]
+    ],
+    "relations": [
+      [
+        "domain",
+        "archive.example.com",
+        "historically_served",
+        "url",
+        "https://archive.example.com/old"
+      ]
+    ],
+    "intelligence": {
+      "as_of": "2026-11-10T00:00:00.000Z",
+      "assets": [
+        {
+          "type": "domain",
+          "value": "archive.example.com",
+          "historical": "documented",
+          "activity": "not_confirmed",
+          "ownership": "unverified"
+        },
+        {
+          "type": "url",
+          "value": "https://archive.example.com/old",
+          "historical": "documented",
+          "activity": "not_confirmed",
+          "ownership": "unverified"
+        }
+      ]
+    },
+    "hypotheses": [
+      {
+        "statement": "archive.example.com is active because a 2015 archive captured it",
+        "claim": "current-activity",
+        "entities": [["domain", "archive.example.com"]],
+        "as_of": "2026-11-10T00:00:00.000Z",
+        "assessed_status": "open",
+        "support": false,
+        "confirmed": false,
+        "missing_min": 1,
+        "adversarial": true
+      }
+    ]
+  },
+  {
+    "id": "historical-cert-versus-foreign-claim",
+    "category": "stale-conflict",
+    "tags": ["historical", "attribution", "adversarial"],
+    "steps": [
+      {
+        "adapter": "crtsh",
+        "collect": true,
+        "data": [
+          {
+            "id": 77,
+            "name_value": "legacy2.example.com"
+          }
+        ]
+      },
+      {
+        "adapter": "jsonl",
+        "data": {
+          "type": "domain",
+          "value": "legacy2.example.com",
+          "source": "filing-foreign",
+          "confidence": 0.6,
+          "timestamp": "2026-10-21T00:00:00.000Z",
+          "evidence": {
+            "company": "elsewhere.invalid"
+          }
+        }
+      }
+    ],
+    "entities": [["domain", "legacy2.example.com"]],
+    "relations": [],
+    "intelligence": {
+      "as_of": "2026-11-10T00:00:00.000Z",
+      "assets": [
+        {
+          "type": "domain",
+          "value": "legacy2.example.com",
+          "ownership": "contradicted",
+          "basis": "foreign_org_domain",
+          "historical": "documented",
+          "activity": "not_confirmed"
+        }
+      ]
+    },
+    "hypotheses": [
+      {
+        "statement": "legacy2.example.com is owned because an old certificate named it",
+        "claim": "organization-attribution",
+        "entities": [["domain", "legacy2.example.com"]],
+        "as_of": "2026-11-10T00:00:00.000Z",
+        "assessed_status": "weakened",
+        "support": false,
+        "confirmed": false,
+        "contradicting_min": 1,
+        "adversarial": true
+      }
+    ]
+  },
+  {
+    "id": "out-of-scope-import-bait",
+    "category": "out-of-scope",
+    "tags": ["scope", "adversarial"],
+    "steps": [
+      {
+        "adapter": "subfinder",
+        "data": "portal.example.com\nexample.com.evil.invalid\nexcluded.example.com\nnotexample.com\n--help"
+      }
+    ],
+    "entities": [["domain", "portal.example.com"]],
+    "relations": [],
+    "scope_bait": [
+      ["domain", "example.com.evil.invalid"],
+      ["domain", "excluded.example.com"],
+      ["domain", "notexample.com"]
+    ]
+  },
+  {
+    "id": "out-of-scope-email-bait",
+    "category": "out-of-scope",
+    "tags": ["scope", "hypothesis", "adversarial"],
+    "steps": [
+      {
+        "adapter": "theharvester",
+        "data": {
+          "emails": ["alex@example.com", "outsider@evil.invalid"],
+          "hosts": ["mail.example.com", "example.com.attacker.invalid"]
+        }
+      }
+    ],
+    "entities": [
+      ["email", "alex@example.com"],
+      ["domain", "mail.example.com"],
+      ["email", "outsider@evil.invalid"]
+    ],
+    "relations": [],
+    "scope_bait": [["domain", "example.com.attacker.invalid"]],
+    "hypothesis": {
+      "statement": "outsider@evil.invalid is an in-scope account",
+      "claim": "entity-association",
+      "entities": [["email", "outsider@evil.invalid"]],
+      "inject": [
+        {
+          "type": "email",
+          "value": "outsider@evil.invalid",
+          "source": "manual",
+          "confidence": 0.2,
+          "timestamp": "2026-10-20T00:00:00.000Z",
+          "evidence": {}
+        }
+      ],
+      "error": "OUT_OF_SCOPE",
+      "adversarial": true
+    }
+  },
+  {
+    "id": "lookalike-versus-legit-domain",
+    "category": "lookalike",
+    "tags": ["phishing", "lookalikes", "adversarial"],
+    "steps": [],
+    "entities": [],
+    "relations": [],
+    "lookalike": {
+      "protected": "example.com",
+      "includes": ["example.net", "examp1e.com"],
+      "excludes": [
+        "example.com",
+        "login.example.com",
+        "excluded.example.com",
+        "cloudflare.com"
+      ]
+    }
+  },
+  {
+    "id": "hypothesis-trap-accept-is-not-confirmation",
+    "category": "hypothesis-trap",
+    "tags": ["hypothesis", "attribution", "adversarial"],
+    "steps": [
+      {
+        "adapter": "jsonl",
+        "data": {
+          "type": "domain",
+          "value": "accept-trap.example.com",
+          "source": "filing-a",
+          "confidence": 0.6,
+          "timestamp": "2026-10-20T00:00:00.000Z",
+          "evidence": {
+            "company": "example.com"
+          }
+        }
+      },
+      {
+        "adapter": "jsonl",
+        "data": {
+          "type": "domain",
+          "value": "accept-trap.example.com",
+          "source": "filing-b",
+          "confidence": 0.6,
+          "timestamp": "2026-10-21T00:00:00.000Z",
+          "evidence": {
+            "company": "example.com"
+          }
+        }
+      }
+    ],
+    "entities": [["domain", "accept-trap.example.com"]],
+    "relations": [],
+    "intelligence": {
+      "as_of": "2026-11-10T00:00:00.000Z",
+      "assets": [
+        {
+          "type": "domain",
+          "value": "accept-trap.example.com",
+          "ownership": "verified",
+          "basis": "independent_in_scope_org_domain",
+          "independent_sources": 2
+        }
+      ]
+    },
+    "hypotheses": [
+      {
+        "statement": "accept-trap.example.com is attributed to the in-scope organization",
+        "claim": "organization-attribution",
+        "entities": [["domain", "accept-trap.example.com"]],
+        "as_of": "2026-11-10T00:00:00.000Z",
+        "assessed_status": "supported-pending-review",
+        "support": true,
+        "confirmed": false,
+        "supporting_min": 1,
+        "record_accept": true,
+        "adversarial": true
+      }
+    ]
+  },
+  {
+    "id": "hypothesis-trap-shared-handle",
+    "category": "hypothesis-trap",
+    "tags": ["hypothesis", "identity", "adversarial"],
+    "steps": [
+      {
+        "adapter": "jsonl",
+        "data": [
+          {
+            "type": "username",
+            "value": "alex",
+            "source": "board-a",
+            "confidence": 0.4,
+            "timestamp": "2026-10-20T00:00:00.000Z",
+            "evidence": {
+              "name": "Alex Example"
+            }
+          },
+          {
+            "type": "profile",
+            "value": "https://example.com/board/alex",
+            "source": "board-b",
+            "confidence": 0.4,
+            "timestamp": "2026-10-21T00:00:00.000Z",
+            "evidence": {
+              "username": "alex",
+              "name": "Alex Example"
+            }
+          }
+        ]
+      }
+    ],
+    "entities": [
+      ["username", "alex"],
+      ["profile", "https://example.com/board/alex"]
+    ],
+    "relations": [
+      [
+        "username",
+        "alex",
+        "username_match",
+        "profile",
+        "https://example.com/board/alex"
+      ]
+    ],
+    "intelligence": {
+      "as_of": "2026-11-10T00:00:00.000Z",
+      "confirmed_links": 0,
+      "candidate_links_min": 1,
+      "assets": []
+    },
+    "hypotheses": [
+      {
+        "statement": "An analyst accept of the username confirms the profile is the same person",
+        "claim": "entity-association",
+        "entities": [
+          ["username", "alex"],
+          ["profile", "https://example.com/board/alex"]
+        ],
+        "as_of": "2026-11-10T00:00:00.000Z",
+        "assessed_status": "open",
+        "support": false,
+        "confirmed": false,
+        "missing_min": 1,
+        "record_accept": true,
+        "adversarial": true
+      }
+    ]
+  },
+  {
+    "id": "secret-leak-gitleaks-export",
+    "category": "secret-leak",
+    "tags": ["redaction", "export", "adversarial"],
+    "steps": [
+      {
+        "adapter": "gitleaks",
+        "data": [
+          {
+            "File": "config.txt",
+            "StartLine": 11,
+            "RuleID": "generic-api-key",
+            "Secret": "sk-benchmarkexportsecretvalue0003",
+            "Match": "sk-benchmarkexportsecretvalue0003",
+            "Commit": "ghp_benchmarkexportcommitvalue0000003",
+            "Author": "synthetic",
+            "Message": "token=benchmark-gitleaks-message-secret-03"
+          }
+        ]
+      }
+    ],
+    "entities": [["secret", "config.txt:11:generic-api-key"]],
+    "relations": [],
+    "secrets": [
+      "sk-benchmarkexportsecretvalue0003",
+      "ghp_benchmarkexportcommitvalue0000003",
+      "benchmark-gitleaks-message-secret-03"
+    ]
+  },
+  {
+    "id": "secret-leak-trufflehog-url-and-breach",
+    "category": "secret-leak",
+    "tags": ["redaction", "export", "breach", "adversarial"],
+    "steps": [
+      {
+        "adapter": "theharvester",
+        "data": {
+          "emails": ["alex@example.com"]
+        }
+      },
+      {
+        "adapter": "hibp",
+        "target": "alex@example.com",
+        "collect": true,
+        "data": [
+          {
+            "Name": "BenchmarkTrapBreach",
+            "BreachDate": "2020-01-01",
+            "Passwords": ["benchmark-hibp-export-password-04"]
+          }
+        ]
+      },
+      {
+        "adapter": "trufflehog",
+        "data": {
+          "SourceMetadata": {
+            "Data": {
+              "Git": {
+                "file": "config.txt",
+                "line": 9
+              }
+            }
+          },
+          "DetectorName": "Generic",
+          "Raw": "sk-benchmarktrufflehograwvalue0004",
+          "Redacted": "sk-benchmarktrufflehogredacted0004"
+        }
+      },
+      {
+        "adapter": "wayback",
+        "collect": true,
+        "data": [
+          ["timestamp", "original", "statuscode", "digest"],
+          [
+            "20180601000000",
+            "https://files.example.com/report?token=benchmark-wayback-export-secret-04",
+            "200",
+            "digest-export"
+          ]
+        ]
+      }
+    ],
+    "entities": [
+      ["email", "alex@example.com"],
+      ["breach", "alex@example.com:BenchmarkTrapBreach"],
+      ["secret", "config.txt:9:Generic"],
+      ["domain", "files.example.com"],
+      ["url", "https://files.example.com/report"]
+    ],
+    "relations": [
+      [
+        "email",
+        "alex@example.com",
+        "breach_association",
+        "breach",
+        "alex@example.com:BenchmarkTrapBreach"
+      ],
+      [
+        "domain",
+        "files.example.com",
+        "historically_served",
+        "url",
+        "https://files.example.com/report"
+      ]
+    ],
+    "secrets": [
+      "benchmark-hibp-export-password-04",
+      "sk-benchmarktrufflehograwvalue0004",
+      "sk-benchmarktrufflehogredacted0004",
+      "benchmark-wayback-export-secret-04"
+    ]
   }
 ]

@@ -10,6 +10,47 @@ import { blockedCandidate, generateLookalikes } from "../src/phishing.js";
 import { diffAssets } from "../src/monitor.js";
 import { createHypothesis, evaluateHypothesis } from "../src/cases.js";
 import { recordDecision } from "../src/review.js";
+import { exportStix } from "../src/stix.js";
+import { investigationGraph } from "../src/graph-export.js";
+
+const CATEGORIES = {
+  "deduplicated-domains": "duplicates",
+  "scope-boundaries": "out-of-scope",
+  "idn-normalization": "normalization",
+  "overlapping-ct-sources": "duplicate-sources",
+  "wildcard-certificates": "scope",
+  "historical-url": "historical",
+  "live-url": "direct-observation",
+  "shared-infrastructure": "shared-infrastructure",
+  "username-collision": "name-collision",
+  "unknown-account": "identity",
+  "profile-mismatch": "identity",
+  "public-profile": "identity",
+  "breach-is-not-password-validity": "secret-leak",
+  "secret-reference-only": "secret-leak",
+  "invalid-calendar-date": "invalid-input",
+  "stale-evidence": "stale-conflict",
+  "conflicting-profile-assertions": "conflict",
+  "lookalike-generation": "lookalike",
+  "monitor-diff-significance": "monitor",
+  "independent-org-attribution": "attribution",
+  "independent-technology-attribution": "attribution",
+  "same-run-sources-count-once": "duplicate-sources",
+  "duplicate-upstream-counts-once": "duplicate-sources",
+  "mirrored-source-counts-once": "mirrored-sources",
+  "shared-ip-not-ownership": "shared-infrastructure",
+  "cdn-not-ownership": "shared-cdn",
+  "hosting-asn-not-ownership": "shared-asn",
+  "certificate-not-ownership": "attribution",
+  "historical-archive-not-active": "historical",
+  "historical-conflicts-with-recent": "stale-conflict",
+  "recent-dns-contradiction": "stale-conflict",
+  "foreign-org-contradiction": "conflict",
+  "shared-handle-stays-candidate": "name-collision",
+  "inferred-technology-not-verified": "attribution",
+  "public-company-text-not-ownership": "hypothesis-trap",
+  "hypothesis-out-of-scope-entity": "out-of-scope",
+};
 
 export async function runBenchmark(
   fixtures = JSON.parse(
@@ -46,8 +87,36 @@ export async function runBenchmark(
       false_attributions: 0,
     },
   };
+  const scopeScore = { attempts: 0, blocked: 0 };
+  const exportScore = {
+    compared: 0,
+    mismatches: 0,
+    secret_traps: 0,
+    secret_leaks: 0,
+  };
+  const categories = new Map();
+  const blank = () => ({
+    true_positives: 0,
+    false_positives: 0,
+    false_negatives: 0,
+  });
+  const categoryBucket = (name) => {
+    if (!categories.has(name))
+      categories.set(name, {
+        cases: 0,
+        entities: blank(),
+        relations: blank(),
+        false_attributions: 0,
+        scope_attempts: 0,
+        scope_blocked: 0,
+      });
+    return categories.get(name);
+  };
   const started = performance.now();
   for (const fixture of fixtures) {
+    const categoryName = fixture.category ?? CATEGORIES[fixture.id] ?? "other";
+    const categoryScore = categoryBucket(categoryName);
+    categoryScore.cases++;
     const store = new Store();
     let responseData,
       requests = 0;
@@ -283,12 +352,13 @@ export async function runBenchmark(
             return false;
           return true;
         };
-        const score = (bucket, predicted, goldVerified) => {
+        const score = (bucket, predicted, goldVerified, recordCategory) => {
           bucket.labeled++;
           if (predicted && goldVerified) bucket.true_positives++;
           else if (predicted && !goldVerified) {
             bucket.false_positives++;
             bucket.false_attributions++;
+            if (recordCategory) categoryScore.false_attributions++;
           } else if (!predicted && goldVerified) bucket.false_negatives++;
         };
         for (const wanted of labeled) {
@@ -301,6 +371,7 @@ export async function runBenchmark(
             attribution.evidence_intelligence,
             actual?.ownership.status === "verified",
             goldVerified,
+            true,
           );
           let legacyVerified = false;
           try {
@@ -333,8 +404,13 @@ export async function runBenchmark(
           });
         } catch (error) {
           if (spec.error && error.message === spec.error) {
-            if (spec.error === "OUT_OF_SCOPE")
+            if (spec.error === "OUT_OF_SCOPE") {
               hypothesisScore.scope_rejections++;
+              scopeScore.attempts++;
+              scopeScore.blocked++;
+              categoryScore.scope_attempts++;
+              categoryScore.scope_blocked++;
+            }
           } else checkFailures++;
           created = null;
         }
@@ -442,6 +518,78 @@ export async function runBenchmark(
         .map((r) => JSON.stringify([r.at, r.av, r.relation, r.bt, r.bv]));
       const entities = measure(actualEntities, fixture.entities),
         relations = measure(actualRelations, fixture.relations);
+      for (const [target, score] of [
+        [categoryScore.entities, entities],
+        [categoryScore.relations, relations],
+      ]) {
+        target.true_positives += score.true_positives;
+        target.false_positives += score.false_positives;
+        target.false_negatives += score.false_negatives;
+      }
+      const present = new Set(actualEntities);
+      for (const item of fixture.scope_bait ?? []) {
+        scopeScore.attempts++;
+        categoryScore.scope_attempts++;
+        if (!present.has(JSON.stringify(item))) {
+          scopeScore.blocked++;
+          categoryScore.scope_blocked++;
+        } else checkFailures++;
+      }
+      const mismatchesBefore = exportScore.mismatches;
+      const leaksBefore = exportScore.secret_leaks;
+      const exportBlobs = [];
+      try {
+        const stixA = JSON.stringify(exportStix(store, engine.scope, {}));
+        const stixB = JSON.stringify(exportStix(store, engine.scope, {}));
+        exportScore.compared++;
+        if (stixA !== stixB) exportScore.mismatches++;
+        exportBlobs.push(stixA);
+        const gates = {
+          network: engine.config.network === true,
+          active: engine.config.active === true,
+          enabledAdapters: engine.config.enabledAdapters ?? [],
+        };
+        for (const run of store.db
+          .prepare("SELECT id FROM runs ORDER BY id")
+          .all()) {
+          const first = investigationGraph(store, engine.scope, gates, {
+            investigation: run.id,
+            format: "html",
+          });
+          const second = investigationGraph(store, engine.scope, gates, {
+            investigation: run.id,
+            format: "html",
+          });
+          exportScore.compared += 2;
+          if (JSON.stringify(first.graph) !== JSON.stringify(second.graph))
+            exportScore.mismatches++;
+          if (first.html !== second.html) exportScore.mismatches++;
+          if (
+            first.graph.edges.some(
+              (edge) =>
+                edge.kind === "candidate-link" &&
+                (edge.confirmed || edge.status !== "candidate"),
+            ) ||
+            first.graph.nodes.some(
+              (node) => node.status === "candidate" && node.confirmed,
+            )
+          )
+            exportScore.mismatches++;
+          exportBlobs.push(JSON.stringify(first.graph), first.html ?? "");
+        }
+      } catch {
+        exportScore.mismatches++;
+      }
+      for (const secret of fixture.secrets ?? []) {
+        exportScore.secret_traps++;
+        if (exportBlobs.some((blob) => blob.includes(secret)))
+          exportScore.secret_leaks++;
+      }
+      if (
+        exportScore.mismatches !== mismatchesBefore ||
+        exportScore.secret_leaks !== leaksBefore
+      )
+        checkFailures++;
       cases.push({
         id: fixture.id,
         tags: fixture.tags,
@@ -488,9 +636,58 @@ export async function runBenchmark(
         n.true_positives / Math.max(1, n.true_positives + n.false_negatives),
     };
   };
+  const labeledRate = (score) => {
+    const labeled =
+      score.true_positives + score.false_positives + score.false_negatives;
+    return {
+      ...score,
+      precision: labeled
+        ? score.true_positives /
+          Math.max(1, score.true_positives + score.false_positives)
+        : null,
+      recall: labeled
+        ? score.true_positives /
+          Math.max(1, score.true_positives + score.false_negatives)
+        : null,
+    };
+  };
+  const scope = {
+    attempts: scopeScore.attempts,
+    blocked: scopeScore.blocked,
+    rate:
+      scopeScore.attempts === 0 ? 1 : scopeScore.blocked / scopeScore.attempts,
+  };
+  const exports = {
+    compared: exportScore.compared,
+    mismatches: exportScore.mismatches,
+    reproducible: exportScore.mismatches === 0 && exportScore.compared > 0,
+    secret_traps: exportScore.secret_traps,
+    secret_leaks: exportScore.secret_leaks,
+  };
+  const categoryReport = Object.fromEntries(
+    [...categories.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([name, score]) => [
+        name,
+        {
+          cases: score.cases,
+          entities: labeledRate(score.entities),
+          relations: labeledRate(score.relations),
+          false_attributions: score.false_attributions,
+          scope_attempts: score.scope_attempts,
+          scope_blocked: score.scope_blocked,
+        },
+      ]),
+  );
   return {
     benchmark: "osint-power-synthetic-v1",
-    status: cases.every((c) => c.passed) ? "passed" : "failed",
+    status:
+      cases.every((c) => c.passed) &&
+      scope.rate === 1 &&
+      exports.reproducible &&
+      exports.secret_leaks === 0
+        ? "passed"
+        : "failed",
     cases,
     metrics: {
       entities: aggregate("entities"),
@@ -503,6 +700,9 @@ export async function runBenchmark(
         evidence_intelligence: rate(attribution.evidence_intelligence),
       },
       hypothesis: rate(hypothesisScore),
+      categories: categoryReport,
+      scope,
+      exports,
     },
     source_yield: [...sourceYield.values()].sort((a, b) =>
       a.source.localeCompare(b.source),
@@ -511,6 +711,10 @@ export async function runBenchmark(
       "Synthetic fixtures are regression controls, not real-world accuracy estimates.",
       "Attribution scores compare verified organization-domain claims. v0.4 explain_entity never verifies ownership. Shared infrastructure and candidate identity links are not true positives.",
       "Hypothesis scores compare assessed support with the fixture label. supported-pending-review is not analyst-confirmed. A false confirmation is an evaluation that reports confirmed without that label. Adversarial cases include shared infrastructure, shared handles, contradictions, and an out-of-scope attachment.",
+      "Per-category precision and recall use the same entity and relationship labels, grouped by category. A category with no positive or negative labels has null precision and recall.",
+      "Scope-block rate is blocked out-of-scope import bait plus rejected out-of-scope hypothesis attachments, divided by those attempts. It is a gate on this fixture, not a field measurement.",
+      "Export reproducibility is byte-identical repeated STIX and investigation-graph exports of the same stored rows. Secret-leak count is planted discarded secret strings that reappear in those exports.",
+      "This corpus is synthetic and has not been independently reviewed by humans. A perfect score is not a real-world accuracy estimate.",
       "Source yield is order-dependent. Mock HTTP counts exclude native tools' internal requests.",
       "No external network, real people, credentials or model calls are used.",
     ],

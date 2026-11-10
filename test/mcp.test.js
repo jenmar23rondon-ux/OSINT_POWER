@@ -34,7 +34,7 @@ test(
     });
     await client.connect(transport);
     const list = await client.listTools();
-    assert.equal(list.tools.length, 42);
+    assert.equal(list.tools.length, 43);
     for (const tool of list.tools) {
       assert.equal(tool.outputSchema.additionalProperties, false);
       assert.equal(tool.outputSchema.properties.schema_version.const, "0.4");
