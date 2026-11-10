@@ -193,11 +193,37 @@ test("planner exposes measured novelty and HTTP cost after real recorded collect
 test("labeled investigation benchmark meets entity, relationship and semantic regression gates", async () => {
   const report = await runBenchmark();
   assert.equal(report.status, "passed");
-  assert.equal(report.cases.length, 36);
+  assert.equal(report.cases.length, 52);
   assert.equal(report.metrics.hypothesis.false_confirmations, 0);
   assert.equal(report.metrics.hypothesis.false_positives, 0);
   assert.equal(report.metrics.hypothesis.precision, 1);
-  assert.equal(report.metrics.hypothesis.scope_rejections, 1);
+  assert.equal(report.metrics.hypothesis.scope_rejections, 2);
+  assert.equal(report.metrics.scope.rate, 1);
+  assert.equal(report.metrics.scope.blocked, report.metrics.scope.attempts);
+  assert.equal(report.metrics.scope.attempts > 0, true);
+  assert.equal(report.metrics.exports.reproducible, true);
+  assert.equal(report.metrics.exports.mismatches, 0);
+  assert.equal(report.metrics.exports.secret_leaks, 0);
+  assert.equal(report.metrics.exports.secret_traps > 0, true);
+  assert.equal(report.metrics.categories.other, undefined);
+  for (const name of [
+    "shared-cdn",
+    "shared-infrastructure",
+    "shared-asn",
+    "name-collision",
+    "mirrored-sources",
+    "duplicate-sources",
+    "stale-conflict",
+    "out-of-scope",
+    "lookalike",
+    "hypothesis-trap",
+    "secret-leak",
+  ]) {
+    assert.ok(report.metrics.categories[name], name);
+    assert.equal(report.metrics.categories[name].entities.false_positives, 0);
+    assert.equal(report.metrics.categories[name].relations.false_positives, 0);
+    assert.equal(report.metrics.categories[name].false_attributions, 0);
+  }
   assert.equal(
     report.metrics.hypothesis.weakened_matches,
     report.metrics.hypothesis.weakened_expected,

@@ -1178,6 +1178,15 @@ function buildBundle(scope, snapshot, chosen, filters, omitted, truncated) {
     limitations: STIX_LIMITATIONS,
   };
 }
+export function investigationCoverage(store, value) {
+  const resolved = resolveInvestigation(store, value);
+  if (!resolved) throw new Error("INVESTIGATION_NOT_FOUND");
+  return {
+    kind: resolved.kind,
+    name: resolved.name,
+    entity_ids: [...resolved.ids].sort(),
+  };
+}
 export function exportStix(store, scope, input = {}) {
   const parsed = StixExportInput.safeParse(input ?? {});
   if (!parsed.success) throw new Error("INVALID_INPUT");

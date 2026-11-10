@@ -38,6 +38,7 @@ import {
   listHypotheses,
   updateHypothesis,
 } from "./cases.js";
+import { investigationGraph } from "./graph-export.js";
 
 const HELP = {
   project: "OSINT_POWER",
@@ -110,7 +111,8 @@ const HELP = {
     import: "import --adapter subfinder --file examples/subdomains.txt",
     query: "query [--type domain] [--limit 25] [--cursor HASH]",
     evidence: "evidence --id ENTITY_HASH [--limit 25] [--offset 0]",
-    graph: "graph [--limit 25] [--offset 0]",
+    graph:
+      "graph [--limit 25] [--offset 0] OR graph --case UUID | --investigation NAME [--format json|html --output PATH] (read-only; candidates are not shown as confirmed)",
     report:
       "report [--format json|html --output PATH]; interactive HTML requires an explicit output path",
   },
@@ -594,7 +596,46 @@ try {
         Number(v.limit ?? 25),
         Number(v.offset ?? 0),
       );
-    else if (command === "graph")
+    else if (command === "graph" && (v.case || v.investigation)) {
+      if (v.case && v.investigation) throw new Error("INVALID_INPUT");
+      const format = v.format ?? "json";
+      if (!["json", "html"].includes(format))
+        throw new Error("INVALID_GRAPH_FORMAT");
+      if (format === "html" && !v.output)
+        throw new Error("OUTPUT_PATH_REQUIRED");
+      const exported = investigationGraph(
+        engine.store,
+        engine.scope,
+        {
+          network: engine.config.network === true,
+          active: engine.config.active === true,
+          enabledAdapters: engine.config.enabledAdapters ?? [],
+        },
+        {
+          ...(v.case ? { case_id: v.case } : {}),
+          ...(v.investigation ? { investigation: v.investigation } : {}),
+          format,
+        },
+      );
+      if (v.output) {
+        writeFileSync(
+          v.output,
+          format === "html"
+            ? exported.html
+            : JSON.stringify(exported.graph, null, 2) + "\n",
+          { mode: 0o600, flag: "wx" },
+        );
+        result = {
+          status: "completed",
+          format,
+          path: v.output,
+          nodes: exported.graph.counts.nodes,
+          edges: exported.graph.counts.edges,
+          read_only: true,
+          truncated: exported.truncated,
+        };
+      } else result = exported;
+    } else if (command === "graph")
       result = engine.store.graph(Number(v.limit ?? 25), Number(v.offset ?? 0));
     else if (command === "report") {
       const format = v.format ?? "json";

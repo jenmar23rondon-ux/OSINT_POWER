@@ -708,7 +708,7 @@ test(
     });
     await client.connect(transport);
     const names = (await client.listTools()).tools.map((tool) => tool.name);
-    assert.equal(names.length, 42);
+    assert.equal(names.length, 43);
     for (const name of [
       "create_hypothesis",
       "update_hypothesis",
@@ -720,6 +720,7 @@ test(
       "case_summary",
       "case_report",
       "export_case_stix",
+      "investigation_graph",
     ])
       assert.equal(names.includes(name), true);
     const descriptions = Object.fromEntries(
@@ -813,5 +814,30 @@ test(
     ).structuredContent.result;
     assert.equal(report.sections.hypotheses[0].finding, false);
     assert.equal(report.collection, false);
+    const graph = (
+      await client.callTool({
+        name: "investigation_graph",
+        arguments: { case_id: folder.result.id, format: "json" },
+      })
+    ).structuredContent;
+    assert.equal(graph.ok, true);
+    assert.equal(graph.result.collection, false);
+    assert.equal(graph.result.network, false);
+    assert.equal(graph.result.read_only, true);
+    assert.equal(
+      graph.result.graph.edges.some(
+        (edge) => edge.kind === "candidate-link" && edge.confirmed,
+      ),
+      false,
+    );
+    assert.equal(
+      graph.result.graph.nodes.some(
+        (node) =>
+          node.kind === "hypothesis" &&
+          node.status === "supported-pending-review" &&
+          node.confirmed,
+      ),
+      false,
+    );
   },
 );

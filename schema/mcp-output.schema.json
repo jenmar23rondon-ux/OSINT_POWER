@@ -15512,5 +15512,387 @@
         ]
       }
     }
+  },
+  "investigation_graph": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "schema_version": {
+        "type": "string",
+        "const": "0.4"
+      },
+      "ok": {
+        "type": "boolean"
+      },
+      "execution_status": {
+        "type": "string",
+        "enum": [
+          "succeeded",
+          "failed"
+        ]
+      },
+      "collection_status": {
+        "type": "string",
+        "enum": [
+          "completed",
+          "partial",
+          "failed",
+          "deferred",
+          "cancelled",
+          "not_applicable"
+        ]
+      },
+      "coverage": {
+        "type": "object",
+        "properties": {
+          "complete": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "complete",
+          "truncated"
+        ],
+        "additionalProperties": false
+      },
+      "retry": {
+        "type": "object",
+        "properties": {
+          "retryable": {
+            "type": "boolean"
+          },
+          "retry_after_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "retryable",
+          "retry_after_ms"
+        ],
+        "additionalProperties": false
+      },
+      "result": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "format": {
+                "type": "string",
+                "enum": [
+                  "json",
+                  "html"
+                ]
+              },
+              "case_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "investigation": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "read_only": {
+                "type": "boolean",
+                "const": true
+              },
+              "executes": {
+                "type": "boolean",
+                "const": false
+              },
+              "network": {
+                "type": "boolean",
+                "const": false
+              },
+              "collection": {
+                "type": "boolean",
+                "const": false
+              },
+              "truncated": {
+                "type": "boolean"
+              },
+              "graph": {
+                "type": "object",
+                "properties": {
+                  "nodes": {
+                    "maxItems": 300,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "entity",
+                            "evidence",
+                            "hypothesis",
+                            "decision"
+                          ]
+                        },
+                        "ref": {
+                          "type": "string"
+                        },
+                        "label": {
+                          "type": "string"
+                        },
+                        "detail": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "observed",
+                            "candidate",
+                            "confirmed",
+                            "contradicted",
+                            "open",
+                            "supported-pending-review",
+                            "weakened",
+                            "rejected",
+                            "analyst-confirmed",
+                            "accept",
+                            "reject",
+                            "needs-more-evidence"
+                          ]
+                        },
+                        "confirmed": {
+                          "type": "boolean"
+                        },
+                        "finding": {
+                          "type": "boolean",
+                          "const": false
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "kind",
+                        "ref",
+                        "label",
+                        "detail",
+                        "status",
+                        "confirmed",
+                        "finding"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "edges": {
+                    "maxItems": 600,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "observation",
+                            "candidate-link",
+                            "confirmed-link",
+                            "contradiction",
+                            "supports",
+                            "contradicts",
+                            "decision"
+                          ]
+                        },
+                        "from": {
+                          "type": "string"
+                        },
+                        "to": {
+                          "type": "string"
+                        },
+                        "label": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "observation",
+                            "candidate",
+                            "confirmed",
+                            "contradicted",
+                            "support",
+                            "decision"
+                          ]
+                        },
+                        "confirmed": {
+                          "type": "boolean"
+                        },
+                        "finding": {
+                          "type": "boolean",
+                          "const": false
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "kind",
+                        "from",
+                        "to",
+                        "label",
+                        "status",
+                        "confirmed",
+                        "finding"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "counts": {
+                    "type": "object",
+                    "properties": {
+                      "nodes": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "edges": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "entities": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "evidence": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "hypotheses": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "decisions": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "candidate_links": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "confirmed_links": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "contradictions": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "omitted_out_of_scope": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      }
+                    },
+                    "required": [
+                      "nodes",
+                      "edges",
+                      "entities",
+                      "evidence",
+                      "hypotheses",
+                      "decisions",
+                      "candidate_links",
+                      "confirmed_links",
+                      "contradictions",
+                      "omitted_out_of_scope"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "limitations": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "nodes",
+                  "edges",
+                  "counts",
+                  "limitations"
+                ],
+                "additionalProperties": false
+              },
+              "html": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "limitations": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "format",
+              "case_id",
+              "investigation",
+              "read_only",
+              "executes",
+              "network",
+              "collection",
+              "truncated",
+              "graph",
+              "html",
+              "limitations"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "required": [
+      "schema_version",
+      "ok",
+      "execution_status",
+      "collection_status",
+      "coverage",
+      "retry",
+      "result"
+    ],
+    "additionalProperties": false
   }
 }

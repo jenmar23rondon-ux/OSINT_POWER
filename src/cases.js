@@ -1202,6 +1202,22 @@ export function listHypotheses(store, input = {}) {
     rules: HYPOTHESIS_RULES,
   };
 }
+export function readHypothesisAssessment(
+  store,
+  scope,
+  gates = {},
+  id,
+  options = {},
+) {
+  const row = loadHypothesis(store, id);
+  const before = row.status;
+  const evaluation = evaluateStored(store, scope, gates, row, options);
+  const after = store.db
+    .prepare("SELECT status FROM hypotheses WHERE id=?")
+    .get(id).status;
+  if (after !== before) throw new Error("HYPOTHESIS_CONFIRMATION_FORBIDDEN");
+  return evaluation;
+}
 export function evaluateHypothesis(
   store,
   scope,

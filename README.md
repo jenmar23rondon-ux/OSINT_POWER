@@ -13,7 +13,7 @@
   <a href="#quick-start">Quick start</a> · <a href="docs/WORKFLOWS.md">Seven workflows</a> · <a href="docs/AI.md">Connect AI</a> · <a href="docs/ADAPTERS.md">Adapters</a> · <a href="docs/ROADMAP.md">Roadmap</a>
 </p>
 
-OSINT POWER is an evidence-focused reconnaissance framework for scoped security assessments and research. It normalizes public-source observations, stores provenance in SQLite, and exposes a CLI and **42 MCP tools**. It works without a model or an AI API key.
+OSINT POWER is an evidence-focused reconnaissance framework for scoped security assessments and research. It normalizes public-source observations, stores provenance in SQLite, and exposes a CLI and **43 MCP tools**. It works without a model or an AI API key.
 
 **Status: v0.4.0, historical discovery and verifiable evidence packages.** Seven workflows include explicit budgets, source status and partial results. External binaries are installed separately. Live connectors and import bridges are distinguished in the matrix below.
 
@@ -22,7 +22,7 @@ OSINT POWER is an evidence-focused reconnaissance framework for scoped security 
 - **Cert Spotter and Wayback CDX:** one bounded provider page per call, persistent continuation, explicit restart and historical URL relationships.
 - **Precise AI responses:** a separate output contract for each MCP tool; execution, collection completeness and retryability are explicit.
 - **Evidence packages:** deterministic exports with normalized excerpts, provenance, configuration digests and offline integrity verification.
-- **Measurable quality:** 36 labeled synthetic scenarios covering scope, duplicates, shared infrastructure, identity ambiguity, conflicting assertions, stale records, monitor diffs, cross-source attribution and hypothesis evaluation.
+- **Measurable quality:** 52 labeled synthetic scenarios covering scope, duplicates, shared infrastructure, identity ambiguity, conflicting assertions, stale records, monitor diffs, cross-source attribution, hypothesis evaluation, out-of-scope bait and secret-leak traps. The scores are synthetic and have not been independently reviewed by humans.
 - **Evidence assessments:** `explain_entity` still separates existence, ownership, identity and freshness. `assess` / `assess_evidence` adds a cross-source reading for in-scope assets. The planner exposes observed source novelty and request cost.
 
 See the **[v0.4 guide and migration notes](docs/V0.4.md)**.
@@ -298,7 +298,9 @@ npm audit
 
 CI covers Windows and Linux. Core tests use synthetic fixtures, mocked network sources, bounded local subprocesses and real MCP sessions. A separate Linux native lab downloads checksum-pinned httpx/dnsx/naabu and exercises loopback-only fixtures. It does not certify every upstream version. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-The benchmark reports entity/relationship precision and recall against its labeled fixtures, semantic failures, source yield and mocked HTTP counts. Its results are regression controls and do not estimate real-world accuracy. See [benchmark design](docs/BENCHMARKS.md).
+The benchmark reports entity and relationship precision and recall, per-category scores, false attributions, scope-block rate, export reproducibility and secret-leak count. Its results are regression controls on synthetic fixtures and do not estimate real-world accuracy. See [benchmark design](docs/BENCHMARKS.md).
+
+`graph --case UUID --format html --output graph.html` writes a read-only offline graph. Candidates are not drawn as confirmed. The paginated `graph --limit` command is unchanged.
 
 The [Dockerfile](docker/Dockerfile) runs the core as an unprivileged user. It does not bundle reconnaissance binaries or impose a provider-specific egress policy; configure resource and network limits on the host.
 

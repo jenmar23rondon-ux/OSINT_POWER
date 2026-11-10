@@ -622,7 +622,7 @@ test(
     });
     await client.connect(transport);
     const names = (await client.listTools()).tools.map((tool) => tool.name);
-    assert.equal(names.length, 42);
+    assert.equal(names.length, 43);
     assert.equal(names.includes("assess_evidence"), true);
     assert.equal(names.includes("explain_asset"), true);
     assert.equal(names.includes("explain_entity"), true);
