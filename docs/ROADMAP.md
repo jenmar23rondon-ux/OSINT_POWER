@@ -56,6 +56,10 @@ Local monitor definitions, per-run snapshots and diffs for subdomains, hosts, ce
 
 Read-only STIX 2.1 export (`export-stix`, `export_stix`) and an offline bundle validator. Suspected and candidate records are not rewritten as confirmed. The operational runbook and release checklist are documentation only: version stays 0.4.0, and the checklist does not create a tag or a GitHub release. Schema stays v6.
 
+## Evidence intelligence
+
+Read-only `assess`, `assess_evidence` and `explain_asset` turn stored in-scope domains, IPs, ASNs, URLs and technologies into separate historical, activity, attribution, conflict, independence and review statuses. Suggestions stay inside the current gates and do not collect. Schema stays v6. Package version remains 0.4.0. The synthetic benchmark reports v0.4 versus this reader for attribution precision, recall and false attributions.
+
 ## Next investigation improvements
 
 - Broaden the labeled corpus with reviewed, publishable datasets and independently maintained gold labels.

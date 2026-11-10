@@ -13,7 +13,7 @@
   <a href="#quick-start">Quick start</a> · <a href="docs/WORKFLOWS.md">Seven workflows</a> · <a href="docs/AI.md">Connect AI</a> · <a href="docs/ADAPTERS.md">Adapters</a> · <a href="docs/ROADMAP.md">Roadmap</a>
 </p>
 
-OSINT POWER is an evidence-focused reconnaissance framework for scoped security assessments and research. It normalizes public-source observations, stores provenance in SQLite, and exposes a CLI and **30 MCP tools**. It works without a model or an AI API key.
+OSINT POWER is an evidence-focused reconnaissance framework for scoped security assessments and research. It normalizes public-source observations, stores provenance in SQLite, and exposes a CLI and **32 MCP tools**. It works without a model or an AI API key.
 
 **Status: v0.4.0, historical discovery and verifiable evidence packages.** Seven workflows include explicit budgets, source status and partial results. External binaries are installed separately. Live connectors and import bridges are distinguished in the matrix below.
 
@@ -22,12 +22,19 @@ OSINT POWER is an evidence-focused reconnaissance framework for scoped security 
 - **Cert Spotter and Wayback CDX:** one bounded provider page per call, persistent continuation, explicit restart and historical URL relationships.
 - **Precise AI responses:** a separate output contract for each MCP tool; execution, collection completeness and retryability are explicit.
 - **Evidence packages:** deterministic exports with normalized excerpts, provenance, configuration digests and offline integrity verification.
-- **Measurable quality:** 19 labeled synthetic scenarios covering scope, duplicates, shared infrastructure, identity ambiguity, conflicting assertions, stale records and monitor diffs.
-- **Evidence assessments:** existence, ownership, identity and freshness remain separate. The planner exposes observed source novelty and request cost.
+- **Measurable quality:** 35 labeled synthetic scenarios covering scope, duplicates, shared infrastructure, identity ambiguity, conflicting assertions, stale records, monitor diffs and cross-source attribution.
+- **Evidence assessments:** `explain_entity` still separates existence, ownership, identity and freshness. `assess` / `assess_evidence` adds a cross-source reading for in-scope assets. The planner exposes observed source novelty and request cost.
 
 See the **[v0.4 guide and migration notes](docs/V0.4.md)**.
 
 Analyst decisions are stored beside that evidence. A shared name or handle, including the same handle on a GitHub profile and in an email address, stays a **candidate** until a non-name identifier is supported by independent sources. Mirrors, a shared upstream, and the same collector run do not count as separate corroboration.
+
+`assess` reads those stored rows and separates historical existence, current activity, organization attribution, conflicts and the analyst decision. It does not collect. A shared IP, CDN or hosting ASN is not ownership, and a certificate or Wayback capture is not proof the name is active. The suggested next step is not executed.
+
+```bash
+node src/cli.js assess --type domain
+node src/cli.js assess --id ENTITY_HASH
+```
 
 Suspicious lookalikes of an in-scope apex are a separate workflow. They are stored as **suspected** leads, with the basis for each signal, and they are not confirmed phishing. An analyst decision is required before notification or takedown. `export-stix` can turn the stored workspace into a STIX 2.1 bundle; suspected leads stay suspected indicators, and out-of-scope rows are left out. See [production operations](docs/PRODUCTION.md).
 

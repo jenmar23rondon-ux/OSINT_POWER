@@ -103,7 +103,7 @@ node src/cli.js validate-stix --file bundle.json
 
 `--output` writes only the STIX bundle, mode `0600` on platforms that honor it, and refuses to overwrite. Stdout stays the CLI JSON summary. Without `--output`, the summary includes the bundle. `validate-stix` reads a file of at most 50 MB and does not open a workspace or the network.
 
-MCP tool `export_stix` takes the same filters (`investigation`, `target`, `review_status`, `since`, `until`) and returns the bundle. It is read-only. Existing tool names and output schemas are unchanged. The server exposes **30** tools.
+MCP tool `export_stix` takes the same filters (`investigation`, `target`, `review_status`, `since`, `until`) and returns the bundle. It is read-only. Existing tool names and output schemas are unchanged. The server exposes **32** tools.
 
 | Filter            | Effect                                                                                                                                   |
 | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |

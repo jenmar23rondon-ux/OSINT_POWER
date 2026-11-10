@@ -25,6 +25,7 @@ import {
   monitorMarkdown,
   runMonitor,
 } from "./monitor.js";
+import { assessAssets, explainAsset } from "./evidence-intelligence.js";
 
 const HELP = {
   project: "OSINT_POWER",
@@ -48,6 +49,8 @@ const HELP = {
     compare:
       "compare --before RUN_UUID --after RUN_UUID [--limit 25] [--cursor HASH]",
     explain: "explain --id ENTITY_HASH [--limit 10]",
+    assess:
+      "assess [--type domain|ip|asn|url|technology] [--id ENTITY_HASH] [--limit 25] [--cursor HASH] (read-only; suggestions do not collect)",
     "review-queue":
       "review-queue [--limit 25] [--cursor HASH] (unreviewed entities, candidate links, contradictions)",
     decide:
@@ -244,7 +247,20 @@ try {
       });
     else if (command === "explain")
       result = explainEntity(engine.store, v.id, Number(v.limit ?? 10));
-    else if (command === "review-queue")
+    else if (command === "assess") {
+      const gates = {
+        network: engine.config.network,
+        active: engine.config.active,
+        enabledAdapters: engine.config.enabledAdapters,
+      };
+      result = v.id
+        ? explainAsset(engine.store, engine.scope, gates, { entity_id: v.id })
+        : assessAssets(engine.store, engine.scope, gates, {
+            ...(v.type ? { type: v.type } : {}),
+            ...(v.limit ? { limit: Number(v.limit) } : {}),
+            ...(v.cursor ? { cursor: v.cursor } : {}),
+          });
+    } else if (command === "review-queue")
       result = reviewQueue(engine.store, {
         ...(v.limit ? { limit: Number(v.limit) } : {}),
         ...(v.cursor ? { cursor: v.cursor } : {}),

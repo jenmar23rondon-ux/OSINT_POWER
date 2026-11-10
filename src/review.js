@@ -28,7 +28,7 @@ export const RESOLUTION_RULES = [
   "Only username, email, profile and employee entities are compared for identity.",
 ];
 
-const INDEPENDENCE_NOTE =
+export const INDEPENDENCE_NOTE =
   "Sources that share an upstream, a mirror origin, or a collector run count as one source.";
 
 export const DecisionInput = z
@@ -127,7 +127,7 @@ function decisionHistory(store, kind, subjectId) {
     .all(kind, subjectId)
     .map(decisionRow);
 }
-function loadDecisions(store) {
+export function loadDecisions(store) {
   const grouped = new Map();
   for (const row of store.db
     .prepare(
@@ -623,15 +623,14 @@ function readLinks(store) {
       blocked_reason: row.blocked_reason,
     }));
 }
-export function refreshResolution(store) {
+function resolutionInputs(store) {
   const entities = store.db
     .prepare("SELECT id, type, value, first_seen, last_seen FROM entities")
     .all();
   const entitiesById = new Map(entities.map((entity) => [entity.id, entity]));
-  const observations = loadObservations(store);
-  const links = buildLinks(entitiesById, observations);
-  persistLinks(store, links);
-  const stored = readLinks(store);
+  return { entities, entitiesById, observations: loadObservations(store) };
+}
+function contradictionsFor(entities, observations, links) {
   const contradictions = new Map();
   const add = (entityId, item) => {
     const list = contradictions.get(entityId) ?? [];
@@ -642,7 +641,7 @@ export function refreshResolution(store) {
     for (const item of entityContradictions(entity.id, observations))
       add(entity.id, item);
   }
-  for (const link of stored) {
+  for (const link of links) {
     for (const item of linkContradictions(link, observations)) {
       add(link.left_id, item);
       add(link.right_id, item);
@@ -656,12 +655,31 @@ export function refreshResolution(store) {
     );
     contradictions.set(entityId, items);
   }
+  return contradictions;
+}
+// Read-only view of the same candidate links and contradictions refreshResolution stores.
+export function inspectResolution(store) {
+  const { entities, entitiesById, observations } = resolutionInputs(store);
+  const links = buildLinks(entitiesById, observations);
+  return {
+    entities,
+    entitiesById,
+    observations,
+    links,
+    contradictions: contradictionsFor(entities, observations, links),
+  };
+}
+export function refreshResolution(store) {
+  const { entities, entitiesById, observations } = resolutionInputs(store);
+  const links = buildLinks(entitiesById, observations);
+  persistLinks(store, links);
+  const stored = readLinks(store);
   return {
     entities,
     entitiesById,
     observations,
     links: stored,
-    contradictions,
+    contradictions: contradictionsFor(entities, observations, stored),
   };
 }
 function orient(link, entityId, entitiesById) {

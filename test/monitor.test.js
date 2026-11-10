@@ -626,7 +626,7 @@ test(
     transport.stderr.on("data", () => {});
     await client.connect(transport);
     const names = (await client.listTools()).tools.map((tool) => tool.name);
-    assert.equal(names.length, 30);
+    assert.equal(names.length, 32);
     for (const name of [
       "create_monitor",
       "run_monitor",
