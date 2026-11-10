@@ -2,7 +2,7 @@
 
 Package version remains **0.4.0**. This document describes how to run a workspace and how to record a reproducible check of the tree. It does not cut a release: do not bump `package.json`, do not create a git tag, and do not publish a GitHub release from this checklist.
 
-SQLite schema **v6** is unchanged by STIX export. Export only reads stored rows.
+SQLite schema **v7** is unchanged by STIX export. Export only reads stored rows. Hypothesis and case tables are created when the database is opened, not when a bundle is exported.
 
 ## Install
 
@@ -81,7 +81,7 @@ A backup contains the scope, evidence, review history, phishing leads, and monit
 
 ## Schema migration
 
-Opening a database creates any missing v6 tables with `CREATE TABLE IF NOT EXISTS` and sets `user_version` to 6. Existing evidence, decisions, phishing rows, and jobs are not rewritten. v4 and v5 databases gain the later tables on open. Pre-v0.3 runs still cannot be reconstructed as historical snapshots.
+Opening a database creates any missing v6 and v7 tables with `CREATE TABLE IF NOT EXISTS` and sets `user_version` to 7. Existing evidence, decisions, phishing rows, monitor rows, and jobs are not rewritten. v4, v5 and v6 databases gain the later tables on open. Pre-v0.3 runs still cannot be reconstructed as historical snapshots.
 
 STIX export does not add a table and does not change `user_version`. A failed export leaves the previous rows in place.
 
@@ -103,7 +103,7 @@ node src/cli.js validate-stix --file bundle.json
 
 `--output` writes only the STIX bundle, mode `0600` on platforms that honor it, and refuses to overwrite. Stdout stays the CLI JSON summary. Without `--output`, the summary includes the bundle. `validate-stix` reads a file of at most 50 MB and does not open a workspace or the network.
 
-MCP tool `export_stix` takes the same filters (`investigation`, `target`, `review_status`, `since`, `until`) and returns the bundle. It is read-only. Existing tool names and output schemas are unchanged. The server exposes **32** tools.
+MCP tool `export_stix` takes the same filters (`investigation`, `target`, `review_status`, `since`, `until`) and returns the bundle. It is read-only. `export_case_stix` calls that exporter for the case's investigations and targets, then adds each hypothesis as a note. Existing tool names and output schemas are unchanged. The server exposes **42** tools.
 
 | Filter            | Effect                                                                                                                                   |
 | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |

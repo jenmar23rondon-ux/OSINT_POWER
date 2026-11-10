@@ -168,8 +168,18 @@ The core report includes at most 50 entities, 50 relationships and 20 recent run
 | monitor_changes       | Read one page of stored changes and their evidence identifiers             |
 | list_monitors         | List definitions and the latest run status                                 |
 | export_stix           | Read-only STIX 2.1 bundle; suspected leads stay suspected                  |
+| create_hypothesis     | Store an open hypothesis. No collection and no confirmation                |
+| update_hypothesis     | Edit an open hypothesis. Cannot set analyst-confirmed                      |
+| close_hypothesis      | Record rejected or analyst-confirmed. Still not a finding                  |
+| list_hypotheses       | Read stored hypotheses                                                     |
+| evaluate_hypothesis   | Supporting, contradicting and missing evidence. Does not collect           |
+| create_case           | Group investigations, targets, hypotheses, decisions and notes             |
+| list_cases            | List stored cases                                                          |
+| case_summary          | Read one case without collecting                                           |
+| case_report           | Separate decisions, candidates, hypotheses and limitations                 |
+| export_case_stix      | Existing STIX exporter; hypotheses are notes, not indicators               |
 
-There are **32 MCP tools** in total, including export_evidence, export_stix, the three review tools, `assess_evidence`, `explain_asset`, the two phishing tools and the four monitor tools. Existing tool names and output schemas are unchanged. execute=true on the seven workflows uses durable jobs. The phishing scan and `monitor run` are synchronous and are not durable jobs. The legacy passive_pipeline is still a synchronous convenience command, without durable workflow recovery. MCP response-envelope changes are documented in the [v0.4 migration guide](V0.4.md). Backup, retention, STIX filters, and the release checklist are in [PRODUCTION.md](PRODUCTION.md).
+There are **42 MCP tools** in total, including export_evidence, export_stix, the three review tools, `assess_evidence`, `explain_asset`, the five hypothesis tools, the five case tools, the two phishing tools and the four monitor tools. Existing tool names and output schemas are unchanged. execute=true on the seven workflows uses durable jobs. The phishing scan and `monitor run` are synchronous and are not durable jobs. The legacy passive_pipeline is still a synchronous convenience command, without durable workflow recovery. MCP response-envelope changes are documented in the [v0.4 migration guide](V0.4.md). Backup, retention, STIX filters, and the release checklist are in [PRODUCTION.md](PRODUCTION.md).
 
 ## Incremental monitor
 
@@ -201,7 +211,7 @@ New entities from a run stay in the review queue until an analyst decides. The m
 
 Alerts are rows in `monitor_alerts` and are included in the JSON result. Markdown export is a local file and is not sent. A webhook URL is stored only when `monitor add` or `create_monitor` receives one. The run posts that URL only when network access is already enabled, through the same provider reservation gate as other HTTP calls, with redirects refused. No alerts means no request. A failed post is recorded as `hook_failed` and the local alert remains. Delivery is best-effort: a crash after the post and before the snapshot commit can repeat the post on the next comparable run.
 
-SQLite schema v6 creates `monitors`, `monitor_runs`, `monitor_assets`, `monitor_changes` and `monitor_alerts` with `CREATE TABLE IF NOT EXISTS`. Existing evidence, review and phishing rows are not rewritten. A database whose `user_version` is newer than v6 is rejected with `DATABASE_VERSION_TOO_NEW`. Snapshots keep at most 2000 assets. A partial or deferred monitor command exits nonzero, matching the other collection commands. Package version remains 0.4.0. STIX export does not add a table or bump `user_version`.
+SQLite schema v6 creates `monitors`, `monitor_runs`, `monitor_assets`, `monitor_changes` and `monitor_alerts` with `CREATE TABLE IF NOT EXISTS`. Schema v7 creates `hypotheses`, `cases` and `case_members` the same way. Existing evidence, review, phishing and monitor rows are not rewritten. A database whose `user_version` is newer than v7 is rejected with `DATABASE_VERSION_TOO_NEW`. Snapshots keep at most 2000 assets. A partial or deferred monitor command exits nonzero, matching the other collection commands. Package version remains 0.4.0. STIX export and hypothesis evaluation do not add a table. Opening the database is what stamps `user_version`.
 
 ## STIX export
 

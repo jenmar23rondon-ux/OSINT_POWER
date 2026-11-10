@@ -49,6 +49,27 @@ import {
   assessAssets,
   explainAsset,
 } from "./evidence-intelligence.js";
+import {
+  CaseIdInput,
+  CaseReportInput,
+  CloseHypothesisInput,
+  CreateCaseInput,
+  CreateHypothesisInput,
+  EvaluateHypothesisInput,
+  ListCasesInput,
+  ListHypothesesInput,
+  UpdateHypothesisInput,
+  caseReport,
+  caseSummary,
+  closeHypothesis,
+  createCase,
+  createHypothesis,
+  evaluateHypothesis,
+  exportCaseStix,
+  listCases,
+  listHypotheses,
+  updateHypothesis,
+} from "./cases.js";
 
 export function createServer(engine) {
   const server = new McpServer({ name: "osint-power", version: "0.4.0" });
@@ -325,6 +346,86 @@ export function createServer(engine) {
     "Read stored, in-scope evidence as a STIX 2.1 bundle. Suspected phishing lookalikes stay suspected indicators. Does not collect, write the database, or turn a candidate into a confirmed identity.",
     StixExportInput,
     (input) => exportStix(engine.store, engine.scope, input),
+  );
+  const gates = () => ({
+    network: engine.config.network === true,
+    active: engine.config.active === true,
+    enabledAdapters: engine.config.enabledAdapters ?? [],
+  });
+  register(
+    "create_hypothesis",
+    "Store an investigation hypothesis linked to in-scope entities and evidence already in the database. Does not collect, scan, or confirm anything. A hypothesis is not a finding. The status starts at open.",
+    CreateHypothesisInput,
+    (input) => createHypothesis(engine.store, engine.scope, input),
+    false,
+    false,
+    false,
+  );
+  register(
+    "update_hypothesis",
+    "Update the statement, claim, note, or in-scope links of an open hypothesis. Does not collect. Cannot set analyst-confirmed or rejected; those require close_hypothesis.",
+    UpdateHypothesisInput,
+    (input) => updateHypothesis(engine.store, engine.scope, input),
+    false,
+    false,
+    true,
+  );
+  register(
+    "close_hypothesis",
+    "Close a hypothesis as rejected or analyst-confirmed. analyst-confirmed is stored only from this explicit analyst id and reason. Does not collect, and does not turn the hypothesis into a finding.",
+    CloseHypothesisInput,
+    (input) => closeHypothesis(engine.store, input),
+    false,
+    false,
+    false,
+  );
+  register(
+    "list_hypotheses",
+    "List stored hypotheses. analyst-confirmed appears only after close_hypothesis. A hypothesis is not a finding. Does not collect.",
+    ListHypothesesInput,
+    (input) => listHypotheses(engine.store, input),
+  );
+  register(
+    "evaluate_hypothesis",
+    "Read stored evidence and the evidence-intelligence assessment for one hypothesis. Returns supporting, contradicting, and missing evidence plus suggested next steps. A step that needs network, active mode, or an adapter sets requires_gate and is not executed. Never sets analyst-confirmed. supported-pending-review is not a finding.",
+    EvaluateHypothesisInput,
+    (input) => evaluateHypothesis(engine.store, engine.scope, gates(), input),
+    false,
+    false,
+    true,
+  );
+  register(
+    "create_case",
+    "Group investigations, in-scope targets, hypotheses, review decisions, and notes into a local case. Does not collect or confirm a hypothesis.",
+    CreateCaseInput,
+    (input) => createCase(engine.store, engine.scope, input),
+    false,
+    false,
+    false,
+  );
+  register(
+    "list_cases",
+    "List stored cases. Does not collect or confirm hypotheses.",
+    ListCasesInput,
+    (input) => listCases(engine.store, input),
+  );
+  register(
+    "case_summary",
+    "Read one case: investigations, targets, hypotheses, decision ids, notes, and counts. Hypotheses are not findings. Does not collect.",
+    CaseIdInput,
+    (input) => caseSummary(engine.store, engine.scope, input),
+  );
+  register(
+    "case_report",
+    "Read a case report that separates confirmed analyst decisions, candidates, hypotheses, and limitations. Does not collect. Does not present a hypothesis as a finding.",
+    CaseReportInput,
+    (input) => caseReport(engine.store, engine.scope, gates(), input),
+  );
+  register(
+    "export_case_stix",
+    "Export one case with the existing read-only STIX 2.1 exporter. Hypothesis text is added as a note, not an indicator or a finding. Suspected leads stay suspected. Does not collect.",
+    CaseIdInput,
+    (input) => exportCaseStix(engine.store, engine.scope, input),
   );
   register(
     "show_entity",

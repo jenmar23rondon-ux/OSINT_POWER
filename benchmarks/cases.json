@@ -604,7 +604,20 @@
           "next_action": "request human review before attribution"
         }
       ]
-    }
+    },
+    "hypotheses": [
+      {
+        "statement": "example.com is attributed to the in-scope organization",
+        "claim": "organization-attribution",
+        "entities": [["domain", "example.com"]],
+        "as_of": "2026-11-10T00:00:00.000Z",
+        "assessed_status": "supported-pending-review",
+        "support": true,
+        "confirmed": false,
+        "supporting_min": 1,
+        "record_accept": true
+      }
+    ]
   },
   {
     "id": "independent-technology-attribution",
@@ -733,7 +746,20 @@
           "independent_groups": 1
         }
       ]
-    }
+    },
+    "hypotheses": [
+      {
+        "statement": "up.example.com is attributed despite a shared upstream",
+        "claim": "organization-attribution",
+        "entities": [["domain", "up.example.com"]],
+        "as_of": "2026-11-10T00:00:00.000Z",
+        "assessed_status": "open",
+        "support": false,
+        "confirmed": false,
+        "missing_min": 1,
+        "adversarial": true
+      }
+    ]
   },
   {
     "id": "mirrored-source-counts-once",
@@ -857,7 +883,30 @@
           "activity": "confirmed"
         }
       ]
-    }
+    },
+    "hypotheses": [
+      {
+        "statement": "192.0.2.77 is owned because two names use it",
+        "claim": "organization-attribution",
+        "entities": [["ip", "192.0.2.77"]],
+        "as_of": "2026-11-10T00:00:00.000Z",
+        "assessed_status": "open",
+        "support": false,
+        "confirmed": false,
+        "missing_min": 1,
+        "adversarial": true
+      },
+      {
+        "statement": "a.example.com is currently active",
+        "claim": "current-activity",
+        "entities": [["domain", "a.example.com"]],
+        "as_of": "2026-11-10T00:00:00.000Z",
+        "assessed_status": "supported-pending-review",
+        "support": true,
+        "confirmed": false,
+        "supporting_min": 1
+      }
+    ]
   },
   {
     "id": "cdn-not-ownership",
@@ -948,7 +997,20 @@
           "activity": "confirmed"
         }
       ]
-    }
+    },
+    "hypotheses": [
+      {
+        "statement": "cdn.example.com is owned because the edge is Cloudflare",
+        "claim": "organization-attribution",
+        "entities": [["domain", "cdn.example.com"]],
+        "as_of": "2026-11-10T00:00:00.000Z",
+        "assessed_status": "open",
+        "support": false,
+        "confirmed": false,
+        "missing_min": 1,
+        "adversarial": true
+      }
+    ]
   },
   {
     "id": "hosting-asn-not-ownership",
@@ -1000,7 +1062,20 @@
           "activity": "not_confirmed"
         }
       ]
-    }
+    },
+    "hypotheses": [
+      {
+        "statement": "AS64500 is owned by the in-scope organization",
+        "claim": "organization-attribution",
+        "entities": [["asn", "AS64500"]],
+        "as_of": "2026-11-10T00:00:00.000Z",
+        "assessed_status": "open",
+        "support": false,
+        "confirmed": false,
+        "missing_min": 1,
+        "adversarial": true
+      }
+    ]
   },
   {
     "id": "certificate-not-ownership",
@@ -1078,7 +1153,31 @@
           "ownership": "unverified"
         }
       ]
-    }
+    },
+    "hypotheses": [
+      {
+        "statement": "old.example.com is active because an archive captured it",
+        "claim": "current-activity",
+        "entities": [["domain", "old.example.com"]],
+        "as_of": "2026-11-10T00:00:00.000Z",
+        "assessed_status": "open",
+        "support": false,
+        "confirmed": false,
+        "missing_min": 1,
+        "requires_gate": "active",
+        "adversarial": true
+      },
+      {
+        "statement": "old.example.com existed in historical records",
+        "claim": "historical-existence",
+        "entities": [["domain", "old.example.com"]],
+        "as_of": "2026-11-10T00:00:00.000Z",
+        "assessed_status": "supported-pending-review",
+        "support": true,
+        "confirmed": false,
+        "supporting_min": 1
+      }
+    ]
   },
   {
     "id": "historical-conflicts-with-recent",
@@ -1193,7 +1292,20 @@
           "next_action": "request human review before attribution"
         }
       ]
-    }
+    },
+    "hypotheses": [
+      {
+        "statement": "app.example.com is currently active",
+        "claim": "current-activity",
+        "entities": [["domain", "app.example.com"]],
+        "as_of": "2026-11-10T00:00:00.000Z",
+        "assessed_status": "weakened",
+        "support": false,
+        "confirmed": false,
+        "contradicting_min": 1,
+        "adversarial": true
+      }
+    ]
   },
   {
     "id": "foreign-org-contradiction",
@@ -1235,7 +1347,20 @@
           "conflicts_min": 1
         }
       ]
-    }
+    },
+    "hypotheses": [
+      {
+        "statement": "example.com is attributed only to the in-scope organization",
+        "claim": "organization-attribution",
+        "entities": [["domain", "example.com"]],
+        "as_of": "2026-11-10T00:00:00.000Z",
+        "assessed_status": "weakened",
+        "support": false,
+        "confirmed": false,
+        "contradicting_min": 1,
+        "adversarial": true
+      }
+    ]
   },
   {
     "id": "shared-handle-stays-candidate",
@@ -1297,7 +1422,24 @@
       "confirmed_links": 0,
       "candidate_links_min": 1,
       "assets": []
-    }
+    },
+    "hypotheses": [
+      {
+        "statement": "The alex profiles are the same person",
+        "claim": "entity-association",
+        "entities": [
+          ["username", "alex"],
+          ["profile", "https://github.com/alex"],
+          ["profile", "https://gitlab.com/alex"]
+        ],
+        "as_of": "2026-11-10T00:00:00.000Z",
+        "assessed_status": "open",
+        "support": false,
+        "confirmed": false,
+        "missing_min": 1,
+        "adversarial": true
+      }
+    ]
   },
   {
     "id": "inferred-technology-not-verified",
@@ -1382,6 +1524,43 @@
           "independent_groups": 2
         }
       ]
+    },
+    "hypotheses": [
+      {
+        "statement": "brand.example.com is owned because two profiles repeat a company name",
+        "claim": "organization-attribution",
+        "entities": [["domain", "brand.example.com"]],
+        "as_of": "2026-11-10T00:00:00.000Z",
+        "assessed_status": "open",
+        "support": false,
+        "confirmed": false,
+        "missing_min": 1,
+        "adversarial": true
+      }
+    ]
+  },
+  {
+    "id": "hypothesis-out-of-scope-entity",
+    "tags": ["hypothesis", "scope", "adversarial"],
+    "steps": [],
+    "entities": [["domain", "out.invalid"]],
+    "relations": [],
+    "hypothesis": {
+      "statement": "out.invalid is operated by the in-scope organization",
+      "claim": "organization-attribution",
+      "entities": [["domain", "out.invalid"]],
+      "inject": [
+        {
+          "type": "domain",
+          "value": "out.invalid",
+          "source": "manual",
+          "confidence": 0.2,
+          "timestamp": "2026-10-20T00:00:00.000Z",
+          "evidence": {}
+        }
+      ],
+      "error": "OUT_OF_SCOPE",
+      "adversarial": true
     }
   }
 ]

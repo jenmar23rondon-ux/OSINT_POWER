@@ -10,6 +10,7 @@ import {
 } from "./phishing.js";
 import { WORKFLOW_NAMES } from "./schema.js";
 import { domain } from "./scope.js";
+import { SCHEMA_VERSION } from "./review.js";
 import { mirrorRun } from "./state.js";
 import { hash } from "./store.js";
 
@@ -1130,7 +1131,7 @@ function head(rowItem, last) {
 }
 export function initializeMonitor(db) {
   const version = db.prepare("PRAGMA user_version").get().user_version;
-  if (version > 6) throw new Error("DATABASE_VERSION_TOO_NEW");
+  if (version > SCHEMA_VERSION) throw new Error("DATABASE_VERSION_TOO_NEW");
   db.exec(`
     CREATE TABLE IF NOT EXISTS monitors(
       id TEXT PRIMARY KEY,
