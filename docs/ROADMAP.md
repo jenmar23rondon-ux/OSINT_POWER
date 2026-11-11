@@ -70,6 +70,8 @@ The labeled corpus is 52 synthetic scenarios. The runner reports per-category pr
 
 ## Next investigation improvements
 
+The temporal network graph is available through `timeline` and `temporal_graph`. It queries DNS, HTTP, and archive observations by time window and knowledge cutoff using existing capture provenance. [Temporal graph operations](OPERATIONS.md#temporal-network-graph)
+
 - Broaden the labeled corpus with reviewed, publishable datasets and independently maintained gold labels.
 - Calibrate source assessments from evaluation data; current confidence remains heuristic.
 - Source-specific watermarks beyond the current per-run snapshot. The monitor does not advance Cert Spotter or Wayback cursors by itself.

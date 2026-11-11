@@ -180,7 +180,7 @@ The core report includes at most 50 entities, 50 relationships and 20 recent run
 | export_case_stix      | Existing STIX exporter; hypotheses are notes, not indicators               |
 | investigation_graph   | Read-only case or investigation graph. Candidates stay candidates          |
 
-There are **43 MCP tools** in total, including export_evidence, export_stix, the three review tools, `assess_evidence`, `explain_asset`, the five hypothesis tools, the five case tools, `investigation_graph`, the two phishing tools and the four monitor tools. Existing tool names and output schemas are unchanged. execute=true on the seven workflows uses durable jobs. The phishing scan and `monitor run` are synchronous and are not durable jobs. The legacy passive_pipeline is still a synchronous convenience command, without durable workflow recovery. MCP response-envelope changes are documented in the [v0.4 migration guide](V0.4.md). Backup, retention, STIX filters, and the release checklist are in [PRODUCTION.md](PRODUCTION.md).
+There are **44 MCP tools** in total, including export_evidence, export_stix, the three review tools, `assess_evidence`, `explain_asset`, the five hypothesis tools, the five case tools, `investigation_graph`, the two phishing tools and the four monitor tools. Existing tool names and output schemas are unchanged. execute=true on the seven workflows uses durable jobs. The phishing scan and `monitor run` are synchronous and are not durable jobs. The legacy passive_pipeline is still a synchronous convenience command, without durable workflow recovery. MCP response-envelope changes are documented in the [v0.4 migration guide](V0.4.md). Backup, retention, STIX filters, and the release checklist are in [PRODUCTION.md](PRODUCTION.md).
 
 ## Incremental monitor
 
@@ -217,6 +217,21 @@ SQLite schema v6 creates `monitors`, `monitor_runs`, `monitor_assets`, `monitor_
 ## STIX export
 
 `export-stix` and `validate-stix` are read-only. Filters, the suspected-indicator rule, backup, and the release checklist are documented in [PRODUCTION.md](PRODUCTION.md). An analyst `accept` in the bundle is an opinion. It does not confirm phishing, identity, or ownership.
+
+## Temporal network graph
+
+Query an exact scoped hostname, an IP address, or both. An IP lookup returns DNS answers already recorded for hosts inside the workspace scope.
+
+```bash
+node src/cli.js timeline --host api.example.com --since 2026-09-01T00:00:00Z --until 2026-10-01T00:00:00Z --as-of 2026-09-30T23:59:59Z
+node src/cli.js timeline --ip 192.0.2.10 --since 2026-09-01T00:00:00Z --until 2026-10-01T00:00:00Z --as-of 2026-10-03T00:00:00Z
+```
+
+MCP `temporal_graph` accepts `host`, `ip`, `since`, `until`, and `as_of`. The observation window includes `since` and excludes `until`. An observation must also fall on or before `as_of`, and the workspace must have captured and finished processing it by that cutoff. Reuse the filters and `as_of` when passing `next_cursor` as `cursor` for the next page.
+
+Each edge includes `observed_at`, `collected_at`, `known_at`, and the originating run and observation IDs. A Wayback record can carry a historical observation date and a much later collection date. DNS and HTTP imports without an original timestamp use the parser's observation time at import. The reader uses completed or partial originating captures with provenance and excludes cached copies and mirrors. Workspaces predating capture provenance have no reconstructed history for those older rows.
+
+The query returns point observations for `resolves_to`, `serves`, and `historically_served`. Multiple answers can coexist. Continuous validity, current activity, and ownership require separate evidence.
 
 ## Pinned native integration lab
 
