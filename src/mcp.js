@@ -71,6 +71,7 @@ import {
   updateHypothesis,
 } from "./cases.js";
 import { InvestigationGraphInput, investigationGraph } from "./graph-export.js";
+import { TemporalGraphInput, temporalGraph } from "./temporal-graph.js";
 
 export function createServer(engine) {
   const server = new McpServer({ name: "osint-power", version: "0.4.0" });
@@ -427,6 +428,12 @@ export function createServer(engine) {
     "Read one case or one investigation as a graph of entities, evidence, hypotheses and decisions. Candidate links stay candidates and are not rendered as confirmed. Does not collect, review, or confirm a hypothesis.",
     InvestigationGraphInput,
     (input) => investigationGraph(engine.store, engine.scope, gates(), input),
+  );
+  register(
+    "temporal_graph",
+    "Read historical DNS, HTTP and archive edges for an in-scope host, or reverse DNS observation history by IP. Filter observation time with since/until and workspace knowledge with as_of. Each edge has an originating capture and confidence.",
+    TemporalGraphInput,
+    (input) => temporalGraph(engine.store, engine.scope, input),
   );
   register(
     "export_case_stix",

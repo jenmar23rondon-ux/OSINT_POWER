@@ -14,6 +14,9 @@ export function initializeState(db) {
       payload TEXT NOT NULL, provenance TEXT NOT NULL,
       PRIMARY KEY(run_id,observation_id,collector,target));
     CREATE INDEX IF NOT EXISTS snapshot_entity ON run_observations(entity_id,run_id);
+    CREATE INDEX IF NOT EXISTS snapshot_network_host
+      ON run_observations(json_extract(payload, '$.evidence.host'))
+      WHERE collector IN ('dnsx', 'import:dnsx', 'httpx', 'import:httpx', 'wayback', 'import:wayback');
     CREATE TABLE IF NOT EXISTS run_sources(
       run_id TEXT NOT NULL REFERENCES runs(id), collector TEXT NOT NULL, target TEXT NOT NULL,
       status TEXT NOT NULL, cached INTEGER NOT NULL, truncated INTEGER NOT NULL,

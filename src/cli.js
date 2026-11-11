@@ -39,6 +39,7 @@ import {
   updateHypothesis,
 } from "./cases.js";
 import { investigationGraph } from "./graph-export.js";
+import { temporalGraph } from "./temporal-graph.js";
 
 const HELP = {
   project: "OSINT_POWER",
@@ -113,6 +114,8 @@ const HELP = {
     evidence: "evidence --id ENTITY_HASH [--limit 25] [--offset 0]",
     graph:
       "graph [--limit 25] [--offset 0] OR graph --case UUID | --investigation NAME [--format json|html --output PATH] (read-only; candidates are not shown as confirmed)",
+    timeline:
+      "timeline [--host DOMAIN] [--ip ADDRESS] --since ISO --until ISO --as-of ISO [--limit 25 --cursor CURSOR]",
     report:
       "report [--format json|html --output PATH]; interactive HTML requires an explicit output path",
   },
@@ -162,6 +165,9 @@ try {
           "review",
           "since",
           "until",
+          "as-of",
+          "host",
+          "ip",
           "statement",
           "claim",
           "entities",
@@ -596,6 +602,16 @@ try {
         Number(v.limit ?? 25),
         Number(v.offset ?? 0),
       );
+    else if (command === "timeline")
+      result = temporalGraph(engine.store, engine.scope, {
+        ...(v.host !== undefined ? { host: v.host } : {}),
+        ...(v.ip !== undefined ? { ip: v.ip } : {}),
+        since: v.since,
+        until: v.until,
+        as_of: v["as-of"],
+        limit: Number(v.limit ?? 25),
+        cursor: v.cursor,
+      });
     else if (command === "graph" && (v.case || v.investigation)) {
       if (v.case && v.investigation) throw new Error("INVALID_INPUT");
       const format = v.format ?? "json";

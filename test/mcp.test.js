@@ -34,7 +34,7 @@ test(
     });
     await client.connect(transport);
     const list = await client.listTools();
-    assert.equal(list.tools.length, 43);
+    assert.equal(list.tools.length, 44);
     for (const tool of list.tools) {
       assert.equal(tool.outputSchema.additionalProperties, false);
       assert.equal(tool.outputSchema.properties.schema_version.const, "0.4");
@@ -132,6 +132,19 @@ test(
       return response.structuredContent;
     };
     await checked("get_graph");
+    const recorded = await checked("import_findings", {
+      adapter: "dnsx",
+      data: JSON.stringify({ host: "api.example.com", a: ["192.0.2.10"] }),
+    });
+    const cutoff = Date.now();
+    const history = await checked("temporal_graph", {
+      host: "api.example.com",
+      since: new Date(cutoff - 60_000).toISOString(),
+      until: new Date(cutoff + 60_000).toISOString(),
+      as_of: new Date(cutoff).toISOString(),
+    });
+    assert.equal(history.result.items[0].run_id, recorded.result.run_id);
+    assert.equal(history.result.items[0].to, "192.0.2.10");
     await checked("list_jobs");
     await checked("source_health");
     const before = (
