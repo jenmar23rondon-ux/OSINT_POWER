@@ -575,7 +575,7 @@ test(
     });
     await client.connect(transport);
     const names = (await client.listTools()).tools.map((tool) => tool.name);
-    assert.equal(names.length, 45);
+    assert.equal(names.length, 47);
     assert.equal(names.includes("export_stix"), true);
     assert.equal(names.includes("collect"), true);
     await client.callTool({

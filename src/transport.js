@@ -416,7 +416,18 @@ export async function runProcess(
   if (!Array.isArray(args) || args.length > 64)
     throw new OperationError("REJECTED_ARGUMENT");
   for (const arg of args) assertSafeArgument(arg);
-  assertStdin(stdin);
+  if (Buffer.isBuffer(stdin)) {
+    // Media callers use a fixed, explicitly allowed executable. Scoped
+    // collectors retain the existing single-target string contract.
+    if (
+      !isAbsolute(command) ||
+      !options.allow?.some((entry) => samePath(entry, command)) ||
+      !stdin.length ||
+      stdin.length > 16 * 1024 * 1024 ||
+      (options.targets !== undefined && options.targets !== null)
+    )
+      throw new OperationError("REJECTED_ARGUMENT");
+  } else assertStdin(stdin);
   assertTargets(options.targets, args, stdin);
   if (options.signal?.aborted)
     throw options.signal.reason ?? new OperationError("CANCELLED");

@@ -108,16 +108,21 @@ export async function inspectImage(bytes, signal) {
 
 export function analyzeImage(input, signal) {
   const { data_base64 } = AnalyzeImageInput.parse(input);
-  const bytes = Buffer.from(data_base64, "base64");
-  if (
-    bytes.length > MAX_MCP_IMAGE_BYTES ||
-    bytes.toString("base64") !== data_base64
-  )
-    throw new Error("INVALID_IMAGE_BASE64");
-  return inspectImage(bytes, signal);
+  return inspectImage(decodeImageBytes(data_base64), signal);
 }
 
-export async function inspectImageFile(path) {
+export function decodeImageBytes(dataBase64) {
+  const bytes = Buffer.from(dataBase64, "base64");
+  if (
+    !bytes.length ||
+    bytes.length > MAX_MCP_IMAGE_BYTES ||
+    bytes.toString("base64") !== dataBase64
+  )
+    throw new Error("INVALID_IMAGE_BASE64");
+  return bytes;
+}
+
+export async function readImageFile(path) {
   if (!path || /^[\\/]{2}/.test(path)) throw new Error("IMAGE_FILE_REQUIRED");
   if (!(await lstat(path)).isFile()) throw new Error("IMAGE_FILE_REQUIRED");
   const file = await open(path, "r");
@@ -139,8 +144,12 @@ export async function inspectImageFile(path) {
     }
     if (size !== stat.size || (await file.stat()).mtimeMs !== stat.mtimeMs)
       throw new Error("IMAGE_CHANGED_DURING_READ");
-    return await inspectImage(bytes.subarray(0, size));
+    return bytes.subarray(0, size);
   } finally {
     await file.close();
   }
+}
+
+export async function inspectImageFile(path) {
+  return inspectImage(await readImageFile(path));
 }

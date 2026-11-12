@@ -16602,5 +16602,344 @@
       "result"
     ],
     "additionalProperties": false
+  },
+  "compare_images": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "schema_version": {
+        "type": "string",
+        "const": "0.4"
+      },
+      "ok": {
+        "type": "boolean"
+      },
+      "execution_status": {
+        "type": "string",
+        "enum": [
+          "succeeded",
+          "failed"
+        ]
+      },
+      "collection_status": {
+        "type": "string",
+        "enum": [
+          "completed",
+          "partial",
+          "failed",
+          "deferred",
+          "cancelled",
+          "not_applicable"
+        ]
+      },
+      "coverage": {
+        "type": "object",
+        "properties": {
+          "complete": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "complete",
+          "truncated"
+        ],
+        "additionalProperties": false
+      },
+      "retry": {
+        "type": "object",
+        "properties": {
+          "retryable": {
+            "type": "boolean"
+          },
+          "retry_after_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "retryable",
+          "retry_after_ms"
+        ],
+        "additionalProperties": false
+      },
+      "result": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "algorithm": {
+                "type": "string",
+                "const": "phash-dct-63-v1"
+              },
+              "left_sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "right_sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "match": {
+                "type": "string",
+                "enum": [
+                  "exact",
+                  "similar_candidate",
+                  "crop_candidate",
+                  "insufficient_detail",
+                  "no_match"
+                ]
+              },
+              "full_distance": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 63
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "crop": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "image": {
+                        "type": "string",
+                        "enum": [
+                          "left",
+                          "right"
+                        ]
+                      },
+                      "x": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "y": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "width": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "height": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "distance": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 63
+                      }
+                    },
+                    "required": [
+                      "image",
+                      "x",
+                      "y",
+                      "width",
+                      "height",
+                      "distance"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "network": {
+                "type": "boolean",
+                "const": false
+              }
+            },
+            "required": [
+              "algorithm",
+              "left_sha256",
+              "right_sha256",
+              "match",
+              "full_distance",
+              "crop",
+              "network"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "required": [
+      "schema_version",
+      "ok",
+      "execution_status",
+      "collection_status",
+      "coverage",
+      "retry",
+      "result"
+    ],
+    "additionalProperties": false
+  },
+  "ocr_image": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "schema_version": {
+        "type": "string",
+        "const": "0.4"
+      },
+      "ok": {
+        "type": "boolean"
+      },
+      "execution_status": {
+        "type": "string",
+        "enum": [
+          "succeeded",
+          "failed"
+        ]
+      },
+      "collection_status": {
+        "type": "string",
+        "enum": [
+          "completed",
+          "partial",
+          "failed",
+          "deferred",
+          "cancelled",
+          "not_applicable"
+        ]
+      },
+      "coverage": {
+        "type": "object",
+        "properties": {
+          "complete": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "complete",
+          "truncated"
+        ],
+        "additionalProperties": false
+      },
+      "retry": {
+        "type": "object",
+        "properties": {
+          "retryable": {
+            "type": "boolean"
+          },
+          "retry_after_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "retryable",
+          "retry_after_ms"
+        ],
+        "additionalProperties": false
+      },
+      "result": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "engine": {
+                "type": "string",
+                "const": "tesseract"
+              },
+              "language": {
+                "type": "string",
+                "enum": [
+                  "eng",
+                  "spa"
+                ]
+              },
+              "text": {
+                "type": "string",
+                "maxLength": 8000
+              },
+              "text_truncated": {
+                "type": "boolean"
+              },
+              "text_trust": {
+                "type": "string",
+                "const": "untrusted"
+              },
+              "network": {
+                "type": "boolean",
+                "const": false
+              }
+            },
+            "required": [
+              "sha256",
+              "engine",
+              "language",
+              "text",
+              "text_truncated",
+              "text_trust",
+              "network"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "required": [
+      "schema_version",
+      "ok",
+      "execution_status",
+      "collection_status",
+      "coverage",
+      "retry",
+      "result"
+    ],
+    "additionalProperties": false
   }
 }
