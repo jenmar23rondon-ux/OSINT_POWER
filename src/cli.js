@@ -97,7 +97,7 @@ const HELP = {
     "case list": "case list [--limit 25] [--cursor UUID]",
     "case summary": "case summary --id UUID",
     "case report":
-      "case report --id UUID [--format json|markdown --output PATH] (separates decisions, candidates, hypotheses, limitations)",
+      "case report --id UUID [--review-budget 1..20] [--format json|markdown --output PATH]",
     "case export-stix":
       "case export-stix --id UUID [--output bundle.json] (reuses STIX export; hypotheses stay notes)",
     health: "health (persisted provider quotas and cooldowns)",
@@ -163,6 +163,7 @@ try {
           "run",
           "investigation",
           "review",
+          "review-budget",
           "since",
           "until",
           "as-of",
@@ -473,6 +474,9 @@ try {
         const body = caseReport(engine.store, engine.scope, gates, {
           case_id: v.id,
           format,
+          ...(v["review-budget"] === undefined
+            ? {}
+            : { review_budget: Number(v["review-budget"]) }),
         });
         if (v.output) {
           writeFileSync(

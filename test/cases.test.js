@@ -533,6 +533,68 @@ test("a case report separates decisions, candidates, hypotheses and limitations"
   assert.equal(RESULT_SCHEMAS.case_report.safeParse(report).success, true);
 });
 
+test("case review replans after evidence changes and honors the analyst checkpoint and budget", (t) => {
+  const { store, engine } = workspace(t);
+  const host = "review.example.com";
+  load(engine, [{ type: "domain", value: host, source: "crtsh" }]);
+  const hypothesis = createHypothesis(store, engine.scope, {
+    statement: "The host is currently active.",
+    claim: "current-activity",
+    entity_ids: [hash(["domain", host])],
+  }).hypothesis;
+  const created = createCase(store, engine.scope, {
+    title: "Review recent activity",
+    summary: "Inspect the stored record for the host.",
+    hypothesis_ids: [hypothesis.id],
+  });
+  const input = { case_id: created.id, review_budget: 1 };
+  const report = () => caseReport(store, engine.scope, gates(), input);
+  const before = report();
+  assert.deepEqual(
+    before.review_plan.steps.map((step) => step.action),
+    ["inspect-evidence-gap"],
+  );
+  assert.equal(before.review_plan.deferred_steps, 1);
+  assert.equal(before.network, false);
+  assert.equal(before.collection, false);
+  assert.match(before.markdown, /## Review plan/);
+
+  const imported = engine.import({
+    adapter: "dnsx",
+    data: JSON.stringify({ host, a: ["192.0.2.10"] }),
+  });
+  assert.equal(imported.status, "completed");
+  input.review_budget = 2;
+  const after = report();
+  const [first, second] = after.review_plan.steps;
+  assert.equal(first.action, "check-supporting-evidence");
+  assert.equal(second.action, "request-analyst-disposition");
+  assert.equal(second.depends_on, first.id);
+  assert.equal(after.review_plan.deferred_steps, 0);
+  assert.equal(after.sections.hypotheses[0].status, "open");
+  assert.equal(
+    after.sections.hypotheses[0].assessed_status,
+    "supported-pending-review",
+  );
+  assert.equal(RESULT_SCHEMAS.case_report.safeParse(after).success, true);
+
+  closeHypothesis(store, {
+    id: hypothesis.id,
+    status: "rejected",
+    reason: "Closed by reviewer.",
+    analyst_id: "analyst-1",
+  });
+  assert.deepEqual(report().review_plan.steps, []);
+  assert.throws(
+    () =>
+      caseReport(store, engine.scope, gates(), {
+        case_id: created.id,
+        review_budget: 21,
+      }),
+    /INVALID_INPUT/,
+  );
+});
+
 test("case STIX export reuses the exporter and keeps hypotheses as notes", (t) => {
   const { store, engine } = workspace(t);
   load(engine, [
@@ -809,11 +871,13 @@ test(
     const report = (
       await client.callTool({
         name: "case_report",
-        arguments: { case_id: folder.result.id },
+        arguments: { case_id: folder.result.id, review_budget: 1 },
       })
     ).structuredContent.result;
     assert.equal(report.sections.hypotheses[0].finding, false);
     assert.equal(report.collection, false);
+    assert.equal(report.review_plan.steps.length, 1);
+    assert.equal(report.review_plan.steps[0].depends_on, null);
     const graph = (
       await client.callTool({
         name: "investigation_graph",

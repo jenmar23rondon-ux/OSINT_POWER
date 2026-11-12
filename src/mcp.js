@@ -419,7 +419,7 @@ export function createServer(engine) {
   );
   register(
     "case_report",
-    "Read a case report that separates confirmed analyst decisions, candidates, hypotheses, and limitations. Does not collect. Does not present a hypothesis as a finding.",
+    "Read a case report. Set review_budget to include a bounded plan for reviewing stored evidence and hypotheses. Read-only.",
     CaseReportInput,
     (input) => caseReport(engine.store, engine.scope, gates(), input),
   );
