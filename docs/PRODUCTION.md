@@ -128,6 +128,16 @@ At most 200 entities and 10 observations per entity are exported. `truncated: tr
 
 `src/stix-validate.js` checks the object types this exporter produces: required properties, identifier and timestamp syntax, confidence range, and that relationship, observed-data, note, and opinion references resolve inside the bundle. It does not download the OASIS schema suite and it will reject object types this project does not emit. A passing validation means the bundle matches those rules. It does not mean every fact in the bundle is true.
 
+## Challenge an asset assessment
+
+```bash
+node src/cli.js assess --id ENTITY_HASH --challenge
+```
+
+MCP clients can pass `challenge: true` to `explain_asset`. The result includes supporting evidence IDs, counterpoints, and a review disposition for activity and attribution. A counterpoint can identify conflicting results, stale or future-dated evidence, an HTTP error response, or an attribution based on shared infrastructure.
+
+Activity and historical existence for a URL require observations of the URL itself. Hostname DNS and certificate records provide context. An HTTP error status documents a server response. Use the cited records to assess endpoint availability. Dispositions are heuristic and require analyst review.
+
 ## Release checklist
 
 Run this on a clean checkout of the commit you intend to record. Keep the command output with the commit SHA. Do not change the version, do not tag, and do not open a GitHub release as part of the check.

@@ -6733,6 +6733,180 @@
                   "note"
                 ],
                 "additionalProperties": false
+              },
+              "challenge": {
+                "type": "object",
+                "properties": {
+                  "activity": {
+                    "type": "object",
+                    "properties": {
+                      "disposition": {
+                        "type": "string",
+                        "enum": [
+                          "supported-pending-review",
+                          "unresolved",
+                          "disputed"
+                        ]
+                      },
+                      "supporting": {
+                        "type": "object",
+                        "properties": {
+                          "evidence_ids": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            }
+                          },
+                          "evidence_truncated": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "evidence_ids",
+                          "evidence_truncated"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "counterpoints": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "evidence_ids": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{64}$"
+                              }
+                            },
+                            "evidence_truncated": {
+                              "type": "boolean"
+                            },
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "conflicting-activity",
+                                "negative-activity",
+                                "host-context",
+                                "historical",
+                                "stale",
+                                "future-dated",
+                                "http-error-response",
+                                "conflicting-attribution",
+                                "shared-infrastructure",
+                                "insufficient-attribution"
+                              ]
+                            },
+                            "explanation": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "evidence_ids",
+                            "evidence_truncated",
+                            "kind",
+                            "explanation"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [
+                      "disposition",
+                      "supporting",
+                      "counterpoints"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "attribution": {
+                    "type": "object",
+                    "properties": {
+                      "disposition": {
+                        "type": "string",
+                        "enum": [
+                          "supported-pending-review",
+                          "unresolved",
+                          "disputed"
+                        ]
+                      },
+                      "supporting": {
+                        "type": "object",
+                        "properties": {
+                          "evidence_ids": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            }
+                          },
+                          "evidence_truncated": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "evidence_ids",
+                          "evidence_truncated"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "counterpoints": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "evidence_ids": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{64}$"
+                              }
+                            },
+                            "evidence_truncated": {
+                              "type": "boolean"
+                            },
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "conflicting-activity",
+                                "negative-activity",
+                                "host-context",
+                                "historical",
+                                "stale",
+                                "future-dated",
+                                "http-error-response",
+                                "conflicting-attribution",
+                                "shared-infrastructure",
+                                "insufficient-attribution"
+                              ]
+                            },
+                            "explanation": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "evidence_ids",
+                            "evidence_truncated",
+                            "kind",
+                            "explanation"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [
+                      "disposition",
+                      "supporting",
+                      "counterpoints"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "activity",
+                  "attribution"
+                ],
+                "additionalProperties": false
               }
             },
             "required": [

@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/client";
 import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import { Engine } from "../src/engine.js";
-import { Store } from "../src/store.js";
+import { Store, hash } from "../src/store.js";
 import { explainEntity } from "../src/state.js";
 import { RESULT_SCHEMAS, toolResponse } from "../src/contracts.js";
 import { SCHEMA_VERSION, recordDecision } from "../src/review.js";
@@ -364,6 +364,77 @@ test("shared names stay candidates and historical evidence is not current activi
   assert.equal(page.mutation, false);
 });
 
+test("URL activity requires a direct observation and the challenge cites timing and scope gaps", (t) => {
+  const { store, engine } = workspace(t);
+  const host = "status.example.com";
+  const url = `https://${host}/retired`;
+  load(engine, [
+    { type: "domain", value: host, source: "dnsx" },
+    {
+      type: "domain",
+      value: host,
+      source: "crtsh",
+      evidence: { historical: true },
+    },
+    {
+      type: "url",
+      value: url,
+      source: "httpx",
+      timestamp: "2025-12-01T00:00:00Z",
+      evidence: { status: 200 },
+    },
+    {
+      type: "url",
+      value: url,
+      source: "httpx",
+      timestamp: "2027-01-01T00:00:00Z",
+      evidence: { status: 503 },
+    },
+  ]);
+  const explain = () =>
+    explainAsset(
+      store,
+      engine.scope,
+      gates(),
+      {
+        entity_id: hash(["url", url]),
+        challenge: true,
+      },
+      { asOf },
+    );
+  const initial = explain();
+  assert.equal(initial.current_activity.status, "not_confirmed");
+  assert.equal(initial.historical_existence.status, "not_documented");
+  assert.equal(initial.challenge.activity.disposition, "unresolved");
+  assert.deepEqual(
+    initial.challenge.activity.counterpoints.map((p) => p.kind),
+    ["host-context", "stale", "future-dated"],
+  );
+  assert.equal(initial.challenge.attribution.disposition, "unresolved");
+  load(engine, [
+    { type: "url", value: url, source: "httpx", evidence: { status: 404 } },
+  ]);
+  assert.equal(
+    explain().challenge.activity.counterpoints.some(
+      (p) => p.kind === "http-error-response",
+    ),
+    true,
+  );
+  load(engine, [
+    { type: "url", value: url, source: "httpx", evidence: { status: 0 } },
+  ]);
+  const disputed = explain();
+  assert.equal(disputed.challenge.activity.disposition, "disputed");
+  assert.equal(disputed.challenge.activity.supporting.evidence_ids.length, 1);
+  assert.equal(
+    disputed.challenge.activity.counterpoints.find(
+      (p) => p.kind === "conflicting-activity",
+    ).evidence_ids.length,
+    1,
+  );
+  assert.equal(RESULT_SCHEMAS.explain_asset.safeParse(disputed).success, true);
+});
+
 test("historical and recent disagreements are listed and do not confirm ownership", (t) => {
   const { store, engine } = workspace(t);
   load(engine, [
@@ -578,9 +649,15 @@ test("assess is read-only from the CLI and stays inside the asset page", (t) => 
   assert.equal(next.returned, 1);
   assert.equal(next.next_cursor, null);
   assert.notEqual(next.items[0].entity_id, page.items[0].entity_id);
-  const one = call(["assess", "--id", page.items[0].entity_id]).result;
+  const one = call([
+    "assess",
+    "--id",
+    page.items[0].entity_id,
+    "--challenge",
+  ]).result;
   assert.equal(one.entity_id, page.items[0].entity_id);
   assert.equal(one.next_action.executes, false);
+  assert.equal(one.challenge.activity.disposition, "unresolved");
   const version = new Store(db);
   assert.equal(
     version.db.prepare("PRAGMA user_version").get().user_version,
@@ -652,10 +729,15 @@ test(
     const explained = (
       await client.callTool({
         name: "explain_asset",
-        arguments: { entity_id: page.items[0].entity_id },
+        arguments: { entity_id: page.items[0].entity_id, challenge: true },
       })
     ).structuredContent.result;
     assert.equal(explained.entity_id, page.items[0].entity_id);
     assert.equal(explained.next_action.executes, false);
+    assert.equal(explained.challenge.activity.disposition, "unresolved");
+    assert.equal(
+      explained.challenge.activity.counterpoints[0].kind,
+      "historical",
+    );
   },
 );
