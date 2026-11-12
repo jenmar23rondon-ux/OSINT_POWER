@@ -82,6 +82,7 @@ export const ImportInput = z
       "gitleaks",
       "recon-ng",
       "spiderfoot",
+      "maigret",
       "jsonl",
       "whatsmyname",
       "business-context",
@@ -89,6 +90,7 @@ export const ImportInput = z
       "trufflehog",
     ]),
     data: z.string().min(1).max(2_000_000),
+    observed_at: z.iso.datetime({ offset: true }).optional(),
   })
   .strict();
 const ProviderPolicyBase = z

@@ -3,6 +3,7 @@ import { parseArgs } from "node:util";
 import { readFileSync, writeFileSync, statSync } from "node:fs";
 import { Engine, openEngine } from "./engine.js";
 import { Store } from "./store.js";
+import { correlateOsintResults } from "./external-osint.js";
 import { report } from "./report.js";
 import { reportHTML } from "./dashboard.js";
 import { doctor } from "./doctor.js";
@@ -125,7 +126,10 @@ const HELP = {
     run: "run --adapter crtsh --target example.com [--restart for certspotter/wayback]",
     pipeline:
       "pipeline --target example.com (passive configured collectors only)",
-    import: "import --adapter subfinder --file examples/subdomains.txt",
+    import:
+      "import --adapter ADAPTER --file PATH [--observed-at ISO for maigret]",
+    "correlate-osint":
+      "correlate-osint --id IMPORT_UUID [--limit 20] [--cursor HASH]",
     query: "query [--type domain] [--limit 25] [--cursor HASH]",
     evidence: "evidence --id ENTITY_HASH [--limit 25] [--offset 0]",
     graph:
@@ -186,6 +190,7 @@ try {
           "since",
           "until",
           "as-of",
+          "observed-at",
           "host",
           "ip",
           "statement",
@@ -645,6 +650,13 @@ try {
       result = engine.import({
         adapter: v.adapter,
         data: readFileSync(v.file, "utf8"),
+        observed_at: v["observed-at"],
+      });
+    } else if (command === "correlate-osint") {
+      result = correlateOsintResults(engine.store, {
+        run_id: v.id,
+        limit: Number(v.limit ?? 20),
+        cursor: v.cursor,
       });
     } else if (command === "query") result = engine.store.query(page);
     else if (command === "evidence")

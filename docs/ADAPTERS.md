@@ -45,6 +45,7 @@ Historical APIs also support imports using their documented projected response f
 - exiftool: JSON array with SourceFile and selected Author/Creator/Producer/Software/Title fields.
 - gitleaks/trufflehog: native report locations and detector/rule identifiers; no raw secret values.
 - whatsmyname: bridge objects with username, url and found/not_found/unknown status.
+- maigret: reviewed native `simple` JSON from Maigret v0.6.6 with an explicit observation timestamp. See [external OSINT reports](EXTERNAL-OSINT.md).
 - business-context: strict sourced professional/office assertions.
 - breach-summary: strict provider/email/breach/date metadata.
 - recon-ng/spiderfoot/jsonl: this project's normalized observation schema; native conversion may be necessary.

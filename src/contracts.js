@@ -21,6 +21,7 @@ import { InvestigationGraphResult } from "./graph-export.js";
 import { TemporalGraphResult } from "./temporal-graph.js";
 import { AnalyzeImageResult } from "./image-forensics.js";
 import { CompareImagesResult, OcrImageResult } from "./visual-evidence.js";
+import { CorrelateOsintResult } from "./external-osint.js";
 
 const text = z.string(),
   count = z.number().int().nonnegative(),
@@ -424,6 +425,8 @@ export const RESULT_SCHEMAS = {
     next_actions: actions,
   }),
   import_findings: collection,
+  import_external_osint: collection,
+  correlate_osint_results: CorrelateOsintResult,
   query_findings: page,
   get_evidence: evidence,
   get_graph: graph,
@@ -650,9 +653,13 @@ export function toolResponse(name, result, thrown = false) {
   if (!thrown && !RESULT_SCHEMAS[name].safeParse(result).success)
     return toolResponse(name, { code: "INTERNAL_OUTPUT_VALIDATION" }, true);
   const collecting =
-    ["collect", "passive_pipeline", "import_findings", "resume_run"].includes(
-      name,
-    ) ||
+    [
+      "collect",
+      "passive_pipeline",
+      "import_findings",
+      "import_external_osint",
+      "resume_run",
+    ].includes(name) ||
     (name === "workflow" && result.mode === "execute") ||
     (name === "run_phishing_workflow" && result.mode === "execute") ||
     (name === "run_monitor" && result.mode === "execute");

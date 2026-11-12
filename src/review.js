@@ -239,6 +239,10 @@ function claimsFor(entity, obs) {
     });
   };
   if (entity.type === "username") handle("username", entity.value);
+  if (obs.source === "maigret") {
+    if (obs.evidence?.username) handle("username", obs.evidence.username);
+    return out;
+  }
   if (entity.type === "email") {
     identifier("email", entity.value);
     handle("local_part", entity.value.split("@")[0]);
