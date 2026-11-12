@@ -19,6 +19,7 @@ import {
 } from "./cases.js";
 import { InvestigationGraphResult } from "./graph-export.js";
 import { TemporalGraphResult } from "./temporal-graph.js";
+import { AnalyzeImageResult } from "./image-forensics.js";
 
 const text = z.string(),
   count = z.number().int().nonnegative(),
@@ -618,6 +619,7 @@ export const RESULT_SCHEMAS = {
   export_case_stix: StixExportResult,
   investigation_graph: InvestigationGraphResult,
   temporal_graph: TemporalGraphResult,
+  analyze_image: AnalyzeImageResult,
 };
 
 const transient =

@@ -34,7 +34,7 @@ test(
     });
     await client.connect(transport);
     const list = await client.listTools();
-    assert.equal(list.tools.length, 44);
+    assert.equal(list.tools.length, 45);
     for (const tool of list.tools) {
       assert.equal(tool.outputSchema.additionalProperties, false);
       assert.equal(tool.outputSchema.properties.schema_version.const, "0.4");
@@ -132,6 +132,12 @@ test(
       return response.structuredContent;
     };
     await checked("get_graph");
+    const image = await checked("analyze_image", {
+      data_base64:
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aF9sAAAAASUVORK5CYII=",
+    });
+    assert.equal(image.result.format, "png");
+    assert.equal(image.result.network, false);
     const recorded = await checked("import_findings", {
       adapter: "dnsx",
       data: JSON.stringify({ host: "api.example.com", a: ["192.0.2.10"] }),

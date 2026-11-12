@@ -72,6 +72,7 @@ import {
 } from "./cases.js";
 import { InvestigationGraphInput, investigationGraph } from "./graph-export.js";
 import { TemporalGraphInput, temporalGraph } from "./temporal-graph.js";
+import { AnalyzeImageInput, analyzeImage } from "./image-forensics.js";
 
 export function createServer(engine) {
   const server = new McpServer({ name: "osint-power", version: "0.4.0" });
@@ -123,6 +124,12 @@ export function createServer(engine) {
       },
     );
   };
+  register(
+    "analyze_image",
+    "Inspect user-provided base64 JPEG, PNG, WebP, or TIFF bytes up to 2 MiB. Returns SHA-256, dimensions, and selected metadata. Reads no file paths and uses no network.",
+    AnalyzeImageInput,
+    analyzeImage,
+  );
   register(
     "capabilities",
     "Read configured scope, collection modes and limits. Does not inspect binary versions.",
