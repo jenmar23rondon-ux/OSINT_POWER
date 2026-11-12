@@ -15,7 +15,7 @@ npm ci --ignore-scripts
 node src/cli.js init
 ```
 
-`init` refuses to overwrite `config.json`. The demo and `npm test` send no traffic. Node may print an experimental SQLite warning on stderr. Stdout of the CLI stays JSON.
+`init` refuses to overwrite `config.json`. The demo and `npm test` require no public network access. The DNS proof test uses a loopback DNS server. Node may print an experimental SQLite warning on stderr. Stdout of the CLI stays JSON.
 
 External binaries (subfinder, dnsx, httpx, naabu, and the others in the source matrix) are not installed by `npm ci`. Enable one only after it is on `PATH` and, for the pinned lab, after `npm run lab:install`.
 
@@ -45,6 +45,19 @@ node src/cli.js doctor --skip-probes
 Use one database per scope. The file is `.osint-power/state.sqlite` next to the configuration unless `--db` or `OSINT_POWER_DB` is set. Opening a database with a different scope fingerprint fails with `SCOPE_DATABASE_MISMATCH`. A discovered IP is not permission to scan it. Excluded domains win over included parents.
 
 The MCP server reads `OSINT_POWER_CONFIG` and `OSINT_POWER_DB`. Stdout is the protocol. Diagnostics stay on stderr.
+
+## Verify domain control
+
+Use the `domain-control` command to ask a domain operator to demonstrate control of a DNS TXT record. The domain must appear explicitly in `scope.domains` and must pass the exclusion rules.
+
+1. Run `node src/cli.js domain-control issue --target example.com` and save the returned `id`.
+2. Have the domain operator publish the returned `txt_value` at the returned `record_name`, such as `_osint-power-verification.example.com`. The issue command is the only response that includes the TXT value. SQLite stores its SHA-256 digest.
+3. Run `node src/cli.js domain-control verify --id UUID` before the one-hour challenge expires. Verification requires both `network: true` and `active: true` and uses the system-configured resolver under the `dns:system` provider quota. If the resolver has yet to see the record, retry within that window after DNS propagation.
+4. Run `node src/cli.js domain-control status --target example.com` for paginated history or `node src/cli.js domain-control revoke --id UUID` to invalidate a challenge or proof immediately. Issue, status, and revoke work offline.
+
+A verified proof records when the resolver returned the matching TXT value and expires 30 days after that observation. The operator can remove the TXT record after verification. Delegation of the record or its DNS zone can allow someone other than the registrant to complete the challenge. Treat the result as evidence of control of the challenge record at the time of observation. Scope, organizational attribution, and identity links stay independent of this evidence.
+
+For a stored entity representing the configured domain, MCP `explain_asset` accepts `include_domain_control: true` and returns the most recent 20 entries. Use the CLI for paging and proof lifecycle operations.
 
 ## Monitors from cron or CI
 

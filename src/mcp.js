@@ -258,7 +258,7 @@ export function createServer(engine) {
   );
   register(
     "explain_asset",
-    "Read one in-scope asset assessment. Set challenge=true for supporting evidence and counterpoints about activity and attribution. Read-only.",
+    "Read one in-scope asset assessment. Set challenge=true for evidence and counterpoints. For a configured domain, set include_domain_control=true to read recent DNS TXT proof history. Read-only.",
     ExplainAssetInput,
     (input) => explainAsset(engine.store, engine.scope, engine.config, input),
   );

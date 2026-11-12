@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { ADAPTERS } from "./adapters.js";
 import {
+  DomainControlHistoryResult,
+  domainControlHistory,
+} from "./domain-control.js";
+import {
   INDEPENDENCE_NOTE,
   independentGroups,
   inspectResolution,
@@ -206,6 +210,7 @@ const challengeDimension = z
   .strict();
 export const ExplainAssetResult = AssetAssessment.extend({
   ...pageFields,
+  domain_control: DomainControlHistoryResult.optional(),
   challenge: z
     .object({
       activity: challengeDimension,
@@ -225,6 +230,7 @@ export const ExplainAssetInput = z
   .object({
     entity_id: hashId,
     challenge: z.boolean().default(false),
+    include_domain_control: z.boolean().default(false),
   })
   .strict();
 
@@ -986,8 +992,20 @@ export function explainAsset(
     throw new Error("ASSET_NOT_IN_SCOPE");
   const related = relatedObservations(entity, context.observations);
   const assessment = assessOne(entity, context, related);
+  if (data.include_domain_control && entity.type !== "domain")
+    throw new Error("DOMAIN_CONTROL_REQUIRES_CONFIGURED_DOMAIN");
   return frame({
     ...assessment,
+    ...(data.include_domain_control
+      ? {
+          domain_control: domainControlHistory(
+            store,
+            scope,
+            { target: entity.value },
+            context.asOf,
+          ),
+        }
+      : {}),
     ...(data.challenge
       ? { challenge: challengeAsset(entity, assessment, related, context.asOf) }
       : {}),

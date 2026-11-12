@@ -27,6 +27,12 @@ import {
 } from "./monitor.js";
 import { assessAssets, explainAsset } from "./evidence-intelligence.js";
 import {
+  domainControlHistory,
+  issueDomainChallenge,
+  revokeDomainChallenge,
+  verifyDomainChallenge,
+} from "./domain-control.js";
+import {
   caseReport,
   caseSummary,
   closeHypothesis,
@@ -84,6 +90,11 @@ const HELP = {
     "monitor diff":
       "monitor diff --id MONITOR_UUID [--run RUN_UUID] [--format json|markdown --output PATH]",
     "monitor list": "monitor list [--limit 25] [--offset 0]",
+    "domain-control issue": "domain-control issue --target DOMAIN",
+    "domain-control verify": "domain-control verify --id UUID",
+    "domain-control status":
+      "domain-control status --target DOMAIN [--limit 20] [--offset 0]",
+    "domain-control revoke": "domain-control revoke --id UUID",
     "hypothesis create":
       "hypothesis create --statement TEXT --claim current-activity|historical-existence|organization-attribution|entity-association --entities HASH[,HASH] [--evidence HASH] [--case UUID] [--note TEXT] (stores an open hypothesis; not a finding)",
     "hypothesis update":
@@ -199,6 +210,12 @@ try {
       !["add", "run", "diff", "list"].includes(subcommand)
     )
       throw new Error("UNKNOWN_COMMAND");
+  } else if (command === "domain-control") {
+    if (
+      positionals.length !== 2 ||
+      !["issue", "verify", "status", "revoke"].includes(subcommand)
+    )
+      throw new Error("UNKNOWN_COMMAND");
   } else if (command === "hypothesis") {
     if (
       positionals.length !== 2 ||
@@ -276,7 +293,19 @@ try {
     else if (command === "doctor")
       result = await doctor(engine, { probe: !v["skip-probes"] });
     else if (command === "health") result = engine.providers.health();
-    else if (command === "plan")
+    else if (command === "domain-control") {
+      if (subcommand === "issue")
+        result = issueDomainChallenge(engine, { target: v.target });
+      else if (subcommand === "verify")
+        result = await verifyDomainChallenge(engine, { id: v.id });
+      else if (subcommand === "status")
+        result = domainControlHistory(engine.store, engine.scope, {
+          target: v.target,
+          limit: Number(v.limit ?? 20),
+          offset: Number(v.offset ?? 0),
+        });
+      else result = revokeDomainChallenge(engine, { id: v.id });
+    } else if (command === "plan")
       result = await planInvestigation(engine, {
         workflow: v.workflow,
         target: v.target,
