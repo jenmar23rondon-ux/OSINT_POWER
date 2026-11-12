@@ -64,7 +64,7 @@ const HELP = {
       "compare --before RUN_UUID --after RUN_UUID [--limit 25] [--cursor HASH]",
     explain: "explain --id ENTITY_HASH [--limit 10]",
     assess:
-      "assess [--type domain|ip|asn|url|technology] [--id ENTITY_HASH] [--limit 25] [--cursor HASH] (read-only; suggestions do not collect)",
+      "assess [--type domain|ip|asn|url|technology] [--id ENTITY_HASH [--challenge]] [--limit 25] [--cursor HASH]",
     "review-queue":
       "review-queue [--limit 25] [--cursor HASH] (unreviewed entities, candidate links, contradictions)",
     decide:
@@ -131,6 +131,7 @@ try {
       queue: { type: "boolean", default: false },
       restart: { type: "boolean", default: false },
       "skip-probes": { type: "boolean", default: false },
+      challenge: { type: "boolean", default: false },
       ...Object.fromEntries(
         [
           "config",
@@ -186,6 +187,8 @@ try {
   });
   const command = positionals[0] ?? "help";
   const subcommand = positionals[1];
+  if (v.challenge && (command !== "assess" || !v.id))
+    throw new Error("CHALLENGE_REQUIRES_ASSET_ID");
   if (v.restart && command !== "run")
     throw new Error("RESTART_ONLY_FOR_COLLECTION");
   if (command === "monitor") {
@@ -318,7 +321,10 @@ try {
         enabledAdapters: engine.config.enabledAdapters,
       };
       result = v.id
-        ? explainAsset(engine.store, engine.scope, gates, { entity_id: v.id })
+        ? explainAsset(engine.store, engine.scope, gates, {
+            entity_id: v.id,
+            challenge: v.challenge,
+          })
         : assessAssets(engine.store, engine.scope, gates, {
             ...(v.type ? { type: v.type } : {}),
             ...(v.limit ? { limit: Number(v.limit) } : {}),

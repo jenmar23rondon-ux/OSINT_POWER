@@ -182,7 +182,38 @@ export const AssessResult = z
     ...pageFields,
   })
   .strict();
-export const ExplainAssetResult = AssetAssessment.extend(pageFields);
+const challengePoint = evidenceRef.extend({
+  kind: z.enum([
+    "conflicting-activity",
+    "negative-activity",
+    "host-context",
+    "historical",
+    "stale",
+    "future-dated",
+    "http-error-response",
+    "conflicting-attribution",
+    "shared-infrastructure",
+    "insufficient-attribution",
+  ]),
+  explanation: text,
+});
+const challengeDimension = z
+  .object({
+    disposition: z.enum(["supported-pending-review", "unresolved", "disputed"]),
+    supporting: evidenceRef,
+    counterpoints: z.array(challengePoint),
+  })
+  .strict();
+export const ExplainAssetResult = AssetAssessment.extend({
+  ...pageFields,
+  challenge: z
+    .object({
+      activity: challengeDimension,
+      attribution: challengeDimension,
+    })
+    .strict()
+    .optional(),
+});
 export const AssessInput = z
   .object({
     type: z.enum(ASSET_TYPES).optional(),
@@ -193,6 +224,7 @@ export const AssessInput = z
 export const ExplainAssetInput = z
   .object({
     entity_id: hashId,
+    challenge: z.boolean().default(false),
   })
   .strict();
 
@@ -572,8 +604,13 @@ function ownershipFor(asset, related, contradictions, scope, sharedIps) {
     basis,
   };
 }
-function activityFor(related, asOf) {
-  const recent = related.filter(
+function directEvidence(asset, related) {
+  return asset.type === "url"
+    ? related.filter((obs) => obs.entity_id === asset.id)
+    : related;
+}
+function activityFor(direct, asOf) {
+  const recent = direct.filter(
     (obs) => isRecent(obs, asOf) && activityPolarity(obs),
   );
   const positive = recent.filter((obs) => activityPolarity(obs) === "positive");
@@ -587,6 +624,116 @@ function activityFor(related, asOf) {
   const used =
     status === "contradicted" ? recent : status === "confirmed" ? positive : [];
   return { status, ...pack(used.map((obs) => obs.id)) };
+}
+
+function challengeAsset(asset, assessment, related, asOf) {
+  const activityPoints = [];
+  function add(kind, explanation, observations) {
+    if (observations.length)
+      activityPoints.push({
+        kind,
+        explanation,
+        ...pack(observations.map((obs) => obs.id)),
+      });
+  }
+  const direct = directEvidence(asset, related);
+  const recent = direct.filter((obs) => isRecent(obs, asOf));
+  const positive = recent.filter((obs) => activityPolarity(obs) === "positive");
+  const negative = recent.filter((obs) => activityPolarity(obs) === "negative");
+  add(
+    positive.length ? "conflicting-activity" : "negative-activity",
+    positive.length
+      ? "Recent observations report different activity outcomes."
+      : "Recent observations failed to establish activity for this asset.",
+    negative,
+  );
+  add(
+    "host-context",
+    "Hostname evidence provides context for this URL. A response at this path requires an observation of the URL itself.",
+    asset.type === "url"
+      ? related.filter(
+          (obs) => obs.entity_id !== asset.id && activityPolarity(obs),
+        )
+      : [],
+  );
+  add(
+    "historical",
+    "Certificate or archive evidence applies to a past observation.",
+    direct.filter(isHistorical),
+  );
+  add(
+    "stale",
+    "Activity evidence falls before the current observation window.",
+    direct.filter(
+      (obs) =>
+        activityPolarity(obs) && Date.parse(obs.timestamp) < asOf - WINDOW_MS,
+    ),
+  );
+  add(
+    "future-dated",
+    "Activity evidence is dated after the assessment time.",
+    direct.filter(
+      (obs) => activityPolarity(obs) && Date.parse(obs.timestamp) > asOf,
+    ),
+  );
+  add(
+    "http-error-response",
+    "An HTTP error response documents a server reply. Endpoint availability requires further evidence.",
+    positive.filter(
+      (obs) => obs.source === "httpx" && Number(statusToken(obs)) >= 400,
+    ),
+  );
+
+  const ownership = assessment.ownership;
+  const disputed = ownership.status === "contradicted";
+  const supported = ownership.status === "verified";
+  const shared = ["shared_ip", "cdn", "hosting_or_registry"].includes(
+    ownership.basis,
+  );
+  const attributionPoints = supported
+    ? []
+    : [
+        {
+          kind: disputed
+            ? "conflicting-attribution"
+            : shared
+              ? "shared-infrastructure"
+              : "insufficient-attribution",
+          explanation: disputed
+            ? "Stored organization claims disagree. Review their provenance before attribution."
+            : shared
+              ? "Shared address space, CDN, or registry evidence can identify an infrastructure provider. An organization-domain claim requires independent corroboration."
+              : "Attribution requires corroborating organization-domain assertions from independent sources.",
+          evidence_ids: ownership.evidence_ids,
+          evidence_truncated: ownership.evidence_truncated,
+        },
+      ];
+  return {
+    activity: {
+      disposition:
+        positive.length && negative.length
+          ? "disputed"
+          : positive.length
+            ? "supported-pending-review"
+            : "unresolved",
+      supporting: pack(positive.map((obs) => obs.id)),
+      counterpoints: activityPoints,
+    },
+    attribution: {
+      disposition: disputed
+        ? "disputed"
+        : supported
+          ? "supported-pending-review"
+          : "unresolved",
+      supporting: supported
+        ? {
+            evidence_ids: ownership.evidence_ids,
+            evidence_truncated: ownership.evidence_truncated,
+          }
+        : pack([]),
+      counterpoints: attributionPoints,
+    },
+  };
 }
 function historyFor(related) {
   const used = related.filter(isHistorical);
@@ -728,10 +875,14 @@ function frame(extra) {
     ...extra,
   };
 }
-function assessOne(asset, context) {
-  const related = relatedObservations(asset, context.observations);
-  const historical = historyFor(related);
-  const current = activityFor(related, context.asOf);
+function assessOne(
+  asset,
+  context,
+  related = relatedObservations(asset, context.observations),
+) {
+  const direct = directEvidence(asset, related);
+  const historical = historyFor(direct);
+  const current = activityFor(direct, context.asOf);
   const ownership = ownershipFor(
     asset,
     related,
@@ -833,8 +984,13 @@ export function explainAsset(
     !entityInScope(context.scope, entity, context.observations)
   )
     throw new Error("ASSET_NOT_IN_SCOPE");
+  const related = relatedObservations(entity, context.observations);
+  const assessment = assessOne(entity, context, related);
   return frame({
-    ...assessOne(entity, context),
+    ...assessment,
+    ...(data.challenge
+      ? { challenge: challengeAsset(entity, assessment, related, context.asOf) }
+      : {}),
     identity_resolution: identityResolutionFor(
       context.resolution.links.filter(
         (link) => link.left_id === entity.id || link.right_id === entity.id,

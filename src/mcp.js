@@ -251,7 +251,7 @@ export function createServer(engine) {
   );
   register(
     "explain_asset",
-    "Read one in-scope asset assessment: historical existence, current activity, ownership, conflicts, source independence, analyst review and a suggestion that does not execute. A candidate is not a confirmed finding.",
+    "Read one in-scope asset assessment. Set challenge=true for supporting evidence and counterpoints about activity and attribution. Read-only.",
     ExplainAssetInput,
     (input) => explainAsset(engine.store, engine.scope, engine.config, input),
   );
