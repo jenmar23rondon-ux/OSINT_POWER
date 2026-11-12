@@ -35,6 +35,8 @@ Analyst decisions are stored beside that evidence. A shared name or handle, incl
 
 `assess` reads those stored rows and separates historical existence, current activity, organization attribution, conflicts and the analyst decision. It does not collect. A shared IP, CDN or hosting ASN is not ownership, and a certificate or Wayback capture is not proof the name is active. The suggested next step is not executed.
 
+`domain-control` lets a domain operator prove control of a DNS TXT record for a configured domain. Proofs expire and can be revoked. MCP can read the history through `explain_asset`. [Domain control guide](docs/PRODUCTION.md#verify-domain-control)
+
 `hypothesis` and `case` read those same stored rows. A hypothesis can be `open`, `supported-pending-review`, `weakened`, `rejected`, or `analyst-confirmed`. Only an explicit analyst close stores `analyst-confirmed`, and none of those statuses is a finding. Evaluation does not collect. A next step that needs network, active mode, or an adapter is labeled and left unexecuted. The case report keeps analyst decisions, candidates, hypotheses and limitations in separate sections.
 
 ```bash

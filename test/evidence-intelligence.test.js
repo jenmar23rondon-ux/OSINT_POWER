@@ -672,6 +672,7 @@ test(
   async (t) => {
     const dir = mkdtempSync(join(tmpdir(), "osint-assess-mcp-"));
     const config = join(dir, "config.json");
+    const db = join(dir, "state.sqlite");
     writeFileSync(
       config,
       JSON.stringify({
@@ -685,13 +686,13 @@ test(
     const transport = new StdioClientTransport({
       command: process.execPath,
       args: [fileURLToPath(new URL("../src/mcp.js", import.meta.url))],
-      env: { ...process.env, OSINT_POWER_CONFIG: config },
+      env: { ...process.env, OSINT_POWER_CONFIG: config, OSINT_POWER_DB: db },
       stderr: "pipe",
     });
     t.after(async () => {
       await client.close();
       try {
-        releaseStore(new Store(join(dir, ".osint-power", "state.sqlite")));
+        releaseStore(new Store(db));
       } catch {
         // The server may already have removed the file.
       }
@@ -739,5 +740,47 @@ test(
       explained.challenge.activity.counterpoints[0].kind,
       "historical",
     );
+    assert.equal(Object.hasOwn(explained, "domain_control"), false);
+
+    await client.callTool({
+      name: "import_findings",
+      arguments: {
+        adapter: "jsonl",
+        data: line({ type: "domain", value: "example.com", source: "crtsh" }),
+      },
+    });
+    const cli = (...args) =>
+      JSON.parse(
+        execFileSync(
+          process.execPath,
+          [
+            fileURLToPath(new URL("../src/cli.js", import.meta.url)),
+            "domain-control",
+            ...args,
+            "--config",
+            config,
+            "--db",
+            db,
+          ],
+          { encoding: "utf8" },
+        ),
+      ).result;
+    const issued = cli("issue", "--target", "example.com");
+    const proof = cli("status", "--target", "example.com");
+    assert.equal(proof.items[0].id, issued.id);
+    assert.equal(Object.hasOwn(proof.items[0], "txt_value"), false);
+    const revoked = cli("revoke", "--id", issued.id);
+    const assessment = (
+      await client.callTool({
+        name: "explain_asset",
+        arguments: {
+          entity_id: hash(["domain", "example.com"]),
+          include_domain_control: true,
+        },
+      })
+    ).structuredContent.result;
+    assert.equal(assessment.ownership.status, "unverified");
+    assert.deepEqual(assessment.domain_control.items, [revoked]);
+    assert.equal(revoked.status, "revoked");
   },
 );

@@ -14,6 +14,13 @@ export function initializeState(db) {
       payload TEXT NOT NULL, provenance TEXT NOT NULL,
       PRIMARY KEY(run_id,observation_id,collector,target));
     CREATE INDEX IF NOT EXISTS snapshot_entity ON run_observations(entity_id,run_id);
+    CREATE TABLE IF NOT EXISTS domain_control_challenges(
+      id TEXT PRIMARY KEY, domain TEXT NOT NULL, record_name TEXT NOT NULL,
+      token_sha256 TEXT NOT NULL, issued_at INTEGER NOT NULL,
+      challenge_expires_at INTEGER NOT NULL, verified_at INTEGER,
+      proof_expires_at INTEGER, revoked_at INTEGER);
+    CREATE INDEX IF NOT EXISTS domain_control_history
+      ON domain_control_challenges(domain, issued_at DESC, id DESC);
     CREATE INDEX IF NOT EXISTS snapshot_network_host
       ON run_observations(json_extract(payload, '$.evidence.host'))
       WHERE collector IN ('dnsx', 'import:dnsx', 'httpx', 'import:httpx', 'wayback', 'import:wayback');
