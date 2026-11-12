@@ -46,6 +46,7 @@ Historical APIs also support imports using their documented projected response f
 - gitleaks/trufflehog: native report locations and detector/rule identifiers; no raw secret values.
 - whatsmyname: bridge objects with username, url and found/not_found/unknown status.
 - maigret: reviewed native `simple` JSON from Maigret v0.6.6 with an explicit observation timestamp. See [external OSINT reports](EXTERNAL-OSINT.md).
+- spiderfoot-json: reviewed native SpiderFoot v4.0 web JSON export. Imports Certificate Transparency domain events with an explicit source UTC offset. See [external OSINT reports](EXTERNAL-OSINT.md#spiderfoot).
 - business-context: strict sourced professional/office assertions.
 - breach-summary: strict provider/email/breach/date metadata.
 - recon-ng/spiderfoot/jsonl: this project's normalized observation schema; native conversion may be necessary.

@@ -71,6 +71,24 @@ test(
         (item) => item.other_observations.length === 0,
       ),
     );
+    const spiderfoot = (
+      await call("import_external_osint", {
+        adapter: "spiderfoot-json",
+        source_utc_offset: "Z",
+        data: JSON.stringify([
+          {
+            data: "api.example.com",
+            scan_target: "example.com",
+            module: "sfp_crt",
+            event_type: "INTERNET_NAME",
+            false_positive: 0,
+            last_seen: "2026-11-10 23:00:00",
+          },
+        ]),
+      })
+    ).structuredContent;
+    assert.equal(spiderfoot.result.inserted, 1);
+    assert.equal(spiderfoot.coverage.complete, false);
     assert.equal(
       (await call("capabilities")).structuredContent.result.network,
       false,
@@ -112,7 +130,7 @@ test(
     assert.equal(
       (await call("explain_entity", { entity_id: page.items[0].id }))
         .structuredContent.result.history.length,
-      1,
+      2,
     );
     assert.equal(
       (

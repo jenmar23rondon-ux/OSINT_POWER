@@ -190,7 +190,7 @@ export function createServer(engine) {
   );
   register(
     "import_external_osint",
-    "Import a reviewed Maigret v0.6.6 simple JSON export for explicitly configured aliases. Supply the observation time. Stores public profile candidates locally.",
+    "Import a reviewed Maigret v0.6.6 simple JSON export (requires observed_at) or SpiderFoot v4.0 web JSON with certificate names (requires source_utc_offset). Stores scoped historical evidence or profile candidates locally.",
     ExternalOsintImportInput,
     (input) => engine.import(input),
     false,

@@ -1900,7 +1900,8 @@
                       "type": "string",
                       "enum": [
                         "username",
-                        "profile"
+                        "profile",
+                        "domain"
                       ]
                     },
                     "value": {

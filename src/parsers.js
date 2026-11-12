@@ -2,7 +2,7 @@ import { basename } from "node:path";
 import { Observation } from "./schema.js";
 import { normalized } from "./scope.js";
 import { parseBusiness, BreachSummary } from "./context.js";
-import { readMaigretReport } from "./external-osint.js";
+import { readMaigretReport, readSpiderFootReport } from "./external-osint.js";
 import {
   decodeDiscovery,
   archiveTimestamp,
@@ -371,6 +371,15 @@ export function parse(adapter, text, scope, maxRecords = 2000, context = {}) {
     }
   } else if (adapter === "maigret") {
     const stats = readMaigretReport(text, scope, context.observed_at, emit);
+    skipped += stats.skipped;
+    invalid += stats.invalid;
+  } else if (adapter === "spiderfoot-json") {
+    const stats = readSpiderFootReport(
+      text,
+      scope,
+      context.source_utc_offset,
+      emit,
+    );
     skipped += stats.skipped;
     invalid += stats.invalid;
   } else if (adapter === "whatsmyname") {
