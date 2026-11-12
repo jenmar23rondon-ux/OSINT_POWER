@@ -184,6 +184,10 @@ v0.4 additionally includes one historical-discovery call for each enabled Cert S
 
 Execution now creates durable jobs with recoverable steps and sealed snapshot IDs. Resume uses a new per-invocation budget while retaining lifetime and per-step caps. Correlation totals are exact for stored scoped entities; displayed samples remain bounded. See [OPERATIONS.md](OPERATIONS.md) for queue/resume/cancel, provider coordination and immutable run comparisons.
 
+## Identity link review
+
+Identity review counts corroboration separately for each shared email address or profile URL. `show_entity` reports the highest independent group count for any one shared identifier. Repeated observations from one source count together across imports. When evidence for each identifier comes from a single group, the relationship remains a candidate even if the groups differ between identifiers. Image fingerprints describe matching bytes or content. Account control, domain control, and personal identity require distinct evidence.
+
 ## Adaptive case review
 
 ```bash

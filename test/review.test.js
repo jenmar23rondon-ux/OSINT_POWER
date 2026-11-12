@@ -364,6 +364,67 @@ test("independent non-name identifiers can confirm a link, and dependent ones ca
   }
 });
 
+test("corroboration cannot pool different identifiers or repeat one source", (t) => {
+  const { store, engine } = workspace(t);
+  const left = "https://github.com/alice";
+  const right = "https://gitlab.com/alice";
+  const leftId = hash(["profile", left]);
+  const rightId = hash(["profile", right]);
+  const row = (value, source, evidence) => ({
+    type: "profile",
+    value,
+    source,
+    evidence: { username: "alice", name: "Alice Doe", ...evidence },
+  });
+  // Both records repeat one account assertion in separate imports. A second
+  // identifier has a different source, but also lacks corroboration.
+  load(engine, [row(left, "directory", { account: "alice@example.com" })]);
+  load(engine, [row(right, "directory", { account: "alice@example.com" })]);
+  const profile_url = "https://example.com/team/alice";
+  load(engine, [
+    row(left, "profile-catalog", { profile_url }),
+    row(right, "profile-catalog", { profile_url }),
+  ]);
+  const before = showEntity(store, { entity_id: leftId });
+  const candidate = before.candidates.find((link) => link.other.id === rightId);
+  assert.equal(candidate.shared_identifiers.length, 2);
+  assert.equal(candidate.independent_corroboration, 1);
+  assert.equal(
+    before.confirmed_links.some((link) => link.other.id === rightId),
+    false,
+  );
+  assertContract("show_entity", before);
+
+  load(engine, [
+    row(right, "owner-published-directory", { account: "alice@example.com" }),
+  ]);
+  const after = showEntity(store, { entity_id: leftId });
+  assert.equal(
+    after.confirmed_links.find((link) => link.other.id === rightId)
+      .independent_corroboration,
+    2,
+  );
+});
+
+test("reused image fingerprints cannot corroborate an identity link", (t) => {
+  const { store, engine } = workspace(t);
+  const fingerprint = "a".repeat(64);
+  const left = { ...github, evidence: { username: "alice", fingerprint } };
+  const right = {
+    ...left,
+    source: "profile-catalog",
+    value: "https://gitlab.com/alice",
+  };
+  load(engine, [left]);
+  load(engine, [right]);
+  const result = showEntity(store, {
+    entity_id: hash(["profile", left.value]),
+  });
+  assert.equal(result.confirmed_links.length, 0);
+  assert.equal(result.candidates[0].basis, "shared_handle");
+  assert.deepEqual(result.candidates[0].shared_identifiers, []);
+});
+
 test("disagreements are flagged, and only independent sources count as corroboration", (t) => {
   const sameRun = workspace(t);
   load(sameRun.engine, [

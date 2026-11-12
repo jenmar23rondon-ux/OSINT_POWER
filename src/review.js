@@ -23,14 +23,14 @@ const MAX_LINK_EVIDENCE = 40;
 
 export const RESOLUTION_RULES = [
   "A shared name or handle across sources never confirms an identity.",
-  "Confirmation requires a non-name identifier supported by at least two independent sources.",
-  "Sources that share an upstream, a mirror origin, or a collector run are not independent.",
+  "A corroborated link requires independent sources supporting the same non-name identifier across both records.",
+  "Repeated observations from one source and observations that share an upstream, mirror origin, or collector run count together.",
   "Analyst decisions are append-only history and do not merge or confirm entities.",
   "Only username, email, profile and employee entities are compared for identity.",
 ];
 
 export const INDEPENDENCE_NOTE =
-  "Sources that share an upstream, a mirror origin, or a collector run count as one source.";
+  "Repeated sources and sources that share an upstream, mirror origin, or collector run count together.";
 
 export const DecisionInput = z
   .object({
@@ -190,11 +190,6 @@ function canonicalIdentifier(attribute, value) {
       return null;
     }
   }
-  if (attribute === "fingerprint") {
-    const compact = String(value).replace(/\s+/g, "").toLowerCase();
-    if (compact.length < 16 || compact.length > 128) return null;
-    return { class: "fingerprint", value: compact };
-  }
   return null;
 }
 function pushClaim(target, claim) {
@@ -264,8 +259,6 @@ function claimsFor(entity, obs) {
     }
   }
   if (evidence.profile_url) identifier("profile_url", evidence.profile_url);
-  if (typeof evidence.fingerprint === "string")
-    identifier("fingerprint", evidence.fingerprint);
   return out;
 }
 function dependent(left, right) {
@@ -274,6 +267,7 @@ function dependent(left, right) {
   const upstreamRight = label(right.evidence.upstream);
   const sourceLeft = label(left.source);
   const sourceRight = label(right.source);
+  if (sourceLeft && sourceLeft === sourceRight) return true;
   if (
     upstreamLeft &&
     (upstreamLeft === upstreamRight || upstreamLeft === sourceRight)
@@ -489,16 +483,20 @@ function buildLinks(entitiesById, observations) {
   for (const entry of pairs.values()) {
     if (!entry.names.size && !entry.handles.size && !entry.identifiers.size)
       continue;
-    const support = [];
-    const seenObs = new Set();
+    const supportByIdentifier = new Map();
     for (const claim of entry.claims) {
-      if (claim.kind !== "identifier" || seenObs.has(claim.observationId))
-        continue;
-      if (!entry.identifiers.has(`${claim.attribute}:${claim.value}`)) continue;
-      seenObs.add(claim.observationId);
-      support.push(claim.obs);
+      if (claim.kind !== "identifier") continue;
+      const key = `${claim.attribute}:${claim.value}`;
+      if (!entry.identifiers.has(key)) continue;
+      const support = supportByIdentifier.get(key) ?? new Map();
+      support.set(claim.observationId, claim.obs);
+      supportByIdentifier.set(key, support);
     }
-    const independent = entry.identifiers.size ? independentGroups(support) : 0;
+    // Count corroboration for a single shared claim. Pooling groups across
+    // different identifiers would let unrelated claims corroborate each other.
+    let independent = 0;
+    for (const support of supportByIdentifier.values())
+      independent = Math.max(independent, independentGroups(support.values()));
     const confirmed = entry.identifiers.size > 0 && independent >= 2;
     let basis;
     let confidence;
@@ -507,12 +505,13 @@ function buildLinks(entitiesById, observations) {
     if (confirmed) {
       basis = "independent_corroboration";
       confidence = Math.min(0.95, round2(0.75 + 0.05 * (independent - 2)));
-      confidenceBasis = "Non-name identifier supported by independent sources.";
+      confidenceBasis =
+        "At least one shared non-name identifier has independent support across both records.";
     } else if (entry.identifiers.size) {
       basis = "unconfirmed_identifier";
       confidence = 0.35;
       confidenceBasis =
-        "Shared identifier lacks independent corroboration; the link stays a candidate.";
+        "Each shared identifier lacks independent corroboration. The link remains a candidate.";
       blocked = "corroboration_not_independent";
     } else if (entry.handles.size) {
       basis = "shared_handle";
