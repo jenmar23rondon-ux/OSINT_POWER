@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "left_base64": {
+      "type": "string",
+      "minLength": 4,
+      "maxLength": 2796204
+    },
+    "right_base64": {
+      "type": "string",
+      "minLength": 4,
+      "maxLength": 2796204
+    }
+  },
+  "required": [
+    "left_base64",
+    "right_base64"
+  ],
+  "additionalProperties": false
+}

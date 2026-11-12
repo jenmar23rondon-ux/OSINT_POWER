@@ -1,8 +1,8 @@
 import { parentPort, workerData } from "node:worker_threads";
 import { createHash } from "node:crypto";
 import ExifReader from "exifreader";
+import { imageFormat } from "./image-format.js";
 
-const PNG_SIGNATURE = Buffer.from("89504e470d0a1a0a", "hex");
 const fields = {
   exif: [
     "Make",
@@ -35,26 +35,6 @@ function pngDimensions(bytes) {
       return { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) };
   }
   throw new Error("IMAGE_PARSE_FAILED");
-}
-
-function formatOf(bytes) {
-  if (bytes.subarray(0, 8).equals(PNG_SIGNATURE)) return "png";
-  if (bytes[0] === 0xff && bytes[1] === 0xd8) {
-    if (bytes.at(-2) !== 0xff || bytes.at(-1) !== 0xd9)
-      throw new Error("IMAGE_PARSE_FAILED");
-    return "jpeg";
-  }
-  if (
-    bytes.toString("ascii", 0, 4) === "RIFF" &&
-    bytes.toString("ascii", 8, 12) === "WEBP"
-  ) {
-    if (bytes.length < 20 || bytes.readUInt32LE(4) + 8 !== bytes.length)
-      throw new Error("IMAGE_PARSE_FAILED");
-    return "webp";
-  }
-  const header = bytes.subarray(0, 4).toString("hex");
-  if (["49492a00", "4d4d002a"].includes(header)) return "tiff";
-  throw new Error("UNSUPPORTED_IMAGE_FORMAT");
 }
 
 function webpDimensions(bytes) {
@@ -111,7 +91,7 @@ function safeValue(tag) {
 }
 
 function analyze(bytes) {
-  const format = formatOf(bytes);
+  const format = imageFormat(bytes);
   const containerDimensions =
     format === "png"
       ? pngDimensions(bytes)

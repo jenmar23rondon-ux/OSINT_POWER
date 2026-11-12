@@ -47,12 +47,15 @@ import {
 import { investigationGraph } from "./graph-export.js";
 import { temporalGraph } from "./temporal-graph.js";
 import { inspectImageFile } from "./image-forensics.js";
+import { compareImageFiles, ocrImageFile } from "./visual-evidence.js";
 
 const HELP = {
   project: "OSINT_POWER",
   version: "0.4.0",
   commands: {
     "analyze-image": "analyze-image --file PATH",
+    "compare-images": "compare-images --file LEFT --other RIGHT",
+    "ocr-image": "ocr-image --file PATH [--language eng|spa]",
     bundle:
       "bundle --id SNAPSHOT_UUID --output evidence.json (complete capture, at most 10000 observations/40 MB)",
     "verify-bundle":
@@ -152,6 +155,8 @@ try {
           "adapter",
           "target",
           "file",
+          "other",
+          "language",
           "type",
           "limit",
           "cursor",
@@ -234,6 +239,10 @@ try {
   let result;
   if (command === "help") result = HELP;
   else if (command === "analyze-image") result = await inspectImageFile(v.file);
+  else if (command === "compare-images")
+    result = await compareImageFiles(v.file, v.other);
+  else if (command === "ocr-image")
+    result = await ocrImageFile(v.file, v.language);
   else if (command === "init") {
     const path = v.config ?? "config.json";
     writeFileSync(

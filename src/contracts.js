@@ -20,6 +20,7 @@ import {
 import { InvestigationGraphResult } from "./graph-export.js";
 import { TemporalGraphResult } from "./temporal-graph.js";
 import { AnalyzeImageResult } from "./image-forensics.js";
+import { CompareImagesResult, OcrImageResult } from "./visual-evidence.js";
 
 const text = z.string(),
   count = z.number().int().nonnegative(),
@@ -620,6 +621,8 @@ export const RESULT_SCHEMAS = {
   investigation_graph: InvestigationGraphResult,
   temporal_graph: TemporalGraphResult,
   analyze_image: AnalyzeImageResult,
+  compare_images: CompareImagesResult,
+  ocr_image: OcrImageResult,
 };
 
 const transient =

@@ -36,6 +36,9 @@ jobs:
           node-version: "24.14.0"
           cache: npm
       - run: npm ci --ignore-scripts
-      - run: sudo apt-get update && sudo apt-get install -y libpcap-dev unzip
+      - run: sudo apt-get update && sudo apt-get install -y libpcap-dev unzip tesseract-ocr tesseract-ocr-eng fonts-dejavu-core
       - run: npm run lab:install
       - run: npm run test:lab
+      - run: node --test --test-name-pattern="native OCR" test/visual-evidence.test.js
+        env:
+          OSINT_POWER_OCR_TEST: "1"

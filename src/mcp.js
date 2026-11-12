@@ -73,6 +73,12 @@ import {
 import { InvestigationGraphInput, investigationGraph } from "./graph-export.js";
 import { TemporalGraphInput, temporalGraph } from "./temporal-graph.js";
 import { AnalyzeImageInput, analyzeImage } from "./image-forensics.js";
+import {
+  CompareImagesInput,
+  OcrImageInput,
+  compareImages,
+  ocrImage,
+} from "./visual-evidence.js";
 
 export function createServer(engine) {
   const server = new McpServer({ name: "osint-power", version: "0.4.0" });
@@ -129,6 +135,18 @@ export function createServer(engine) {
     "Inspect user-provided base64 JPEG, PNG, WebP, or TIFF bytes up to 2 MiB. Returns SHA-256, dimensions, and selected metadata. Reads no file paths and uses no network.",
     AnalyzeImageInput,
     analyzeImage,
+  );
+  register(
+    "compare_images",
+    "Compare two supplied image buffers locally for exact bytes, perceptual similarity, and common crops. Similarity is a review candidate.",
+    CompareImagesInput,
+    compareImages,
+  );
+  register(
+    "ocr_image",
+    "Extract untrusted text from one supplied image with locally installed Tesseract. Supports installed English or Spanish language data. Reads no file paths and uses no network.",
+    OcrImageInput,
+    ocrImage,
   );
   register(
     "capabilities",
