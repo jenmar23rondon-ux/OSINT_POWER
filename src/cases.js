@@ -3,6 +3,7 @@ import { isIP } from "node:net";
 import { z } from "zod";
 import { ADAPTERS } from "./adapters.js";
 import { explainAsset } from "./evidence-intelligence.js";
+import { CaseReviewPlan, planCaseReview, ReviewBudget } from "./planning.js";
 import { SCHEMA_VERSION, inspectResolution, loadDecisions } from "./review.js";
 import { WORKFLOW_ALIASES, WORKFLOW_NAMES } from "./schema.js";
 import { domain, normalized } from "./scope.js";
@@ -130,6 +131,7 @@ export const CaseReportInput = z
   .object({
     case_id: z.uuid(),
     format: z.enum(["json", "markdown"]).default("json"),
+    review_budget: ReviewBudget.optional(),
   })
   .strict();
 
@@ -329,6 +331,7 @@ export const CaseReportResult = z
       })
       .strict(),
     markdown: text,
+    review_plan: CaseReviewPlan.optional(),
     ...gatesShape.shape,
   })
   .strict();
@@ -1364,7 +1367,7 @@ export function caseSummary(store, scope, input = {}) {
 function markdownList(lines) {
   return lines.length ? lines.map((line) => `- ${line}`).join("\n") : "- None.";
 }
-function reportSections(store, scope, gates, row) {
+function reportSections(store, scope, gates, row, reviewBudget) {
   const summary = summarizeCase(store, scope, row);
   const explicitDecisions = new Set(summary.decision_ids);
   const subjectIds = summary.entityIds;
@@ -1415,17 +1418,17 @@ function reportSections(store, scope, gates, row) {
       finding: false,
       note: "A shared name or handle is not a confirmed identity.",
     }));
-  const hypotheses = summary.hypotheses.map((item) => {
+  const evaluations = summary.hypotheses.map((item) => {
     const stored = store.db
       .prepare("SELECT * FROM hypotheses WHERE id=?")
       .get(item.id);
-    const evaluation = evaluateStored(store, scope, gates, stored);
-    return {
-      kind: "hypothesis",
-      ...item,
-      assessed_status: evaluation.assessed_status,
-    };
+    return evaluateStored(store, scope, gates, stored);
   });
+  const hypotheses = evaluations.map((evaluation) => ({
+    kind: "hypothesis",
+    ...evaluation.hypothesis,
+    assessed_status: evaluation.assessed_status,
+  }));
   const limitations = [...CASE_LIMITATIONS];
   const resolverConfirmed = linksFor(
     [...summary.entityIds],
@@ -1437,6 +1440,10 @@ function reportSections(store, scope, gates, row) {
     );
   return {
     summary,
+    reviewPlan:
+      reviewBudget === undefined
+        ? null
+        : planCaseReview(evaluations, reviewBudget),
     sections: {
       confirmed_analyst_decisions: [...accepted, ...closures],
       candidates,
@@ -1452,8 +1459,14 @@ export function caseReport(store, scope, gates = {}, input = {}) {
     scope,
     gates,
     loadCaseRow(store, data.case_id),
+    data.review_budget,
   );
   const sections = built.sections;
+  const reviewPlan = built.reviewPlan;
+  const reviewLines = reviewPlan?.steps.map(
+    (step) =>
+      `\`${step.id}\` — ${step.reason}${step.depends_on ? ` Depends on \`${step.depends_on}\`.` : ""}${step.evidence_ids.length ? ` Evidence IDs: ${step.evidence_ids.join(", ")}.` : ""}`,
+  );
   const confirmedLines = sections.confirmed_analyst_decisions.map((item) =>
     item.kind === "review-decision"
       ? `Review accept ${item.id} on ${item.subject_kind} ${item.subject_id} by ${item.analyst_id}: ${item.reason}`
@@ -1489,6 +1502,16 @@ export function caseReport(store, scope, gates = {}, input = {}) {
     "",
     markdownList(hypothesisLines),
     "",
+    ...(reviewPlan
+      ? [
+          "## Review plan",
+          "",
+          `Budget of ${reviewPlan.budget} local review steps. Deferred steps: ${reviewPlan.deferred_steps}.`,
+          "",
+          markdownList(reviewLines),
+          "",
+        ]
+      : []),
     "## Limitations",
     "",
     markdownList(sections.limitations),
@@ -1499,6 +1522,7 @@ export function caseReport(store, scope, gates = {}, input = {}) {
     title: built.summary.title,
     format: data.format,
     sections,
+    ...(reviewPlan ? { review_plan: reviewPlan } : {}),
     markdown,
     ...localFlags(),
   };

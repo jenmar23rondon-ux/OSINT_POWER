@@ -183,3 +183,13 @@ The diff can raise a local alert for a new certificate that names the brand, a s
 v0.4 additionally includes one historical-discovery call for each enabled Cert Spotter/Wayback adapter in the company workflow. Existing call budgets apply. Each result is a page with incomplete historical coverage, not a complete census. See [the v0.4 guide](V0.4.md).
 
 Execution now creates durable jobs with recoverable steps and sealed snapshot IDs. Resume uses a new per-invocation budget while retaining lifetime and per-step caps. Correlation totals are exact for stored scoped entities; displayed samples remain bounded. See [OPERATIONS.md](OPERATIONS.md) for queue/resume/cancel, provider coordination and immutable run comparisons.
+
+## Adaptive case review
+
+```bash
+node src/cli.js case report --id CASE_UUID --review-budget 6 --format markdown
+```
+
+Pass `review_budget` to MCP `case_report` for the same plan in structured output. The budget covers 1 to 20 local review steps. The plan prioritizes conflicting evidence, evidence gaps, and supporting evidence in that order. Each unresolved hypothesis gets an initial review step before follow-ups enter the plan. Follow-ups name their prerequisite, and the plan reports how many steps were deferred by the budget.
+
+Regenerate the report after importing reviewed evidence or closing a hypothesis. The plan reads the current case and returns suggested analyst actions. Hypothesis closure requires an explicit analyst decision.

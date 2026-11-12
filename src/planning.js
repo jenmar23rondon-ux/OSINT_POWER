@@ -3,6 +3,123 @@ import { runWorkflow } from "./workflows.js";
 import { ADAPTERS } from "./adapters.js";
 import { hash } from "./store.js";
 import { sourceMetrics } from "./quality.js";
+import { z } from "zod";
+
+export const ReviewBudget = z.number().int().min(1).max(20);
+const reviewAction = z.enum([
+  "compare-conflicting-evidence",
+  "inspect-evidence-gap",
+  "check-supporting-evidence",
+  "reassess-after-review",
+  "request-analyst-disposition",
+]);
+const reviewStep = z
+  .object({
+    id: z.string(),
+    hypothesis_id: z.uuid(),
+    action: reviewAction,
+    reason: z.string(),
+    evidence_ids: z.array(z.string().regex(/^[a-f0-9]{64}$/)).max(40),
+    depends_on: z.string().nullable(),
+  })
+  .strict();
+export const CaseReviewPlan = z
+  .object({
+    budget: ReviewBudget,
+    steps: z.array(reviewStep).max(20),
+    deferred_steps: z.number().int().nonnegative(),
+  })
+  .strict();
+
+function reviewSteps(evaluation) {
+  const id = evaluation.hypothesis_id;
+  const step = (action, reason, evidence = [], dependsOn = null) => ({
+    id: `${id}/${action}`,
+    hypothesis_id: id,
+    action,
+    reason,
+    evidence_ids: [
+      ...new Set(evidence.map((item) => item.evidence_id).filter(Boolean)),
+    ]
+      .sort()
+      .slice(0, 40),
+    depends_on: dependsOn,
+  });
+  if (evaluation.contradicting.length) {
+    const compare = step(
+      "compare-conflicting-evidence",
+      "Compare the conflicting records and their dates before reviewing the claim.",
+      [
+        ...evaluation.contradicting.slice(0, 20),
+        ...evaluation.supporting.slice(0, 20),
+      ],
+    );
+    return [
+      compare,
+      step(
+        "reassess-after-review",
+        "Refresh the assessment after the analyst reviews the disagreement.",
+        [],
+        compare.id,
+      ),
+    ];
+  }
+  if (evaluation.assessed_status === "supported-pending-review") {
+    const support = step(
+      "check-supporting-evidence",
+      "Review whether the cited records support the claim and whether their sources overlap.",
+      evaluation.supporting,
+    );
+    return [
+      support,
+      step(
+        "request-analyst-disposition",
+        "Ask the analyst to decide whether to close the hypothesis or request more evidence.",
+        [],
+        support.id,
+      ),
+    ];
+  }
+  const gap = step(
+    "inspect-evidence-gap",
+    evaluation.missing[0]?.reason ??
+      "Check the case records for evidence that directly supports the claim.",
+    evaluation.supporting,
+  );
+  return [
+    gap,
+    step(
+      "reassess-after-review",
+      "Refresh the assessment after reviewing the gap or adding reviewed evidence.",
+      [],
+      gap.id,
+    ),
+  ];
+}
+
+export function planCaseReview(evaluations, budget) {
+  const open = evaluations.filter(
+    ({ hypothesis }) =>
+      hypothesis.status !== "rejected" &&
+      hypothesis.status !== "analyst-confirmed",
+  );
+  const priority = { weakened: 0, open: 1, "supported-pending-review": 2 };
+  open.sort(
+    (left, right) =>
+      priority[left.assessed_status] - priority[right.assessed_status] ||
+      left.hypothesis_id.localeCompare(right.hypothesis_id),
+  );
+  const paths = open.map(reviewSteps);
+  const steps = [
+    ...paths.map(([first]) => first),
+    ...paths.map(([, second]) => second),
+  ];
+  return {
+    budget,
+    steps: steps.slice(0, budget),
+    deferred_steps: Math.max(0, steps.length - budget),
+  };
+}
 
 const PROVIDERS = {
   crtsh: "crt.sh",
