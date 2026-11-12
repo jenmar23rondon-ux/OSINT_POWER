@@ -652,7 +652,7 @@ test(
     await client.connect(transport);
     const list = await client.listTools();
     const names = new Set(list.tools.map((tool) => tool.name));
-    assert.equal(list.tools.length, 44);
+    assert.equal(list.tools.length, 45);
     for (const name of [
       "list_review_queue",
       "record_decision",

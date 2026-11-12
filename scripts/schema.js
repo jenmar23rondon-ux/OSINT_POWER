@@ -9,6 +9,7 @@ import { RESULT_SCHEMAS, outputSchema } from "../src/contracts.js";
 import { BundleInput } from "../src/bundles.js";
 import { StixExportInput } from "../src/stix.js";
 import { TemporalGraphInput } from "../src/temporal-graph.js";
+import { AnalyzeImageInput } from "../src/image-forensics.js";
 
 mkdirSync(new URL("../schema/", import.meta.url), { recursive: true });
 for (const [name, schema] of Object.entries({
@@ -24,6 +25,7 @@ for (const [name, schema] of Object.entries({
   bundle: BundleInput,
   "stix-export": StixExportInput,
   "temporal-graph": TemporalGraphInput,
+  "analyze-image": AnalyzeImageInput,
 }))
   writeFileSync(
     new URL(`../schema/${name}.schema.json`, import.meta.url),

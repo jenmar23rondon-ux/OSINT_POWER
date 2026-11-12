@@ -40,11 +40,13 @@ import {
 } from "./cases.js";
 import { investigationGraph } from "./graph-export.js";
 import { temporalGraph } from "./temporal-graph.js";
+import { inspectImageFile } from "./image-forensics.js";
 
 const HELP = {
   project: "OSINT_POWER",
   version: "0.4.0",
   commands: {
+    "analyze-image": "analyze-image --file PATH",
     bundle:
       "bundle --id SNAPSHOT_UUID --output evidence.json (complete capture, at most 10000 observations/40 MB)",
     "verify-bundle":
@@ -214,6 +216,7 @@ try {
   } else if (positionals.length > 1) throw new Error("UNEXPECTED_ARGUMENT");
   let result;
   if (command === "help") result = HELP;
+  else if (command === "analyze-image") result = await inspectImageFile(v.file);
   else if (command === "init") {
     const path = v.config ?? "config.json";
     writeFileSync(
