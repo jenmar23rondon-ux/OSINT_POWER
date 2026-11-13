@@ -431,7 +431,12 @@ function scrubResult(file, output, backend, before, after, clean) {
   };
 }
 
-export async function scrubImageFile(path, output, backend = "builtin") {
+export async function scrubImageFile(
+  path,
+  output,
+  backend = "builtin",
+  options = {},
+) {
   if (!output) throw new Error("SCRUB_OUTPUT_REQUIRED");
   if (samePath(path, output)) throw new Error("OUTPUT_IS_INPUT");
   let outputReal = null;
@@ -446,7 +451,11 @@ export async function scrubImageFile(path, output, backend = "builtin") {
   const beforeStat = await stat(path);
   const bytes = await readImageFile(path);
   const before = await checkImageBytes(bytes);
-  const stripped = Buffer.from(await produceStripped(bytes, backend));
+  const stripped = Buffer.from(
+    options.strip
+      ? await options.strip(bytes)
+      : await produceStripped(bytes, backend),
+  );
   await unchanged(path, bytes, beforeStat);
   const preview = await checkImageBytes(stripped);
   try {

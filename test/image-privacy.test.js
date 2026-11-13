@@ -1,9 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { createHash } from "node:crypto";
 import {
-  chmodSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -25,6 +23,7 @@ import {
   isPrivacyClean,
   scrubImageFile,
 } from "../src/image-privacy.js";
+import { OperationError, runProcess } from "../src/transport.js";
 
 const jpeg = Buffer.from(
   "/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCAACAAMDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD8qqKKKAP/2Q==",
@@ -152,9 +151,18 @@ function privacyJpeg() {
   return Buffer.concat([jpeg.subarray(0, 2), segment, jpeg.subarray(2)]);
 }
 
+function removeDirectory(directory) {
+  rmSync(directory, {
+    recursive: true,
+    force: true,
+    maxRetries: 10,
+    retryDelay: 100,
+  });
+}
+
 function temporary(t) {
   const directory = mkdtempSync(join(tmpdir(), "osint-privacy-"));
-  t.after(() => rmSync(directory, { recursive: true, force: true }));
+  t.after(() => removeDirectory(directory));
   return directory;
 }
 
@@ -264,44 +272,38 @@ test("privacy check does not create a workspace database", (t) => {
   assert.equal(batch.result.persisted, false);
 });
 
-test("a scrub backend that leaves metadata fails without touching the original", (t) => {
+test("a dirty scrub copy fails closed and the exiftool flag stays one argument", async (t) => {
   const directory = temporary(t);
-  const bin = join(directory, "bin");
-  mkdirSync(bin);
-  const fake = join(bin, "exiftool");
-  writeFileSync(
-    fake,
-    "#!/usr/bin/env node\nconst fs=require('node:fs');const args=process.argv.slice(2);fs.writeFileSync(args[args.indexOf('-o')+1],fs.readFileSync(args.at(-1)));\n",
-  );
-  chmodSync(fake, 0o755);
   const photo = join(directory, "own.jpg");
   const output = join(directory, "still-dirty.jpg");
   const bytes = privacyJpeg();
   writeFileSync(photo, bytes);
-  const digest = createHash("sha256").update(bytes).digest("hex");
-  const report = cli(
-    directory,
-    [
-      "privacy-check-image",
-      "--file",
-      photo,
-      "--scrub",
-      "--output",
-      output,
-      "--backend",
-      "exiftool",
-    ],
-    { ...process.env, PATH: `${bin}:${process.env.PATH}` },
+  const before = statSync(photo);
+  const missing = join(directory, "exiftool");
+  await assert.rejects(
+    () =>
+      runProcess(
+        missing,
+        ["-all=", "-o", output, photo],
+        { timeoutMs: 1000, maxBytes: 1024 },
+        "",
+        { allow: [missing] },
+      ),
+    (error) =>
+      error instanceof OperationError && error.code === "TOOL_NOT_INSTALLED",
   );
-  assert.equal(report.ok, false);
-  assert.equal(report.result.code, "SCRUB_INCOMPLETE");
-  assert.equal(report.result.original_unchanged, true);
-  assert.equal(report.error.code, "SCRUB_INCOMPLETE");
-  assert.equal(
-    createHash("sha256").update(readFileSync(photo)).digest("hex"),
-    digest,
-  );
-  assert.equal(readFileSync(output).equals(bytes), true);
+  const result = await scrubImageFile(photo, output, "builtin", {
+    strip: async (input) => Buffer.from(input),
+  });
+  const after = statSync(photo);
+  assert.equal(result.status, "failed");
+  assert.equal(result.code, "SCRUB_INCOMPLETE");
+  assert.equal(result.clean, false);
+  assert.equal(result.original_unchanged, true);
+  assert.equal(result.persisted, false);
+  assert.equal(after.mtimeMs, before.mtimeMs);
+  assert.deepEqual(readFileSync(photo), bytes);
+  assert.deepEqual(readFileSync(output), bytes);
 });
 
 test("missing scrub backends and same-path output leave the original in place", async (t) => {
@@ -312,17 +314,18 @@ test("missing scrub backends and same-path output leave the original in place", 
   writeFileSync(photo, bytes);
   const saved = process.env.PATH;
   process.env.PATH = directory;
-  t.after(() => {
+  try {
+    await assert.rejects(
+      () => scrubImageFile(photo, output, "mat2"),
+      /TOOL_NOT_INSTALLED/,
+    );
+    await assert.rejects(
+      () => scrubImageFile(photo, output, "exiftool"),
+      /TOOL_NOT_INSTALLED/,
+    );
+  } finally {
     process.env.PATH = saved;
-  });
-  await assert.rejects(
-    () => scrubImageFile(photo, output, "mat2"),
-    /TOOL_NOT_INSTALLED/,
-  );
-  await assert.rejects(
-    () => scrubImageFile(photo, output, "exiftool"),
-    /TOOL_NOT_INSTALLED/,
-  );
+  }
   assert.equal(existsSync(output), false);
   assert.equal(readFileSync(photo).equals(bytes), true);
   const failure = cli(directory, [
@@ -369,7 +372,7 @@ test(
   "MCP own-photo check returns coordinates and a scrubbed copy without a path",
   { timeout: 20_000 },
   async (t) => {
-    const directory = temporary(t);
+    const directory = mkdtempSync(join(tmpdir(), "osint-privacy-"));
     const config = join(directory, "config.json");
     writeFileSync(
       config,
@@ -389,6 +392,7 @@ test(
     transport.stderr.on("data", () => {});
     t.after(async () => {
       await client.close();
+      removeDirectory(directory);
     });
     await client.connect(transport);
     const names = (await client.listTools()).tools.map((tool) => tool.name);
