@@ -78,6 +78,7 @@ import {
 import { InvestigationGraphInput, investigationGraph } from "./graph-export.js";
 import { TemporalGraphInput, temporalGraph } from "./temporal-graph.js";
 import { AnalyzeImageInput, analyzeImage } from "./image-forensics.js";
+import { PrivacyCheckImageInput, privacyCheckImage } from "./image-privacy.js";
 import {
   CompareImagesInput,
   OcrImageInput,
@@ -140,6 +141,12 @@ export function createServer(engine) {
     "Inspect user-provided base64 JPEG, PNG, WebP, or TIFF bytes up to 2 MiB. Returns SHA-256, dimensions, and selected metadata. Reads no file paths and uses no network.",
     AnalyzeImageInput,
     analyzeImage,
+  );
+  register(
+    "privacy_check_image",
+    "Audit one supplied photo before the caller publishes it. Reports GPS coordinates, altitude, camera serial numbers, owner and copyright tags, software, and timestamps, with a high/medium/low rating. Exact coordinates appear only in this own-photo check. Nothing is written to the workspace and no network is used. scrub=true returns a metadata-stripped JPEG, PNG, or WebP in scrubbed_base64 and rechecks that GPS and identifying tags are gone.",
+    PrivacyCheckImageInput,
+    privacyCheckImage,
   );
   register(
     "compare_images",

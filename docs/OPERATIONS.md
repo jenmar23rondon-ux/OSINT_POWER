@@ -145,42 +145,43 @@ The core report includes at most 50 entities, 50 relationships and 20 recent run
 
 ## MCP additions
 
-| Tool                  | Behavior                                                                   |
-| --------------------- | -------------------------------------------------------------------------- |
-| start_workflow        | Create a queued job without collection                                     |
-| resume_run            | Execute pending steps of a durable job                                     |
-| cancel_run            | Request cancellation                                                       |
-| get_job / list_jobs   | Inspect durable state                                                      |
-| doctor                | Local diagnostics                                                          |
-| source_health         | Persisted quotas and cooldowns                                             |
-| compare_runs          | Paginated immutable evidence comparison                                    |
-| explain_entity        | Provenance and source-family explanation                                   |
-| assess_evidence       | Read-only cross-source assessment page; suggestions do not collect         |
-| explain_asset         | One asset's assessment, conflicts, review state and suggestion             |
-| plan_investigation    | Rank eligible actions without execution                                    |
-| list_review_queue     | Unreviewed entities, candidate links, contradictions                       |
-| record_decision       | Append an analyst decision; does not confirm identity                      |
-| show_entity           | Candidates, contradictions, independence, decision history                 |
-| run_phishing_workflow | Suspected lookalikes; execute stores leads and may query passive sources   |
-| phishing_report       | Unverified lead report; no collection                                      |
-| create_monitor        | Store a monitor definition. No collection and no webhook unless one is set |
-| run_monitor           | Re-check scope, collect allowed sources, snapshot and diff                 |
-| monitor_changes       | Read one page of stored changes and their evidence identifiers             |
-| list_monitors         | List definitions and the latest run status                                 |
-| export_stix           | Read-only STIX 2.1 bundle; suspected leads stay suspected                  |
-| create_hypothesis     | Store an open hypothesis. No collection and no confirmation                |
-| update_hypothesis     | Edit an open hypothesis. Cannot set analyst-confirmed                      |
-| close_hypothesis      | Record rejected or analyst-confirmed. Still not a finding                  |
-| list_hypotheses       | Read stored hypotheses                                                     |
-| evaluate_hypothesis   | Supporting, contradicting and missing evidence. Does not collect           |
-| create_case           | Group investigations, targets, hypotheses, decisions and notes             |
-| list_cases            | List stored cases                                                          |
-| case_summary          | Read one case without collecting                                           |
-| case_report           | Separate decisions, candidates, hypotheses and limitations                 |
-| export_case_stix      | Existing STIX exporter; hypotheses are notes, not indicators               |
-| investigation_graph   | Read-only case or investigation graph. Candidates stay candidates          |
+| Tool                  | Behavior                                                                      |
+| --------------------- | ----------------------------------------------------------------------------- |
+| start_workflow        | Create a queued job without collection                                        |
+| resume_run            | Execute pending steps of a durable job                                        |
+| cancel_run            | Request cancellation                                                          |
+| get_job / list_jobs   | Inspect durable state                                                         |
+| doctor                | Local diagnostics                                                             |
+| source_health         | Persisted quotas and cooldowns                                                |
+| compare_runs          | Paginated immutable evidence comparison                                       |
+| explain_entity        | Provenance and source-family explanation                                      |
+| assess_evidence       | Read-only cross-source assessment page; suggestions do not collect            |
+| explain_asset         | One asset's assessment, conflicts, review state and suggestion                |
+| plan_investigation    | Rank eligible actions without execution                                       |
+| list_review_queue     | Unreviewed entities, candidate links, contradictions                          |
+| record_decision       | Append an analyst decision; does not confirm identity                         |
+| show_entity           | Candidates, contradictions, independence, decision history                    |
+| run_phishing_workflow | Suspected lookalikes; execute stores leads and may query passive sources      |
+| phishing_report       | Unverified lead report; no collection                                         |
+| create_monitor        | Store a monitor definition. No collection and no webhook unless one is set    |
+| run_monitor           | Re-check scope, collect allowed sources, snapshot and diff                    |
+| monitor_changes       | Read one page of stored changes and their evidence identifiers                |
+| list_monitors         | List definitions and the latest run status                                    |
+| export_stix           | Read-only STIX 2.1 bundle; suspected leads stay suspected                     |
+| create_hypothesis     | Store an open hypothesis. No collection and no confirmation                   |
+| update_hypothesis     | Edit an open hypothesis. Cannot set analyst-confirmed                         |
+| close_hypothesis      | Record rejected or analyst-confirmed. Still not a finding                     |
+| list_hypotheses       | Read stored hypotheses                                                        |
+| evaluate_hypothesis   | Supporting, contradicting and missing evidence. Does not collect              |
+| create_case           | Group investigations, targets, hypotheses, decisions and notes                |
+| list_cases            | List stored cases                                                             |
+| case_summary          | Read one case without collecting                                              |
+| case_report           | Separate decisions, candidates, hypotheses and limitations                    |
+| export_case_stix      | Existing STIX exporter; hypotheses are notes, not indicators                  |
+| investigation_graph   | Read-only case or investigation graph. Candidates stay candidates             |
+| privacy_check_image   | Own-photo GPS and identity metadata. Not stored. Optional scrub returns bytes |
 
-There are **49 MCP tools** in total, including export_evidence, export_stix, the three review tools, `assess_evidence`, `explain_asset`, the five hypothesis tools, the five case tools, `investigation_graph`, the two phishing tools and the four monitor tools. Existing tool names and output schemas are unchanged. execute=true on the seven workflows uses durable jobs. The phishing scan and `monitor run` are synchronous and are not durable jobs. The legacy passive_pipeline is still a synchronous convenience command, without durable workflow recovery. MCP response-envelope changes are documented in the [v0.4 migration guide](V0.4.md). Backup, retention, STIX filters, and the release checklist are in [PRODUCTION.md](PRODUCTION.md).
+There are **50 MCP tools** in total, including export_evidence, export_stix, the three review tools, `assess_evidence`, `explain_asset`, the five hypothesis tools, the five case tools, `investigation_graph`, the two phishing tools, the four monitor tools, and `privacy_check_image`. `doctor` adds `optional_binaries` for exiftool and mat2. Other existing tool names and output schemas are unchanged. execute=true on the seven workflows uses durable jobs. The phishing scan and `monitor run` are synchronous and are not durable jobs. The legacy passive_pipeline is still a synchronous convenience command, without durable workflow recovery. MCP response-envelope changes are documented in the [v0.4 migration guide](V0.4.md). Backup, retention, STIX filters, and the release checklist are in [PRODUCTION.md](PRODUCTION.md).
 
 ## Incremental monitor
 

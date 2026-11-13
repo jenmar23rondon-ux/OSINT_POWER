@@ -90,20 +90,94 @@ function safeValue(tag) {
   return value || null;
 }
 
-function analyze(bytes) {
-  const format = imageFormat(bytes);
-  const containerDimensions =
-    format === "png"
-      ? pngDimensions(bytes)
-      : format === "webp"
-        ? webpDimensions(bytes)
-        : null;
-  const tags = ExifReader.load(bytes, {
+const privacyTags = {
+  exif: [
+    "Make",
+    "Model",
+    "LensMake",
+    "LensModel",
+    "Software",
+    "DateTime",
+    "DateTimeOriginal",
+    "DateTimeDigitized",
+    "Artist",
+    "Copyright",
+    "CameraOwnerName",
+    "OwnerName",
+    "BodySerialNumber",
+    "SerialNumber",
+    "LensSerialNumber",
+    "InternalSerialNumber",
+    "ImageUniqueID",
+    "GPSLatitude",
+    "GPSLatitudeRef",
+    "GPSLongitude",
+    "GPSLongitudeRef",
+    "GPSAltitude",
+    "GPSAltitudeRef",
+    "GPSDateStamp",
+    "GPSTimeStamp",
+  ],
+  xmp: [
+    "Make",
+    "Model",
+    "CreatorTool",
+    "CreateDate",
+    "ModifyDate",
+    "Creator",
+    "Rights",
+  ],
+  iptc: [
+    "Date Created",
+    "Time Created",
+    "By-line",
+    "Copyright Notice",
+    "Credit",
+  ],
+};
+const privacyRisk = {
+  GPSLatitude: "high",
+  GPSLongitude: "high",
+  GPSAltitude: "high",
+  Artist: "medium",
+  Copyright: "medium",
+  CameraOwnerName: "medium",
+  OwnerName: "medium",
+  BodySerialNumber: "medium",
+  SerialNumber: "medium",
+  LensSerialNumber: "medium",
+  InternalSerialNumber: "medium",
+  ImageUniqueID: "medium",
+  Creator: "medium",
+  Rights: "medium",
+  "By-line": "medium",
+  "Copyright Notice": "medium",
+  Credit: "medium",
+  Make: "low",
+  Model: "low",
+  LensMake: "low",
+  LensModel: "low",
+  Software: "low",
+  CreatorTool: "low",
+  DateTime: "low",
+  DateTimeOriginal: "low",
+  DateTimeDigitized: "low",
+  CreateDate: "low",
+  ModifyDate: "low",
+  "Date Created": "low",
+  "Time Created": "low",
+  GPSDateStamp: "low",
+  GPSTimeStamp: "low",
+};
+
+function loadTags(bytes, mode) {
+  const privacy = mode === "privacy";
+  return ExifReader.load(bytes, {
     expanded: true,
     includeTags: {
       file: ["FileType", "Image Width", "Image Height"],
       exif: [
-        ...fields.exif,
+        ...(privacy ? privacyTags.exif : fields.exif),
         "ImageWidth",
         "ImageLength",
         "PixelXDimension",
@@ -111,16 +185,33 @@ function analyze(bytes) {
         "GPSLatitude",
         "GPSLongitude",
       ],
-      xmp: fields.xmp,
-      iptc: fields.iptc,
+      xmp: privacy ? privacyTags.xmp : fields.xmp,
+      iptc: privacy ? privacyTags.iptc : fields.iptc,
+      ...(privacy ? { gps: ["Latitude", "Longitude", "Altitude"] } : {}),
     },
   });
+}
+
+function parsedImage(bytes, mode) {
+  const format = imageFormat(bytes);
+  const containerDimensions =
+    format === "png"
+      ? pngDimensions(bytes)
+      : format === "webp"
+        ? webpDimensions(bytes)
+        : null;
+  const tags = loadTags(bytes, mode);
   if (tags.file?.FileType?.value !== format)
     throw new Error("IMAGE_PARSE_FAILED");
   const dimensions = containerDimensions ?? {
     width: tags.file?.["Image Width"]?.value ?? tags.exif?.ImageWidth?.value,
     height: tags.file?.["Image Height"]?.value ?? tags.exif?.ImageLength?.value,
   };
+  return { format, dimensions, tags };
+}
+
+function analyze(bytes) {
+  const { format, dimensions, tags } = parsedImage(bytes, "analyze");
   const metadata = [];
   for (const [group, names] of Object.entries(fields)) {
     for (const tag of names) {
@@ -157,8 +248,158 @@ function analyze(bytes) {
   };
 }
 
+function ratio(pair) {
+  if (!Array.isArray(pair) || pair.length < 2) return null;
+  const [numerator, denominator] = pair;
+  if (
+    typeof numerator !== "number" ||
+    typeof denominator !== "number" ||
+    denominator === 0
+  )
+    return null;
+  return numerator / denominator;
+}
+
+function dms(tag) {
+  const value = tag?.value;
+  if (!Array.isArray(value) || value.length < 3) return null;
+  const degrees = ratio(value[0]);
+  const minutes = ratio(value[1]);
+  const seconds = ratio(value[2]);
+  if (degrees === null || minutes === null || seconds === null) return null;
+  return degrees + minutes / 60 + seconds / 3600;
+}
+
+function bounded(value, limit) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  if (value < -limit || value > limit) return null;
+  return value;
+}
+
+function formatNumber(value) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  const rounded = Math.round(value * 1e6) / 1e6;
+  return Object.is(rounded, -0) ? "0" : String(rounded);
+}
+
+function readGps(tags) {
+  const latitudeRef = Array.isArray(tags.exif?.GPSLatitudeRef?.value)
+    ? tags.exif.GPSLatitudeRef.value.join("")
+    : "";
+  const longitudeRef = Array.isArray(tags.exif?.GPSLongitudeRef?.value)
+    ? tags.exif.GPSLongitudeRef.value.join("")
+    : "";
+  let latitude = bounded(tags.gps?.Latitude, 90);
+  let longitude = bounded(tags.gps?.Longitude, 180);
+  let altitude = bounded(tags.gps?.Altitude, 20000);
+  if (latitude === null) {
+    const magnitude = dms(tags.exif?.GPSLatitude);
+    if (magnitude !== null)
+      latitude = bounded(
+        latitudeRef.includes("S") ? -magnitude : magnitude,
+        90,
+      );
+  }
+  if (longitude === null) {
+    const magnitude = dms(tags.exif?.GPSLongitude);
+    if (magnitude !== null)
+      longitude = bounded(
+        longitudeRef.includes("W") ? -magnitude : magnitude,
+        180,
+      );
+  }
+  if (altitude === null) {
+    const meters = ratio(tags.exif?.GPSAltitude?.value);
+    if (meters !== null)
+      altitude = bounded(
+        tags.exif?.GPSAltitudeRef?.value === 1 ? -meters : meters,
+        20000,
+      );
+  }
+  return {
+    present: Boolean(
+      tags.exif?.GPSLatitude ||
+      tags.exif?.GPSLongitude ||
+      tags.exif?.GPSAltitude ||
+      latitude !== null ||
+      longitude !== null ||
+      altitude !== null,
+    ),
+    latitude,
+    longitude,
+    altitude_meters: altitude,
+  };
+}
+
+function privacy(bytes) {
+  const { format, dimensions, tags } = parsedImage(bytes, "privacy");
+  const gps = readGps(tags);
+  const signed = {
+    GPSLatitude: formatNumber(gps.latitude),
+    GPSLongitude: formatNumber(gps.longitude),
+    GPSAltitude: formatNumber(gps.altitude_meters),
+  };
+  const findings = [];
+  for (const [group, names] of Object.entries(privacyTags)) {
+    for (const tag of names) {
+      const risk = privacyRisk[tag];
+      const source = tags[group]?.[tag];
+      if (!risk || !source) continue;
+      const value = signed[tag] || safeValue(source);
+      if (value) findings.push({ group, tag, risk, value });
+    }
+  }
+  if (gps.present && !findings.some((finding) => finding.risk === "high")) {
+    findings.push({
+      group: "exif",
+      tag: "GPSLatitude",
+      risk: "high",
+      value:
+        formatNumber(gps.latitude) ||
+        formatNumber(gps.longitude) ||
+        formatNumber(gps.altitude_meters) ||
+        "present",
+    });
+  }
+  const rank = { high: 0, medium: 1, low: 2 };
+  findings.sort(
+    (left, right) =>
+      rank[left.risk] - rank[right.risk] ||
+      left.tag.localeCompare(right.tag) ||
+      left.group.localeCompare(right.group),
+  );
+  const reported = findings.slice(0, 48);
+  const counts = { high: 0, medium: 0, low: 0 };
+  for (const finding of reported) counts[finding.risk] += 1;
+  const rating = counts.high
+    ? "high"
+    : counts.medium
+      ? "medium"
+      : counts.low
+        ? "low"
+        : "none";
+  return {
+    purpose: "own-photo-privacy-check",
+    network: false,
+    persisted: false,
+    format,
+    bytes: bytes.length,
+    sha256: createHash("sha256").update(bytes).digest("hex"),
+    dimensions,
+    rating,
+    counts,
+    gps,
+    findings: reported,
+    metadata_trust: "untrusted",
+  };
+}
+
 try {
-  parentPort.postMessage({ result: analyze(Buffer.from(workerData.buffer)) });
+  const mode = workerData?.mode === "privacy" ? "privacy" : "analyze";
+  const source = workerData?.buffer ?? workerData;
+  parentPort.postMessage({
+    result: (mode === "privacy" ? privacy : analyze)(Buffer.from(source)),
+  });
 } catch (error) {
   parentPort.postMessage({
     error:

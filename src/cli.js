@@ -49,6 +49,7 @@ import {
 import { investigationGraph } from "./graph-export.js";
 import { temporalGraph } from "./temporal-graph.js";
 import { inspectImageFile } from "./image-forensics.js";
+import { privacyCheckCommand } from "./image-privacy.js";
 import { compareImageFiles, ocrImageFile } from "./visual-evidence.js";
 
 const HELP = {
@@ -56,6 +57,8 @@ const HELP = {
   version: "0.4.0",
   commands: {
     "analyze-image": "analyze-image --file PATH",
+    "privacy-check-image":
+      "privacy-check-image --file PATH | --dir PATH [--scrub --output PATH] [--backend builtin|exiftool|mat2] (own photos; coordinates are not stored)",
     "compare-images": "compare-images --file LEFT --other RIGHT",
     "ocr-image": "ocr-image --file PATH [--language eng|spa]",
     bundle:
@@ -154,6 +157,7 @@ try {
       restart: { type: "boolean", default: false },
       "skip-probes": { type: "boolean", default: false },
       challenge: { type: "boolean", default: false },
+      scrub: { type: "boolean", default: false },
       ...Object.fromEntries(
         [
           "config",
@@ -161,6 +165,8 @@ try {
           "adapter",
           "target",
           "file",
+          "dir",
+          "backend",
           "other",
           "language",
           "type",
@@ -217,6 +223,8 @@ try {
     throw new Error("CHALLENGE_REQUIRES_ASSET_ID");
   if (v.restart && command !== "run")
     throw new Error("RESTART_ONLY_FOR_COLLECTION");
+  if ((v.scrub || v.backend || v.dir) && command !== "privacy-check-image")
+    throw new Error("UNEXPECTED_ARGUMENT");
   if (command === "monitor") {
     if (
       positionals.length !== 2 ||
@@ -247,7 +255,16 @@ try {
   let result;
   if (command === "help") result = HELP;
   else if (command === "analyze-image") result = await inspectImageFile(v.file);
-  else if (command === "compare-images")
+  else if (command === "privacy-check-image") {
+    stage = "privacy";
+    result = await privacyCheckCommand({
+      file: v.file,
+      directory: v.dir,
+      scrub: v.scrub,
+      output: v.output,
+      backend: v.backend,
+    });
+  } else if (command === "compare-images")
     result = await compareImageFiles(v.file, v.other);
   else if (command === "ocr-image")
     result = await ocrImageFile(v.file, v.language);

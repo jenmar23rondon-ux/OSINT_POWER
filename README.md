@@ -13,7 +13,7 @@
   <a href="#quick-start">Quick start</a> · <a href="docs/WORKFLOWS.md">Seven workflows</a> · <a href="docs/AI.md">Connect AI</a> · <a href="docs/ADAPTERS.md">Adapters</a> · <a href="docs/ROADMAP.md">Roadmap</a>
 </p>
 
-OSINT POWER is an evidence-focused reconnaissance framework for scoped security assessments and research. It normalizes public-source observations, stores provenance in SQLite, and exposes a CLI and **49 MCP tools**. It works without a model or an AI API key.
+OSINT POWER is an evidence-focused reconnaissance framework for scoped security assessments and research. It normalizes public-source observations, stores provenance in SQLite, and exposes a CLI and **50 MCP tools**. It works without a model or an AI API key.
 
 **Status: v0.4.0, historical discovery and verifiable evidence packages.** Seven workflows include explicit budgets, source status and partial results. External binaries are installed separately. Live connectors and import bridges are distinguished in the matrix below.
 
@@ -27,7 +27,14 @@ OSINT POWER is an evidence-focused reconnaissance framework for scoped security 
 
 See the **[v0.4 guide and migration notes](docs/V0.4.md)**.
 
-Inspect authorized JPEG, PNG, WebP, or TIFF files locally for exact hashes, dimensions, and selected metadata. Use `analyze-image` in the CLI or `analyze_image` with supplied bytes in MCP. [Visual and identity evidence guide](docs/VISUAL-IDENTITY.md)
+Inspect authorized JPEG, PNG, WebP, or TIFF files locally for exact hashes, dimensions, and selected metadata. Use `analyze-image` in the CLI or `analyze_image` with supplied bytes in MCP. That investigation view reports GPS presence and does not return coordinates. [Visual and identity evidence guide](docs/VISUAL-IDENTITY.md)
+
+`privacy-check-image` is a separate offline check for a photo you are auditing before you publish it. It prints exact GPS coordinates and altitude, camera make and model, serial numbers, owner and copyright tags, software, and timestamps. GPS is high, serial and owner tags are medium, and dates, software, and camera make/model are low. The report is not written to the workspace database. `--scrub --output PATH` writes a metadata-stripped copy and leaves the original unchanged.
+
+```bash
+node src/cli.js privacy-check-image --file my-photo.jpg
+node src/cli.js privacy-check-image --file my-photo.jpg --scrub --output my-photo-public.jpg
+```
 
 Use `compare-images` for local perceptual comparison and `ocr-image` for text extraction with installed Tesseract language data. [Commands and limits](docs/VISUAL-IDENTITY.md#compare-images-and-extract-text)
 
@@ -195,30 +202,30 @@ The legacy pipeline runs configured crt.sh/subfinder/Amass collectors only. Work
 
 ## Integrations and actual support
 
-| Source                                                                                                         | Current support                                           | Requirements and limitations                                                                         |
-| -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| [crt.sh](https://crt.sh/)                                                                                      | Certificate API                                           | Certificate names are not proof of ownership                                                         |
-| [Cert Spotter](https://sslmate.com/help/reference/ct_search_api_v1)                                            | Direct CT API and imports                                 | Persistent `after` cursor; one page per call; optional environment key; searches unexpired issuances |
-| [Wayback CDX](https://github.com/internetarchive/wayback/blob/master/wayback-cdx-server/README.md)             | Direct historical URL index and imports                   | Persistent resume key; dates retained; no archived content downloads or live checks                  |
-| [subfinder](https://github.com/projectdiscovery/subfinder)                                                     | Execute and import TXT/JSONL                              | Binary on PATH; native upstream provider configuration                                               |
-| [Amass](https://github.com/owasp-amass/amass)                                                                  | Legacy enum -passive interface and name imports           | Verify flags in your installed version; disabled by default                                          |
-| [dnsx](https://github.com/projectdiscovery/dnsx)                                                               | Execute/import A/AAAA JSONL                               | Active mode; one host per collection call                                                            |
-| [httpx](https://github.com/projectdiscovery/httpx)                                                             | Execute/import JSONL                                      | ProjectDiscovery binary; status, tech, title and TLS CN/issuer; no redirect following                |
-| [naabu](https://github.com/projectdiscovery/naabu)                                                             | TCP connect and JSONL imports                             | Active mode; at most 20 configured ports                                                             |
-| DNS MX                                                                                                         | Native Node resolver                                      | Mailbox validity and catch-all remain unknown                                                        |
-| RDAP / [IANA](https://data.iana.org/rdap/ipv4.json)                                                            | Bootstrap and allowlisted RIR queries                     | Registered networks are not office locations or scope grants                                         |
-| [RIPEstat](https://stat.ripe.net/docs/data-api/api-endpoints/network-info)                                     | Prefix and origin ASN API                                 | Routing information is not ownership                                                                 |
-| [GitHub profiles](https://docs.github.com/en/rest/users/users#get-a-user)                                      | Public API by scoped alias                                | Public company/email claims are unverified source assertions                                         |
-| [Sherlock](https://github.com/sherlock-project/sherlock)                                                       | Bounded execution and CSV import                          | One alias, 1–3 configured professional sites, binary on PATH                                         |
-| [theHarvester](https://github.com/laramies/theHarvester)                                                       | Bounded execution and JSON import                         | Configured crtsh/certspotter sources; field coverage depends on source                               |
-| [WhatsMyName](https://github.com/WebBreacher/WhatsMyName)                                                      | Import bridge                                             | Dataset, not an invented executable; username/url/status contract                                    |
-| [ExifTool](https://exiftool.org/)                                                                              | JSON metadata import                                      | Allowed document; selected metadata fields, no automatic GPS inference                               |
-| [Gitleaks](https://github.com/gitleaks/gitleaks) / [TruffleHog](https://github.com/trufflesecurity/trufflehog) | Report imports                                            | File/rule/line only; raw values and scanner verification claims discarded                            |
-| [HIBP](https://haveibeenpwned.com/API/v3)                                                                      | Breach name/date API                                      | Exact scoped account and HIBP_API_KEY; no passwords                                                  |
-| DeHashed / LeakCheck                                                                                           | Strict breach-summary imports                             | Metadata only; no password retrieval or live connectors                                              |
-| [recon-ng](https://github.com/lanmaster53/recon-ng) / [SpiderFoot](https://github.com/smicallef/spiderfoot)    | Common-schema JSONL bridge                                | Native export conversion required; no module execution                                               |
-| LinkedIn / X / job listings / public office records                                                            | Search-query handoff and sourced business-context imports | No automated scraping or fabricated search results                                                   |
-| Phishing lookalikes                                                                                            | Offline variants plus passive enrichment of those names   | In-scope apex only. Suspected, never auto-confirmed. No kit download, form submit, or credential use |
+| Source                                                                                                         | Current support                                           | Requirements and limitations                                                                                                             |
+| -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| [crt.sh](https://crt.sh/)                                                                                      | Certificate API                                           | Certificate names are not proof of ownership                                                                                             |
+| [Cert Spotter](https://sslmate.com/help/reference/ct_search_api_v1)                                            | Direct CT API and imports                                 | Persistent `after` cursor; one page per call; optional environment key; searches unexpired issuances                                     |
+| [Wayback CDX](https://github.com/internetarchive/wayback/blob/master/wayback-cdx-server/README.md)             | Direct historical URL index and imports                   | Persistent resume key; dates retained; no archived content downloads or live checks                                                      |
+| [subfinder](https://github.com/projectdiscovery/subfinder)                                                     | Execute and import TXT/JSONL                              | Binary on PATH; native upstream provider configuration                                                                                   |
+| [Amass](https://github.com/owasp-amass/amass)                                                                  | Legacy enum -passive interface and name imports           | Verify flags in your installed version; disabled by default                                                                              |
+| [dnsx](https://github.com/projectdiscovery/dnsx)                                                               | Execute/import A/AAAA JSONL                               | Active mode; one host per collection call                                                                                                |
+| [httpx](https://github.com/projectdiscovery/httpx)                                                             | Execute/import JSONL                                      | ProjectDiscovery binary; status, tech, title and TLS CN/issuer; no redirect following                                                    |
+| [naabu](https://github.com/projectdiscovery/naabu)                                                             | TCP connect and JSONL imports                             | Active mode; at most 20 configured ports                                                                                                 |
+| DNS MX                                                                                                         | Native Node resolver                                      | Mailbox validity and catch-all remain unknown                                                                                            |
+| RDAP / [IANA](https://data.iana.org/rdap/ipv4.json)                                                            | Bootstrap and allowlisted RIR queries                     | Registered networks are not office locations or scope grants                                                                             |
+| [RIPEstat](https://stat.ripe.net/docs/data-api/api-endpoints/network-info)                                     | Prefix and origin ASN API                                 | Routing information is not ownership                                                                                                     |
+| [GitHub profiles](https://docs.github.com/en/rest/users/users#get-a-user)                                      | Public API by scoped alias                                | Public company/email claims are unverified source assertions                                                                             |
+| [Sherlock](https://github.com/sherlock-project/sherlock)                                                       | Bounded execution and CSV import                          | One alias, 1–3 configured professional sites, binary on PATH                                                                             |
+| [theHarvester](https://github.com/laramies/theHarvester)                                                       | Bounded execution and JSON import                         | Configured crtsh/certspotter sources; field coverage depends on source                                                                   |
+| [WhatsMyName](https://github.com/WebBreacher/WhatsMyName)                                                      | Import bridge                                             | Dataset, not an invented executable; username/url/status contract                                                                        |
+| [ExifTool](https://exiftool.org/)                                                                              | JSON metadata import; optional local scrub backend        | Import keeps selected fields and drops GPS. `privacy-check-image --backend exiftool` can strip your own photo when the binary is on PATH |
+| [Gitleaks](https://github.com/gitleaks/gitleaks) / [TruffleHog](https://github.com/trufflesecurity/trufflehog) | Report imports                                            | File/rule/line only; raw values and scanner verification claims discarded                                                                |
+| [HIBP](https://haveibeenpwned.com/API/v3)                                                                      | Breach name/date API                                      | Exact scoped account and HIBP_API_KEY; no passwords                                                                                      |
+| DeHashed / LeakCheck                                                                                           | Strict breach-summary imports                             | Metadata only; no password retrieval or live connectors                                                                                  |
+| [recon-ng](https://github.com/lanmaster53/recon-ng) / [SpiderFoot](https://github.com/smicallef/spiderfoot)    | Common-schema JSONL bridge                                | Native export conversion required; no module execution                                                                                   |
+| LinkedIn / X / job listings / public office records                                                            | Search-query handoff and sourced business-context imports | No automated scraping or fabricated search results                                                                                       |
+| Phishing lookalikes                                                                                            | Offline variants plus passive enrichment of those names   | In-scope apex only. Suspected, never auto-confirmed. No kit download, form submit, or credential use                                     |
 
 External projects are not bundled or relicensed. Their versions and API availability affect compatibility. OCR, historical DNS, global code/paste search, geocoding and Nuclei execution remain outside this release.
 
@@ -240,26 +247,27 @@ The MCP server uses stdio. Register it with your compatible host using absolute 
 
 Adapt registration to your host's format. See [AI integration](docs/AI.md) and the [agent template](docs/AGENT_PROMPT.md).
 
-| MCP tool                                       | Purpose                                                                                  |
-| ---------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `capabilities`                                 | Configured scope, adapters, workflows and limits                                         |
-| `collect`                                      | One validated adapter/target pair                                                        |
-| `passive_pipeline`                             | Sequential passive discovery with partial results                                        |
-| `import_findings`                              | Normalize a bounded supplied export                                                      |
-| `query_findings`                               | Stable entity pages and provenance summary                                               |
-| `get_evidence`                                 | Untrusted observations for a specific entity                                             |
-| `get_graph`                                    | Evidence-backed relationships                                                            |
-| `workflow`                                     | Plan or execute a bounded workflow                                                       |
-| `start_workflow` / `resume_run` / `cancel_run` | Queue, resume and cancel durable jobs                                                    |
-| `get_job` / `list_jobs`                        | Inspect checkpoints and worker leases                                                    |
-| `doctor` / `source_health`                     | Local compatibility and persisted provider state                                         |
-| `compare_runs` / `explain_entity`              | Immutable comparisons and provenance                                                     |
-| `plan_investigation`                           | Rank configured actions using coverage, freshness and budgets                            |
-| `get_report`                                   | Bounded report, history and next actions                                                 |
-| `export_evidence`                              | Paginated immutable evidence package with integrity digests                              |
-| `export_stix`                                  | Read-only STIX 2.1 bundle of in-scope evidence; suspected leads stay suspected           |
-| `run_phishing_workflow`                        | Suspected lookalikes for one in-scope apex; passive enrichment only when execute is true |
-| `phishing_report`                              | Unverified CERT-style lead report for stored candidates                                  |
+| MCP tool                                       | Purpose                                                                                                         |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `capabilities`                                 | Configured scope, adapters, workflows and limits                                                                |
+| `collect`                                      | One validated adapter/target pair                                                                               |
+| `passive_pipeline`                             | Sequential passive discovery with partial results                                                               |
+| `import_findings`                              | Normalize a bounded supplied export                                                                             |
+| `query_findings`                               | Stable entity pages and provenance summary                                                                      |
+| `get_evidence`                                 | Untrusted observations for a specific entity                                                                    |
+| `get_graph`                                    | Evidence-backed relationships                                                                                   |
+| `workflow`                                     | Plan or execute a bounded workflow                                                                              |
+| `start_workflow` / `resume_run` / `cancel_run` | Queue, resume and cancel durable jobs                                                                           |
+| `get_job` / `list_jobs`                        | Inspect checkpoints and worker leases                                                                           |
+| `doctor` / `source_health`                     | Local compatibility and persisted provider state. `doctor` also lists optional exiftool and mat2 scrub backends |
+| `privacy_check_image`                          | Own-photo metadata report, including GPS. Not stored. Optional scrub returns stripped bytes                     |
+| `compare_runs` / `explain_entity`              | Immutable comparisons and provenance                                                                            |
+| `plan_investigation`                           | Rank configured actions using coverage, freshness and budgets                                                   |
+| `get_report`                                   | Bounded report, history and next actions                                                                        |
+| `export_evidence`                              | Paginated immutable evidence package with integrity digests                                                     |
+| `export_stix`                                  | Read-only STIX 2.1 bundle of in-scope evidence; suspected leads stay suspected                                  |
+| `run_phishing_workflow`                        | Suspected lookalikes for one in-scope apex; passive enrichment only when execute is true                        |
+| `phishing_report`                              | Unverified CERT-style lead report for stored candidates                                                         |
 
 The model reasons about the evidence; the core handles parsing, validation and storage. Evidence text cannot change the configured scope or become a shell command.
 

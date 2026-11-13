@@ -82,7 +82,7 @@ TheHarvester's configured crtsh/certspotter sources may mainly provide hosts rat
 
 The places workflow links reviewed **public corporate office** records to the company. Import `business-context` with `kind: place`, `place_kind: public_office` and a source URL such as a corporate contact page or business registry.
 
-There is no image downloader, GPS extractor, geocoder or residential-location inference. Existing ExifTool metadata can be reviewed, but a corporate-location assertion needs independent source evidence. IP geolocation or registration country never becomes an office node automatically.
+There is no image downloader, geocoder, or residential-location inference. `analyze-image` does not return GPS coordinates. `privacy-check-image` can show coordinates for a photo you are auditing before publication, and those coordinates are not stored as a place or office. A corporate-location assertion still needs independent source evidence. IP geolocation or registration country never becomes an office node automatically.
 
 ## Users and emails
 

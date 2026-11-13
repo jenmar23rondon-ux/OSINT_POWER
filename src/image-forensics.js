@@ -54,7 +54,9 @@ export const AnalyzeImageResult = z
   })
   .strict();
 
-export async function inspectImage(bytes, signal) {
+export async function inspectImage(bytes, signal, options = {}) {
+  const mode = options.mode === "privacy" ? "privacy" : "analyze";
+  const schema = options.schema ?? AnalyzeImageResult;
   if (!bytes.length || bytes.length > MAX_LOCAL_IMAGE_BYTES)
     throw new Error("INVALID_IMAGE_SIZE");
   if (signal?.aborted) throw new Error("CANCELLED");
@@ -66,7 +68,7 @@ export async function inspectImage(bytes, signal) {
   try {
     const input = Uint8Array.from(bytes);
     worker = new Worker(new URL("./image-worker.js", import.meta.url), {
-      workerData: input,
+      workerData: { buffer: input, mode },
       transferList: [input.buffer],
       resourceLimits: {
         maxOldGenerationSizeMb: 64,
@@ -92,7 +94,7 @@ export async function inspectImage(bytes, signal) {
       worker.once("exit", () => reject(new Error("IMAGE_PARSE_FAILED")));
     });
     if (response.error) throw new Error(response.error);
-    const result = AnalyzeImageResult.safeParse(response.result);
+    const result = schema.safeParse(response.result);
     if (!result.success) throw new Error("IMAGE_PARSE_FAILED");
     return result.data;
   } finally {

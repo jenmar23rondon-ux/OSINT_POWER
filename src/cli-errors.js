@@ -47,9 +47,71 @@ const messages = {
     "The import exceeds the workspace byte limit.",
     "Split the export into smaller files and import each separately.",
   ],
+  SCRUB_OUTPUT_REQUIRED: [
+    "Scrub needs a destination path.",
+    "Pass --output PATH. The original file is not modified.",
+  ],
+  OUTPUT_REQUIRES_SCRUB: [
+    "An output path was given without scrubbing.",
+    "Add --scrub to write a metadata-stripped copy, or omit --output to only print the report.",
+  ],
+  OUTPUT_IS_INPUT: [
+    "The scrub output path is the original file.",
+    "Choose a different --output path. The original is left unchanged.",
+  ],
+  OUTPUT_EXISTS: [
+    "The scrub output already exists.",
+    "Choose a new --output path. Existing files are not overwritten.",
+  ],
+  OUTPUT_IS_DIRECTORY: [
+    "The scrub output path is a directory.",
+    "Pass a file path with --file, or a directory with --dir.",
+  ],
+  SCRUB_INCOMPLETE: [
+    "The stripped copy still contains GPS or identifying tags.",
+    "Do not publish that copy. Try --backend exiftool or --backend mat2 when doctor shows it is installed.",
+  ],
+  SCRUB_UNSUPPORTED: [
+    "This image cannot be stripped with the selected backend.",
+    "Built-in scrub supports JPEG, PNG, and WebP. TIFF can use exiftool or mat2 when that tool is on PATH.",
+  ],
+  SCRUB_FAILED: [
+    "The selected scrub backend could not write a cleaned copy.",
+    "Check doctor for exiftool or mat2, or omit --backend to use the built-in stripper.",
+  ],
+  INVALID_PRIVACY_BACKEND: [
+    "The scrub backend is not recognized.",
+    "Use builtin, exiftool, or mat2.",
+  ],
+  DIRECTORY_REQUIRED: [
+    "The path is not a directory.",
+    "Pass a folder of your own photos with --dir.",
+  ],
+  TOO_MANY_IMAGES: [
+    "The folder contains too many files.",
+    "Check at most 64 regular files per call.",
+  ],
+  ORIGINAL_MODIFIED: [
+    "The original file changed while the privacy check was running.",
+    "The command does not write to the original. Run it again on a stable file.",
+  ],
 };
 
 const scopedMessages = {
+  privacy: {
+    TOOL_NOT_INSTALLED: [
+      "The selected scrub backend is not on PATH.",
+      "Install exiftool or mat2, or omit --backend to use the built-in stripper. doctor lists those optional tools.",
+    ],
+    IMAGE_FILE_REQUIRED: [
+      "The image path is missing or is not a regular file.",
+      "Pass --file PATH for one of your own photos, or --dir PATH for a folder.",
+    ],
+    FILE_NOT_FOUND: [
+      "The photo or folder could not be found.",
+      "Check the path passed to --file or --dir.",
+    ],
+  },
   config: {
     FILE_NOT_FOUND: [
       "The workspace configuration file could not be found.",
