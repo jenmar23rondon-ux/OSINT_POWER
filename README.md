@@ -78,18 +78,23 @@ Requires **Node.js 24.14+** and Git. The core uses JavaScript ESM and Node's inc
 git clone https://github.com/jenmar23rondon-ux/OSINT_POWER.git
 cd OSINT_POWER
 npm ci --ignore-scripts
-node src/cli.js demo
-npm test
+node src/cli.js demo --format html --output investigation.html
 ```
 
-The demo uses only synthetic example.com and documentation IP fixtures. It sends no traffic and returns **4 entities and 2 relationships**. Node 24 may print an experimental SQLite warning to stderr; stdout remains valid JSON.
+Open `investigation.html` in your browser. The demo imports the bundled subfinder, dnsx, and httpx fixtures into a temporary in-memory workspace. It uses only synthetic example.com names and documentation IPs and returns **4 entities and 2 relationships**. Node may print a SQLite warning on stderr. Stdout stays JSON.
+
+![Synthetic OSINT POWER report showing four entities and two relationships](assets/quickstart-report.png)
+
+The inventory includes `www.example.com` without a recorded relationship. The subfinder fixture lists the name, while the DNS and HTTP fixtures cover `api.example.com`. The HTML graph draws relationship endpoints, so inventory-only entities can be absent from the graph. Compare the inventory and graph when reviewing evidence coverage.
 
 ```bash
 node src/cli.js init
 node src/cli.js import --adapter subfinder --file examples/subdomains.txt
+node src/cli.js import --adapter dnsx --file examples/dnsx.jsonl
+node src/cli.js import --adapter httpx --file examples/httpx.jsonl
 node src/cli.js query --type domain --limit 25
 node src/cli.js graph
-node src/cli.js report
+node src/cli.js report --format html --output investigation.html
 ```
 
 `init` never overwrites an existing configuration. The default configuration disables network access and active collection. State is stored alongside the configuration in `.osint-power/state.sqlite`.
