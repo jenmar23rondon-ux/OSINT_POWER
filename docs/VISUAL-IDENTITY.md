@@ -73,6 +73,18 @@ MCP `compare_images` takes `left_base64` and `right_base64`. MCP `ocr_image` tak
 
 The comparison reports SHA-256, exact-byte equality, and a 63-bit grayscale perceptual distance. Whole images within 8 bits are similarity candidates. For crops, the search tests 50% and 75% regions at fixed positions in either image and reports the best candidate within 6 bits. Crop coordinates refer to the auto-oriented source image. Flat images can be inconclusive, grayscale hashes can miss color-only differences, and the fixed search can miss arbitrary crops. Synthetic fixtures establish expected behavior for known transforms. Use an independent labeled corpus to calibrate thresholds for a real collection.
 
+### Find copies in a collection
+
+```powershell
+node src/cli.js search-image-copies --file .\reference.jpg --dir .\reviewed-images
+```
+
+The CLI compares the reference with up to 24 JPEG, PNG, WebP, or TIFF files in the supplied folder. It scans one folder level, checks at most 256 entries, and returns basenames for matches and rejected candidates. Put the reference outside that folder to avoid a self-match. The per-file limit is 16 MiB.
+
+MCP `search_image_copies` accepts `query_base64` and an array of up to eight `{id, data_base64}` candidates. Pass image bytes and short unique labels. The limit is 2 MiB per image and about 8 MiB before base64 encoding per call. The tool reads no filesystem paths.
+
+Results rank exact copies first, then similar images and common crop candidates. The search compares the composition of the images and returns results without network access or database writes. Review perceptual matches as possible copies. They establish neither identity nor who posted an image. Searches run one at a time and time out after 45 seconds.
+
 JPEG, PNG, WebP, and TIFF pixels are decoded by a bounded subprocess. Comparison and OCR accept single-frame images up to 20 million pixels. The decoder uses a fixed loader allowlist and the existing process runner enforces deadlines and output limits. OCR receives a normalized grayscale PNG with a maximum side of 1600 pixels. It returns up to 8000 characters as untrusted text, with redaction of common credential patterns. Review text before sharing. [Sharp input controls](https://sharp.pixelplumbing.com/api-constructor/)
 
 ## Prioritized pull requests

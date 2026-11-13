@@ -81,8 +81,10 @@ import { AnalyzeImageInput, analyzeImage } from "./image-forensics.js";
 import { PrivacyCheckImageInput, privacyCheckImage } from "./image-privacy.js";
 import {
   CompareImagesInput,
+  SearchImageCopiesInput,
   OcrImageInput,
   compareImages,
+  searchImageCopies,
   ocrImage,
 } from "./visual-evidence.js";
 
@@ -153,6 +155,12 @@ export function createServer(engine) {
     "Compare two supplied image buffers locally for exact bytes, perceptual similarity, and common crops. Similarity is a review candidate.",
     CompareImagesInput,
     compareImages,
+  );
+  register(
+    "search_image_copies",
+    "Compare a supplied reference image against up to eight supplied candidate images for exact copies, resized copies, or common crops. Uses local image comparison only.",
+    SearchImageCopiesInput,
+    searchImageCopies,
   );
   register(
     "ocr_image",

@@ -11,7 +11,11 @@ import { StixExportInput } from "../src/stix.js";
 import { TemporalGraphInput } from "../src/temporal-graph.js";
 import { AnalyzeImageInput } from "../src/image-forensics.js";
 import { PrivacyCheckImageInput } from "../src/image-privacy.js";
-import { CompareImagesInput, OcrImageInput } from "../src/visual-evidence.js";
+import {
+  CompareImagesInput,
+  OcrImageInput,
+  SearchImageCopiesInput,
+} from "../src/visual-evidence.js";
 
 mkdirSync(new URL("../schema/", import.meta.url), { recursive: true });
 for (const [name, schema] of Object.entries({
@@ -30,6 +34,7 @@ for (const [name, schema] of Object.entries({
   "analyze-image": AnalyzeImageInput,
   "privacy-check-image": PrivacyCheckImageInput,
   "compare-images": CompareImagesInput,
+  "search-image-copies": SearchImageCopiesInput,
   "ocr-image": OcrImageInput,
 }))
   writeFileSync(

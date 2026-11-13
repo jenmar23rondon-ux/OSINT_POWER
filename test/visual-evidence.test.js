@@ -1,7 +1,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import sharp from "sharp";
-import { compareImages, ocrImage } from "../src/visual-evidence.js";
+import {
+  compareImages,
+  ocrImage,
+  searchImageCopies,
+} from "../src/visual-evidence.js";
 import { runProcess } from "../src/transport.js";
 
 const bytes = (buffer) => buffer.toString("base64");
@@ -74,6 +83,87 @@ test("low-detail images remain inconclusive and unsupported formats are rejected
       left,
     ),
     /REJECTED_ARGUMENT/,
+  );
+});
+
+test("photo-copy search ranks known copies and isolates unreadable candidates", async () => {
+  const original = await pattern(314159);
+  const variants = [
+    ["unrelated", await pattern(271828)],
+    ["corrupt", Buffer.from("invalid image")],
+    [
+      "crop",
+      await sharp(original)
+        .extract({ left: 64, top: 64, width: 128, height: 128 })
+        .png()
+        .toBuffer(),
+    ],
+    [
+      "resized",
+      await sharp(original).resize(160).jpeg({ quality: 70 }).toBuffer(),
+    ],
+    ["exact", original],
+  ];
+  const input = {
+    query_base64: bytes(original),
+    candidates: variants.map(([id, buffer]) => ({
+      id,
+      data_base64: bytes(buffer),
+    })),
+  };
+  const report = await searchImageCopies(input);
+  assert.equal(report.network, false);
+  assert.equal(report.compared, 4);
+  assert.equal(report.no_match, 1);
+  assert.deepEqual(
+    report.matches.map(({ id, match }) => [id, match]),
+    [
+      ["exact", "exact"],
+      ["resized", "similar_candidate"],
+      ["crop", "crop_candidate"],
+    ],
+  );
+  assert.equal(report.matches[0].sha256, report.query_sha256);
+  assert.deepEqual(report.rejected, [
+    { id: "corrupt", code: "UNSUPPORTED_IMAGE_FORMAT" },
+  ]);
+  assert.throws(
+    () =>
+      searchImageCopies({
+        ...input,
+        candidates: [input.candidates[0], input.candidates[0]],
+      }),
+    /DUPLICATE_IMAGE_CANDIDATE_ID/,
+  );
+  await assert.rejects(
+    searchImageCopies(input, AbortSignal.abort(new Error("test abort"))),
+    /test abort/,
+  );
+});
+
+test("CLI photo-copy search accepts a local directory without a workspace", async (t) => {
+  const root = mkdtempSync(join(tmpdir(), "osint-copy-search-"));
+  t.after(() => rmSync(root, { recursive: true, force: true, maxRetries: 5 }));
+  const directory = join(root, "reviewed");
+  const reference = join(root, "original.png");
+  const original = await pattern(42);
+  mkdirSync(directory);
+  writeFileSync(reference, original);
+  writeFileSync(join(directory, "exact.png"), original);
+  writeFileSync(join(directory, "skip.txt"), original);
+  const cli = fileURLToPath(new URL("../src/cli.js", import.meta.url));
+  const result = JSON.parse(
+    execFileSync(
+      process.execPath,
+      [cli, "search-image-copies", "--file", reference, "--dir", directory],
+      { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+    ),
+  ).result;
+  assert.equal(result.network, false);
+  assert.equal(result.compared, 1);
+  assert.deepEqual(
+    result.matches.map(({ id, match }) => [id, match]),
+    [["exact.png", "exact"]],
   );
 });
 

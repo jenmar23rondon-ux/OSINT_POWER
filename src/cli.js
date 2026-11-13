@@ -50,7 +50,11 @@ import { investigationGraph } from "./graph-export.js";
 import { temporalGraph } from "./temporal-graph.js";
 import { inspectImageFile } from "./image-forensics.js";
 import { privacyCheckCommand } from "./image-privacy.js";
-import { compareImageFiles, ocrImageFile } from "./visual-evidence.js";
+import {
+  compareImageFiles,
+  ocrImageFile,
+  searchImageDirectory,
+} from "./visual-evidence.js";
 
 const HELP = {
   project: "OSINT_POWER",
@@ -60,6 +64,8 @@ const HELP = {
     "privacy-check-image":
       "privacy-check-image --file PATH | --dir PATH [--scrub --output PATH] [--backend builtin|exiftool|mat2] (own photos; coordinates are not stored)",
     "compare-images": "compare-images --file LEFT --other RIGHT",
+    "search-image-copies":
+      "search-image-copies --file REFERENCE --dir LOCAL_COLLECTION",
     "ocr-image": "ocr-image --file PATH [--language eng|spa]",
     bundle:
       "bundle --id SNAPSHOT_UUID --output evidence.json (complete capture, at most 10000 observations/40 MB)",
@@ -223,7 +229,10 @@ try {
     throw new Error("CHALLENGE_REQUIRES_ASSET_ID");
   if (v.restart && command !== "run")
     throw new Error("RESTART_ONLY_FOR_COLLECTION");
-  if ((v.scrub || v.backend || v.dir) && command !== "privacy-check-image")
+  if (
+    ((v.scrub || v.backend) && command !== "privacy-check-image") ||
+    (v.dir && !["privacy-check-image", "search-image-copies"].includes(command))
+  )
     throw new Error("UNEXPECTED_ARGUMENT");
   if (command === "monitor") {
     if (
@@ -266,6 +275,8 @@ try {
     });
   } else if (command === "compare-images")
     result = await compareImageFiles(v.file, v.other);
+  else if (command === "search-image-copies")
+    result = await searchImageDirectory(v.file, v.dir);
   else if (command === "ocr-image")
     result = await ocrImageFile(v.file, v.language);
   else if (command === "init") {
