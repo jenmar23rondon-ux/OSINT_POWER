@@ -2,6 +2,7 @@
 import { parseArgs } from "node:util";
 import { readFileSync, writeFileSync, statSync } from "node:fs";
 import { Engine, openEngine } from "./engine.js";
+import { cliError, cliException } from "./cli-errors.js";
 import { Store } from "./store.js";
 import { correlateOsintResults } from "./external-osint.js";
 import { report } from "./report.js";
@@ -143,6 +144,7 @@ const HELP = {
     "--config config.json --db PATH; all CLI responses are JSON; diagnostics use stderr",
 };
 let engine;
+let stage;
 try {
   const { values: v, positionals } = parseArgs({
     allowPositionals: true,
@@ -295,10 +297,12 @@ try {
       });
     result = report(engine);
   } else {
+    stage = "config";
     engine = openEngine(
       v.config ?? process.env.OSINT_POWER_CONFIG ?? "config.json",
       v.db ?? process.env.OSINT_POWER_DB,
     );
+    stage = undefined;
     const page = {
       ...(v.type ? { type: v.type } : {}),
       ...(v.limit ? { limit: Number(v.limit) } : {}),
@@ -646,11 +650,15 @@ try {
         ? engine.jobs.create(request)
         : await engine.workflow(request);
     } else if (command === "import") {
-      if (!v.file || statSync(v.file).size > engine.config.limits.maxBytes)
+      stage = "import";
+      const file = v.file ? statSync(v.file) : null;
+      if (!file?.isFile() || file.size > engine.config.limits.maxBytes)
         throw new Error("INVALID_IMPORT_FILE");
+      const data = readFileSync(v.file, "utf8");
+      stage = undefined;
       result = engine.import({
         adapter: v.adapter,
-        data: readFileSync(v.file, "utf8"),
+        data,
         observed_at: v["observed-at"],
         source_utc_offset: v["source-utc-offset"],
       });
@@ -743,38 +751,31 @@ try {
       }
     } else throw new Error("UNKNOWN_COMMAND");
   }
+  const unsuccessful = [
+    "failed",
+    "partial",
+    "cancelled",
+    "interrupted",
+    "deferred",
+  ].includes(result.status);
   process.stdout.write(
     JSON.stringify(
       {
-        ok: ![
-          "failed",
-          "partial",
-          "cancelled",
-          "interrupted",
-          "deferred",
-        ].includes(result.status),
+        ok: !unsuccessful,
         result,
+        ...(unsuccessful && result.code
+          ? { error: cliError(result.code) }
+          : {}),
       },
       null,
       2,
     ) + "\n",
   );
-  if (
-    ["failed", "partial", "cancelled", "interrupted", "deferred"].includes(
-      result.status,
-    )
-  )
-    process.exitCode = 1;
+  if (unsuccessful) process.exitCode = 1;
 } catch (error) {
-  const code =
-    error.code === "ENOENT"
-      ? "FILE_NOT_FOUND"
-      : error.code === "EEXIST"
-        ? "CONFIG_EXISTS"
-        : /^[A-Z_0-9]+$/.test(error.message)
-          ? error.message
-          : "INVALID_INPUT";
-  process.stdout.write(JSON.stringify({ ok: false, error: { code } }) + "\n");
+  process.stdout.write(
+    JSON.stringify({ ok: false, error: cliException(error, stage) }) + "\n",
+  );
   process.exitCode = 1;
 } finally {
   engine?.store.close();
