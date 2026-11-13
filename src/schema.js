@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { parseWebhookUrl } from "./webhook.js";
 
 export const EntityType = z.enum([
   "domain",
@@ -140,6 +141,22 @@ export const Config = z
       .strict(),
     network: z.boolean().default(false),
     active: z.boolean().default(false),
+    webhookAllowedUrls: z
+      .array(
+        z
+          .string()
+          .max(500)
+          .refine((value) => {
+            try {
+              parseWebhookUrl(value);
+              return true;
+            } catch {
+              return false;
+            }
+          }, "Invalid HTTPS webhook destination"),
+      )
+      .max(25)
+      .default([]),
     enabledAdapters: z.array(RunInput.shape.adapter).default(["crtsh"]),
     collectors: z
       .object({

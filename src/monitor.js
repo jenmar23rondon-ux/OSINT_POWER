@@ -13,6 +13,7 @@ import { domain } from "./scope.js";
 import { SCHEMA_VERSION } from "./review.js";
 import { mirrorRun } from "./state.js";
 import { hash } from "./store.js";
+import { allowedWebhook, postWebhook } from "./webhook.js";
 
 export const ASSET_TYPES = [
   "subdomain",
@@ -293,23 +294,6 @@ function unique(values) {
 function clip(value, max = 300) {
   const textValue = String(value ?? "");
   return textValue.length > max ? `${textValue.slice(0, max - 1)}…` : textValue;
-}
-function webhookUrl(value) {
-  if (value === null || value === undefined || value === "") return null;
-  let url;
-  try {
-    url = new URL(value);
-  } catch {
-    throw new Error("WEBHOOK_URL_REJECTED");
-  }
-  if (
-    !["http:", "https:"].includes(url.protocol) ||
-    url.username ||
-    url.password
-  )
-    throw new Error("WEBHOOK_URL_REJECTED");
-  if (!url.hostname) throw new Error("WEBHOOK_URL_REJECTED");
-  return url.href;
 }
 function defaultThresholds(input = {}) {
   const rules = Object.fromEntries(RULE_IDS.map((rule) => [rule, true]));
@@ -928,8 +912,12 @@ async function deliverWebhook(engine, monitor, runId, alerts, signal) {
     })),
   });
   try {
-    const response = await engine.providers.fetch(
+    const destination = allowedWebhook(
       monitor.webhook_url,
+      engine.config.webhookAllowedUrls,
+    );
+    const response = await engine.providers.fetch(
+      destination.href,
       {
         method: "POST",
         redirect: "error",
@@ -941,7 +929,7 @@ async function deliverWebhook(engine, monitor, runId, alerts, signal) {
         body: payload,
         signal: AbortSignal.timeout(engine.config.limits.timeoutMs),
       },
-      (url, options) => (engine.dependencies.fetcher ?? fetch)(url, options),
+      (_url, options) => postWebhook(destination, options, engine.dependencies),
       signal,
     );
     await response.body?.cancel?.();
@@ -1214,7 +1202,9 @@ export function createMonitor(engine, input) {
   )
     throw new Error("SOURCE_NOT_SUPPORTED");
   const thresholds = defaultThresholds(data.thresholds);
-  const webhook = webhookUrl(data.webhook_url);
+  const webhook = data.webhook_url
+    ? allowedWebhook(data.webhook_url, engine.config.webhookAllowedUrls).href
+    : null;
   const draft = {
     id: randomUUID(),
     investigation: data.investigation,
