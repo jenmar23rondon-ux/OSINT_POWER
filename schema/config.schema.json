@@ -115,6 +115,15 @@
       "default": false,
       "type": "boolean"
     },
+    "webhookAllowedUrls": {
+      "default": [],
+      "maxItems": 25,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 500
+      }
+    },
     "enabledAdapters": {
       "default": [
         "crtsh"
@@ -377,6 +386,7 @@
     "scope",
     "network",
     "active",
+    "webhookAllowedUrls",
     "enabledAdapters",
     "collectors",
     "limits"

@@ -412,10 +412,15 @@ test("monitor runs re-check scope and mode, diff comparable assets, and leave en
 });
 
 test("webhook delivery is opt-in and stays behind the network gate", async (t) => {
+  const hook = "https://alerts.example.com/hook";
   const urls = [];
   const engine = engineFor(
     t,
-    settings({ enabledAdapters: ["crtsh"], active: false }),
+    settings({
+      enabledAdapters: ["crtsh"],
+      active: false,
+      webhookAllowedUrls: [hook],
+    }),
     {
       fetcher: async (url, options = {}) => {
         urls.push({
@@ -423,11 +428,16 @@ test("webhook delivery is opt-in and stays behind the network gate", async (t) =
           method: options.method ?? "GET",
           body: options.body,
         });
-        if (String(url).includes("127.0.0.1")) throw new Error("hook down");
         return new Response(
           JSON.stringify([{ id: 7, name_value: "login.example.com" }]),
         );
       },
+      webhookResolve: async (host) => {
+        assert.equal(host, "alerts.example.com");
+        return ["127.0.0.1"];
+      },
+      webhookRequest: () =>
+        assert.fail("Internal destination reached transport"),
     },
   );
   const silent = createMonitor(engine, {
@@ -447,7 +457,7 @@ test("webhook delivery is opt-in and stays behind the network gate", async (t) =
     investigation: "collectors",
     target: "example.com",
     sources: ["crtsh"],
-    webhook_url: "http://127.0.0.1/hook",
+    webhook_url: hook,
   });
   const failed = await runMonitor(engine, { id: hooked.id });
   assert.equal(failed.webhook.attempted, true);
@@ -461,11 +471,17 @@ test("webhook delivery is opt-in and stays behind the network gate", async (t) =
   );
   const offline = engineFor(
     t,
-    settings({ network: false, active: false, enabledAdapters: ["crtsh"] }),
+    settings({
+      network: false,
+      active: false,
+      enabledAdapters: ["crtsh"],
+      webhookAllowedUrls: [hook],
+    }),
     {
       fetcher: async () => {
         throw new Error("network was used");
       },
+      webhookResolve: () => assert.fail("Offline workspace resolved a webhook"),
     },
   );
   const parked = createMonitor(offline, {
@@ -473,7 +489,7 @@ test("webhook delivery is opt-in and stays behind the network gate", async (t) =
     investigation: "collectors",
     target: "example.com",
     sources: ["crtsh"],
-    webhook_url: "http://127.0.0.1/hook",
+    webhook_url: hook,
   });
   const deferred = await runMonitor(offline, { id: parked.id });
   assert.equal(deferred.status, "deferred");
