@@ -34,7 +34,7 @@ test(
     });
     await client.connect(transport);
     const list = await client.listTools();
-    assert.equal(list.tools.length, 50);
+    assert.equal(list.tools.length, 51);
     for (const tool of list.tools) {
       assert.equal(tool.outputSchema.additionalProperties, false);
       assert.equal(tool.outputSchema.properties.schema_version.const, "0.4");
@@ -192,6 +192,13 @@ test(
       right_base64: png,
     });
     assert.equal(comparison.result.match, "exact");
+    const copies = await checked("search_image_copies", {
+      query_base64: png,
+      candidates: [{ id: "copy", data_base64: png }],
+    });
+    assert.equal(copies.result.network, false);
+    assert.equal(copies.result.matches[0].id, "copy");
+    assert.equal(copies.result.matches[0].match, "exact");
     const recorded = await checked("import_findings", {
       adapter: "dnsx",
       data: JSON.stringify({ host: "api.example.com", a: ["192.0.2.10"] }),

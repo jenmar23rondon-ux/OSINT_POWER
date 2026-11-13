@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
-import { isAbsolute } from "node:path";
+import { lstat, opendir, realpath } from "node:fs/promises";
+import { extname, isAbsolute, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { locateBinary } from "./doctor.js";
@@ -58,6 +59,60 @@ export const CompareImagesResult = z
     ]),
     full_distance: distance.nullable(),
     crop: crop.nullable(),
+    network: z.literal(false),
+  })
+  .strict();
+const maxSearchFiles = 24;
+const maxInlineImages = 8;
+const maxInlineEncoded = Math.ceil((8 * 1024 * 1024) / 3) * 4;
+const imageData = AnalyzeImageInput.shape.data_base64;
+const candidateId = z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,63}$/);
+const searchMatch = z.enum(["exact", "similar_candidate", "crop_candidate"]);
+const matchRank = { exact: 0, similar_candidate: 1, crop_candidate: 2 };
+const invalidImageCodes = new Set([
+  "INVALID_IMAGE_BASE64",
+  "INVALID_IMAGE_SIZE",
+  "IMAGE_FILE_REQUIRED",
+  "IMAGE_CHANGED_DURING_READ",
+  "IMAGE_PARSE_FAILED",
+  "IMAGE_DECODE_FAILED",
+  "UNSUPPORTED_IMAGE_FORMAT",
+  "MULTIPAGE_IMAGE_UNSUPPORTED",
+]);
+export const SearchImageCopiesInput = z
+  .object({
+    query_base64: imageData,
+    candidates: z
+      .array(z.object({ id: candidateId, data_base64: imageData }).strict())
+      .min(1)
+      .max(maxInlineImages),
+  })
+  .strict();
+export const SearchImageCopiesResult = z
+  .object({
+    algorithm: CompareImagesResult.shape.algorithm,
+    query_sha256: sha,
+    compared: z.number().int().min(0).max(maxSearchFiles),
+    no_match: z.number().int().min(0).max(maxSearchFiles),
+    insufficient_detail: z.number().int().min(0).max(maxSearchFiles),
+    matches: z
+      .array(
+        z
+          .object({
+            id: z.string().min(1).max(255),
+            sha256: sha,
+            match: searchMatch,
+            full_distance: distance.nullable(),
+            crop: crop.nullable(),
+          })
+          .strict(),
+      )
+      .max(maxSearchFiles),
+    rejected: z
+      .array(
+        z.object({ id: z.string().min(1).max(255), code: z.string() }).strict(),
+      )
+      .max(maxSearchFiles),
     network: z.literal(false),
   })
   .strict();
@@ -188,36 +243,51 @@ function findCrop(pixels, reference, image, best) {
   return best;
 }
 
-async function compareBytes(left, right, signal) {
-  const first = await decode(left, "thumbnail", signal);
+async function prepareReference(left, signal) {
+  const pixels = await decode(left, "thumbnail", signal);
+  return {
+    bytes: left,
+    pixels,
+    hash: perceptualHash(pixels),
+    sha256: digest(left),
+  };
+}
+
+async function compareReference(reference, right, signal) {
+  const { bytes: left, pixels: first, hash: firstHash } = reference;
   const exact = left.equals(right);
-  const second = exact ? first : await decode(right, "thumbnail", signal);
-  const firstHash = perceptualHash(first);
-  const secondHash = perceptualHash(second);
   let match = "insufficient_detail";
   let fullDistance = null;
   let cropMatch = null;
   if (exact) {
     match = "exact";
     fullDistance = firstHash ? 0 : null;
-  } else if (firstHash && secondHash) {
-    fullDistance = hamming(firstHash, secondHash);
-    if (fullDistance <= 8) match = "similar_candidate";
-    else {
-      cropMatch = findCrop(first, secondHash, "left", null);
-      cropMatch = findCrop(second, firstHash, "right", cropMatch);
-      match = cropMatch ? "crop_candidate" : "no_match";
+  } else {
+    const second = await decode(right, "thumbnail", signal);
+    const secondHash = perceptualHash(second);
+    if (firstHash && secondHash) {
+      fullDistance = hamming(firstHash, secondHash);
+      if (fullDistance <= 8) match = "similar_candidate";
+      else {
+        cropMatch = findCrop(first, secondHash, "left", null);
+        cropMatch = findCrop(second, firstHash, "right", cropMatch);
+        match = cropMatch ? "crop_candidate" : "no_match";
+      }
     }
   }
   return {
     algorithm: "phash-dct-63-v1",
-    left_sha256: digest(left),
-    right_sha256: digest(right),
+    left_sha256: reference.sha256,
+    right_sha256: exact ? reference.sha256 : digest(right),
     match,
     full_distance: fullDistance,
     crop: cropMatch,
     network: false,
   };
+}
+
+async function compareBytes(left, right, signal) {
+  return compareReference(await prepareReference(left, signal), right, signal);
 }
 
 export async function compareImages(input, signal) {
@@ -234,6 +304,125 @@ export async function compareImages(input, signal) {
 export async function compareImageFiles(leftPath, rightPath) {
   return withMediaSlot(async () =>
     compareBytes(await readImageFile(leftPath), await readImageFile(rightPath)),
+  );
+}
+
+async function searchCopies(query, candidates, signal) {
+  const deadline = AbortSignal.timeout(45000);
+  const cancellation = signal ? AbortSignal.any([signal, deadline]) : deadline;
+  return withMediaSlot(async () => {
+    try {
+      cancellation.throwIfAborted();
+      const reference = await prepareReference(await query(), cancellation);
+      const matches = [];
+      const rejected = [];
+      let no_match = 0;
+      let insufficient_detail = 0;
+      for (const { id, read } of candidates) {
+        cancellation.throwIfAborted();
+        try {
+          const comparison = await compareReference(
+            reference,
+            await read(),
+            cancellation,
+          );
+          if (comparison.match === "no_match") no_match++;
+          else if (comparison.match === "insufficient_detail")
+            insufficient_detail++;
+          else
+            matches.push({
+              id,
+              sha256: comparison.right_sha256,
+              match: comparison.match,
+              full_distance: comparison.full_distance,
+              crop: comparison.crop,
+            });
+        } catch (error) {
+          cancellation.throwIfAborted();
+          const code = ["ENOENT", "EACCES", "EPERM", "EISDIR"].includes(
+            error.code,
+          )
+            ? "IMAGE_FILE_UNREADABLE"
+            : error.message;
+          if (code !== "IMAGE_FILE_UNREADABLE" && !invalidImageCodes.has(code))
+            throw error;
+          rejected.push({ id, code });
+        }
+      }
+      cancellation.throwIfAborted();
+      matches.sort(
+        (a, b) =>
+          matchRank[a.match] - matchRank[b.match] ||
+          (a.crop?.distance ?? a.full_distance ?? 0) -
+            (b.crop?.distance ?? b.full_distance ?? 0) ||
+          (a.id < b.id ? -1 : Number(a.id > b.id)),
+      );
+      return {
+        algorithm: "phash-dct-63-v1",
+        query_sha256: reference.sha256,
+        compared: candidates.length - rejected.length,
+        no_match,
+        insufficient_detail,
+        matches,
+        rejected,
+        network: false,
+      };
+    } catch (error) {
+      signal?.throwIfAborted();
+      if (deadline.aborted) throw new Error("IMAGE_SEARCH_TIMEOUT");
+      throw error;
+    }
+  });
+}
+
+export function searchImageCopies(input, signal) {
+  const { query_base64, candidates } = SearchImageCopiesInput.parse(input);
+  if (new Set(candidates.map(({ id }) => id)).size !== candidates.length)
+    throw new Error("DUPLICATE_IMAGE_CANDIDATE_ID");
+  const total = candidates.reduce(
+    (size, item) => size + item.data_base64.length,
+    query_base64.length,
+  );
+  if (total > maxInlineEncoded) throw new Error("IMAGE_SEARCH_INPUT_TOO_LARGE");
+  return searchCopies(
+    () => decodeImageBytes(query_base64),
+    candidates.map(({ id, data_base64 }) => ({
+      id,
+      read: () => decodeImageBytes(data_base64),
+    })),
+    signal,
+  );
+}
+
+export async function searchImageDirectory(queryPath, directory) {
+  if (
+    !directory ||
+    /^[\\/]{2}/.test(directory) ||
+    !(await lstat(directory)).isDirectory()
+  )
+    throw new Error("DIRECTORY_REQUIRED");
+  const root = await realpath(directory);
+  if (/^[\\/]{2}/.test(root)) throw new Error("DIRECTORY_REQUIRED");
+  const names = [];
+  let inspected = 0;
+  for await (const entry of await opendir(root)) {
+    if (++inspected > 256) throw new Error("IMAGE_DIRECTORY_TOO_LARGE");
+    if (
+      !entry.isFile() ||
+      ![".jpg", ".jpeg", ".png", ".webp", ".tif", ".tiff"].includes(
+        extname(entry.name).toLowerCase(),
+      )
+    )
+      continue;
+    names.push(entry.name);
+    if (names.length > maxSearchFiles) throw new Error("TOO_MANY_IMAGES");
+  }
+  if (!names.length) throw new Error("IMAGE_FILE_REQUIRED");
+  return searchCopies(
+    () => readImageFile(queryPath),
+    names
+      .sort()
+      .map((id) => ({ id, read: () => readImageFile(join(root, id)) })),
   );
 }
 

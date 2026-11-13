@@ -396,7 +396,7 @@ test(
     });
     await client.connect(transport);
     const names = (await client.listTools()).tools.map((tool) => tool.name);
-    assert.equal(names.length, 50);
+    assert.equal(names.length, 51);
     assert.equal(names.includes("privacy_check_image"), true);
     const response = await client.callTool({
       name: "privacy_check_image",

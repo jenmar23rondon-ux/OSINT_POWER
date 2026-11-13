@@ -21,7 +21,11 @@ import { InvestigationGraphResult } from "./graph-export.js";
 import { TemporalGraphResult } from "./temporal-graph.js";
 import { AnalyzeImageResult } from "./image-forensics.js";
 import { PrivacyCheckImageResult } from "./image-privacy.js";
-import { CompareImagesResult, OcrImageResult } from "./visual-evidence.js";
+import {
+  CompareImagesResult,
+  OcrImageResult,
+  SearchImageCopiesResult,
+} from "./visual-evidence.js";
 import { CorrelateOsintResult } from "./external-osint.js";
 
 const text = z.string(),
@@ -640,6 +644,7 @@ export const RESULT_SCHEMAS = {
   analyze_image: AnalyzeImageResult,
   privacy_check_image: PrivacyCheckImageResult,
   compare_images: CompareImagesResult,
+  search_image_copies: SearchImageCopiesResult,
   ocr_image: OcrImageResult,
 };
 

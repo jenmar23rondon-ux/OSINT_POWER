@@ -13,7 +13,7 @@
   <a href="#quick-start">Quick start</a> · <a href="docs/WORKFLOWS.md">Seven workflows</a> · <a href="docs/AI.md">Connect AI</a> · <a href="docs/ADAPTERS.md">Adapters</a> · <a href="docs/ROADMAP.md">Roadmap</a>
 </p>
 
-OSINT POWER is an evidence-focused reconnaissance framework for scoped security assessments and research. It normalizes public-source observations, stores provenance in SQLite, and exposes a CLI and **50 MCP tools**. It works without a model or an AI API key.
+OSINT POWER is an evidence-focused reconnaissance framework for scoped security assessments and research. It normalizes public-source observations, stores provenance in SQLite, and exposes a CLI and **51 MCP tools**. It works without a model or an AI API key.
 
 **Status: v0.4.0, historical discovery and verifiable evidence packages.** Seven workflows include explicit budgets, source status and partial results. External binaries are installed separately. Live connectors and import bridges are distinguished in the matrix below.
 
@@ -37,6 +37,8 @@ node src/cli.js privacy-check-image --file my-photo.jpg --scrub --output my-phot
 ```
 
 Use `compare-images` for local perceptual comparison and `ocr-image` for text extraction with installed Tesseract language data. [Commands and limits](docs/VISUAL-IDENTITY.md#compare-images-and-extract-text)
+
+Use `search-image-copies` to look for exact, resized, or cropped copies in a local image folder. AI clients can compare supplied images with `search_image_copies` over MCP. [Photo-copy search](docs/VISUAL-IDENTITY.md#find-copies-in-a-collection)
 
 Use `timeline` or MCP `temporal_graph` to read stored DNS, HTTP, and Wayback relationships for a host or reverse DNS history for an IP. Set the observation window and a knowledge cutoff to reconstruct what the workspace knew at that time. [Temporal graph commands and examples](docs/OPERATIONS.md#temporal-network-graph)
 
