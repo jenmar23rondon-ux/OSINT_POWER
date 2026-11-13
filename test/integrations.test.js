@@ -110,6 +110,13 @@ test("CLI quickstart demo, init, import and persistent query produce valid JSON;
       }),
     );
   assert.equal(call(["demo"]).result.findings.total, 4);
+  const demo = call(["demo", "--format", "html", "--output", "demo.html"]);
+  assert.equal(demo.result.findings.total, 4);
+  assert.equal(demo.result.graph.items.length, 2);
+  assert.match(
+    readFileSync(join(dir, "demo.html"), "utf8"),
+    /<title>OSINT POWER/,
+  );
   assert.equal(call(["init"]).ok, true);
   const before = readFileSync(join(dir, "config.json"), "utf8");
   assert.throws(() => call(["init"]));
@@ -123,4 +130,25 @@ test("CLI quickstart demo, init, import and persistent query produce valid JSON;
     2,
   );
   assert.equal(call(["query", "--type", "domain"]).result.total, 2);
+  for (const adapter of ["dnsx", "httpx"])
+    assert.equal(
+      call([
+        "import",
+        "--adapter",
+        adapter,
+        "--file",
+        fileURLToPath(new URL(`../examples/${adapter}.jsonl`, import.meta.url)),
+      ]).ok,
+      true,
+    );
+  assert.equal(call(["graph"]).result.items.length, 2);
+  assert.equal(
+    call(["report", "--format", "html", "--output", "investigation.html"])
+      .result.total_entities,
+    4,
+  );
+  assert.match(
+    readFileSync(join(dir, "investigation.html"), "utf8"),
+    /www\.example\.com/,
+  );
 });

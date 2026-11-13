@@ -25,7 +25,8 @@ jobs:
       - run: npm run schema
       - run: git diff --exit-code -- schema/
       - run: npm audit --audit-level=moderate
-      - run: node src/cli.js demo
+      - name: Render the offline quickstart report
+        run: node src/cli.js demo --format html --output investigation.html
   native-lab:
     runs-on: ubuntu-latest
     timeout-minutes: 10

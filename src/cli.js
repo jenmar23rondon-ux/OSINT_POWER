@@ -120,7 +120,7 @@ const HELP = {
     health: "health (persisted provider quotas and cooldowns)",
     workflow:
       "workflow --workflow company --target example.com [--execute | --queue] [--max-targets 3] [--max-calls 10]",
-    demo: "Offline example: node src/cli.js demo",
+    demo: "demo [--format html --output PATH] (synthetic offline example)",
     init: "Write a new config.json without overwriting: node src/cli.js init",
     capabilities: "List configured collectors, importers and scope",
     run: "run --adapter crtsh --target example.com [--restart for certspotter/wayback]",
@@ -279,6 +279,10 @@ try {
       object_count: Array.isArray(bundle?.objects) ? bundle.objects.length : 0,
     };
   } else if (command === "demo") {
+    const format = v.format ?? "json";
+    if (!["html", "json"].includes(format))
+      throw new Error("INVALID_REPORT_FORMAT");
+    if (format === "html" && !v.output) throw new Error("OUTPUT_PATH_REQUIRED");
     const config = JSON.parse(
       readFileSync(new URL("../config.example.json", import.meta.url), "utf8"),
     );
@@ -294,6 +298,15 @@ try {
         data: readFileSync(new URL(name, root), "utf8"),
       });
     result = report(engine);
+    if (v.output) {
+      writeFileSync(
+        v.output,
+        format === "html"
+          ? reportHTML(result)
+          : JSON.stringify(result, null, 2) + "\n",
+        { mode: 0o600 },
+      );
+    }
   } else {
     engine = openEngine(
       v.config ?? process.env.OSINT_POWER_CONFIG ?? "config.json",
