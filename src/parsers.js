@@ -1,6 +1,7 @@
 import { basename } from "node:path";
+import { isIP } from "node:net";
 import { Observation } from "./schema.js";
-import { normalized } from "./scope.js";
+import { domain, normalized } from "./scope.js";
 import { parseBusiness, BreachSummary } from "./context.js";
 import { readMaigretReport, readSpiderFootReport } from "./external-osint.js";
 import {
@@ -153,6 +154,7 @@ export function parse(adapter, text, scope, maxRecords = 2000, context = {}) {
   let invalid = 0;
   let truncated = false;
   let discovery;
+  let crtsh_counts;
   const emit = (
     type,
     value,
@@ -282,14 +284,43 @@ export function parse(adapter, text, scope, maxRecords = 2000, context = {}) {
       } else emit("domain", line, {}, 0.7);
     }
   } else if (adapter === "crtsh") {
+    crtsh_counts = { dns: 0, ignored_non_dns: 0, out_of_scope: 0 };
     for (const r of records(text)) {
-      if (!r || typeof r !== "object") {
+      if (typeof r?.name_value !== "string" || !r.name_value.trim()) {
         invalid++;
         continue;
       }
-      for (const name of String(r.name_value ?? "").split("\n"))
-        emit("domain", name, { record: String(r.id ?? "") }, 0.8);
+      for (const value of r.name_value.split(/\r?\n/)) {
+        const name = value.trim();
+        if (
+          !name ||
+          isIP(name) ||
+          /^[^\s@]+@[^\s@]+$/.test(name) ||
+          /^[a-z][a-z\d+.-]*:\/\/\S+$/i.test(name) ||
+          /^[\p{L}\p{N}][\p{L}\p{N} &,'_-]*$/u.test(name)
+        ) {
+          crtsh_counts.ignored_non_dns++;
+          continue;
+        }
+        let host;
+        try {
+          const candidate = name.replace(/^\*\./, "");
+          if (!/^[\p{L}\p{N}\p{M}.-]+$/u.test(candidate))
+            throw new Error("INVALID_DOMAIN");
+          host = domain(candidate);
+        } catch {
+          invalid++;
+          continue;
+        }
+        if (!scope.host(host)) {
+          crtsh_counts.out_of_scope++;
+          continue;
+        }
+        crtsh_counts.dns++;
+        emit("domain", host, { record: String(r.id ?? "") }, 0.8);
+      }
     }
+    skipped += crtsh_counts.ignored_non_dns + crtsh_counts.out_of_scope;
   } else if (adapter === "dnsx") {
     for (const r of records(text)) {
       if (!r || typeof r !== "object") {
@@ -625,6 +656,7 @@ export function parse(adapter, text, scope, maxRecords = 2000, context = {}) {
     skipped,
     invalid,
     truncated,
+    ...(crtsh_counts ? { crtsh_counts } : {}),
     ...(discovery ? { discovery } : {}),
   };
 }
