@@ -16,7 +16,9 @@ const ERROR_KINDS = {
 // Shell metacharacters never belong in an argv entry. Backslash is allowed so
 // Windows paths survive; spawn is always shell:false, so the shell never sees them.
 const SHELL_META = /[\0\r\n;|&$`<>(){}[\]!*?"']/;
-const SAFE_FLAG = /^--?[A-Za-z0-9][A-Za-z0-9-]{0,64}$/;
+// A trailing "=" is ExifTool's delete operator (-all=). It is one argv
+// element; spawn is still shell:false, so the shell never parses it.
+const SAFE_FLAG = /^--?[A-Za-z0-9][A-Za-z0-9-]{0,64}=?$/;
 const HOST_TARGET = /^[A-Za-z0-9](?:[A-Za-z0-9._:-]{0,253})?$/;
 const HTTP_TARGET =
   /^https?:\/\/[A-Za-z0-9][A-Za-z0-9._:-]*(?::\d{1,5})?(?:\/[A-Za-z0-9._~-]*)?$/;

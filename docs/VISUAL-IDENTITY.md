@@ -12,6 +12,54 @@ The CLI accepts regular files up to 16 MiB. MCP clients call `analyze_image` wit
 
 The SHA-256 digest identifies exact file bytes. Dimensions and selected fields come from header and metadata inspection. Pixel decoding, full container validation, and C2PA credential verification require separate processing. Metadata is untrusted and can be edited. Treat timing and dimension disagreements as review leads. Review reports before sharing because even allowed text fields can contain sensitive values.
 
+`analyze-image` and `analyze_image` are the investigation view. They set `gps_tags_present` and omit coordinates, altitude, serial numbers, and owner names. That omission stays in place for investigation reports.
+
+## Check your own photo before publishing
+
+```bash
+node src/cli.js privacy-check-image --file my-photo.jpg
+node src/cli.js privacy-check-image --dir ./my-photos
+node src/cli.js privacy-check-image --file my-photo.jpg --scrub --output my-photo-public.jpg
+```
+
+`privacy-check-image` is an explicit own-photo check. It does not open the workspace database, including when `--db` is set, and it does not use the network. The report can include exact latitude, longitude, and altitude. Camera make and model, serial numbers, Artist, CameraOwnerName, Copyright, software, and timestamps are listed with a rating: GPS is high, serial and owner or copyright tags are medium, and dates, software, and make/model are low.
+
+`--scrub` writes a new file and then reads that file back. The command fails if GPS or any reported identifying tag remains. It does not open the original for writing. The built-in stripper removes JPEG, PNG, and WebP metadata segments. TIFF scrub needs `exiftool` or `mat2` on PATH (`--backend exiftool` or `--backend mat2`). `doctor` reports those optional binaries. A missing optional binary does not fail `doctor`. The ExifTool JSON import still drops GPS; it is not this command.
+
+MCP `privacy_check_image` takes `data_base64` and optional `scrub`. It reads no path. `scrub: true` returns `scrubbed_base64` after the same recheck. Supplied image bytes follow the 2 MiB MCP limit. CLI files follow the 16 MiB limit. A folder check reads at most 64 regular files and skips non-images.
+
+```json
+{
+  "purpose": "own-photo-privacy-check",
+  "network": false,
+  "persisted": false,
+  "rating": "high",
+  "gps": {
+    "present": true,
+    "latitude": 10.5,
+    "longitude": -20.25,
+    "altitude_meters": 42.5
+  },
+  "findings": [
+    { "group": "exif", "tag": "GPSLatitude", "risk": "high", "value": "10.5" },
+    {
+      "group": "exif",
+      "tag": "BodySerialNumber",
+      "risk": "medium",
+      "value": "SN-FIXTURE-001"
+    },
+    {
+      "group": "exif",
+      "tag": "Software",
+      "risk": "low",
+      "value": "FixtureEdit 1.0"
+    }
+  ]
+}
+```
+
+The sample values above come from a generated fixture, not a real photograph.
+
 `src/image-forensics.js` controls file reads, request size, concurrency, and the MCP response contract. `src/image-worker.js` parses the buffer in a worker with a five-second deadline and V8 heap limits. OS-level sandboxing would add controls for total memory and file or network permissions. Image bytes are handled in memory and the inspector returns JSON. The parser dependency is pinned in the lockfile. [ExifReader documentation](https://github.com/mattiasw/ExifReader)
 
 ## Compare images and extract text

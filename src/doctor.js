@@ -50,6 +50,16 @@ export const BINARY_CONTRACTS = {
     flags: ["--source", "--limit", "--filename", "--source-workers"],
   },
 };
+const OPTIONAL_PRIVACY_BINARIES = [
+  {
+    name: "exiftool",
+    purpose: "optional privacy-check-image scrub backend",
+  },
+  {
+    name: "mat2",
+    purpose: "optional privacy-check-image scrub backend",
+  },
+];
 export function locateBinary(name) {
   const extensions = process.platform === "win32" ? [".exe"] : [""];
   for (const directory of (process.env.PATH ?? "")
@@ -134,11 +144,22 @@ export async function doctor(engine, input = {}) {
         .get(Date.now()).n,
     },
     binaries,
+    optional_binaries: OPTIONAL_PRIVACY_BINARIES.map((tool) => {
+      const path = (engine.dependencies.locateBinary ?? locateBinary)(
+        tool.name,
+      );
+      return {
+        name: tool.name,
+        path,
+        installed: Boolean(path),
+        purpose: tool.purpose,
+      };
+    }),
     credentials: {
       hibp_api_key_configured: Boolean(process.env.HIBP_API_KEY),
       certspotter_api_key_configured: Boolean(process.env.CERTSPOTTER_API_KEY),
     },
     providers: engine.providers.health(),
-    note: "Local version/help probes do not query targets or validate credentials. Flag presence does not certify runtime compatibility; use the native lab.",
+    note: "Local version/help probes do not query targets or validate credentials. Flag presence does not certify runtime compatibility; use the native lab. Optional exiftool and mat2 binaries are scrub backends for privacy-check-image; a missing optional binary does not change this status.",
   };
 }

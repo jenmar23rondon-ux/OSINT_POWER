@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "data_base64": {
+      "type": "string",
+      "minLength": 4,
+      "maxLength": 2796204
+    },
+    "scrub": {
+      "default": false,
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "data_base64",
+    "scrub"
+  ],
+  "additionalProperties": false
+}

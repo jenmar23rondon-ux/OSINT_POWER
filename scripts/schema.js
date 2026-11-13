@@ -10,6 +10,7 @@ import { BundleInput } from "../src/bundles.js";
 import { StixExportInput } from "../src/stix.js";
 import { TemporalGraphInput } from "../src/temporal-graph.js";
 import { AnalyzeImageInput } from "../src/image-forensics.js";
+import { PrivacyCheckImageInput } from "../src/image-privacy.js";
 import { CompareImagesInput, OcrImageInput } from "../src/visual-evidence.js";
 
 mkdirSync(new URL("../schema/", import.meta.url), { recursive: true });
@@ -27,6 +28,7 @@ for (const [name, schema] of Object.entries({
   "stix-export": StixExportInput,
   "temporal-graph": TemporalGraphInput,
   "analyze-image": AnalyzeImageInput,
+  "privacy-check-image": PrivacyCheckImageInput,
   "compare-images": CompareImagesInput,
   "ocr-image": OcrImageInput,
 }))

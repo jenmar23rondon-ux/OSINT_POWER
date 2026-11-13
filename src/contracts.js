@@ -20,6 +20,7 @@ import {
 import { InvestigationGraphResult } from "./graph-export.js";
 import { TemporalGraphResult } from "./temporal-graph.js";
 import { AnalyzeImageResult } from "./image-forensics.js";
+import { PrivacyCheckImageResult } from "./image-privacy.js";
 import { CompareImagesResult, OcrImageResult } from "./visual-evidence.js";
 import { CorrelateOsintResult } from "./external-osint.js";
 
@@ -471,6 +472,14 @@ export const RESULT_SCHEMAS = {
         missing_flags: z.array(text),
       }),
     ),
+    optional_binaries: z.array(
+      row({
+        name: z.enum(["exiftool", "mat2"]),
+        path: text.nullable(),
+        installed: z.boolean(),
+        purpose: text,
+      }),
+    ),
     credentials: row({
       hibp_api_key_configured: z.boolean(),
       certspotter_api_key_configured: z.boolean(),
@@ -629,6 +638,7 @@ export const RESULT_SCHEMAS = {
   investigation_graph: InvestigationGraphResult,
   temporal_graph: TemporalGraphResult,
   analyze_image: AnalyzeImageResult,
+  privacy_check_image: PrivacyCheckImageResult,
   compare_images: CompareImagesResult,
   ocr_image: OcrImageResult,
 };

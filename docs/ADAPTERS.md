@@ -44,7 +44,7 @@ crt.sh collection reports eligible DNS names, expected non-DNS values, and out-o
 - naabu: host/ip and port.
 - sherlock: native CSV with username, url_user and exists=Claimed. The debug dump-response option is not a JSON export.
 - theharvester: JSON emails/hosts lists.
-- exiftool: JSON array with SourceFile and selected Author/Creator/Producer/Software/Title fields.
+- exiftool: JSON array with SourceFile and selected Author/Creator/Producer/Software/Title fields. GPS is dropped. Stripping metadata from your own photo is `privacy-check-image`, not this import.
 - gitleaks/trufflehog: native report locations and detector/rule identifiers; no raw secret values.
 - whatsmyname: bridge objects with username, url and found/not_found/unknown status.
 - maigret: reviewed native `simple` JSON from Maigret v0.6.6 with an explicit observation timestamp. See [external OSINT reports](EXTERNAL-OSINT.md).
