@@ -329,6 +329,16 @@ export async function compareImageFiles(leftPath, rightPath) {
   );
 }
 
+export async function compareImageWithSource(leftPath, readSource, signal) {
+  return withMediaSlot(async () => {
+    const reference = await prepareReference(
+      await readImageFile(leftPath),
+      signal,
+    );
+    return compareReference(reference, await readSource(), signal);
+  });
+}
+
 async function searchCopies(query, candidates, signal) {
   const deadline = AbortSignal.timeout(45000);
   const cancellation = signal ? AbortSignal.any([signal, deadline]) : deadline;

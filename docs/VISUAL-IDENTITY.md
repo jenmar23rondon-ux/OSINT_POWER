@@ -96,6 +96,18 @@ MCP `search_image_copies` accepts `query_base64` and an array of up to eight `{i
 
 Matching images with a link include `source_status: "supplied_unverified"`. HTTP and HTTPS links are treated as labels. The search strips query strings and fragments and rejects embedded credentials. Page addresses are supplied by the operator. Image comparison verifies the supplied bytes and makes no claim about the current page content or account ownership.
 
+### Verify a copy at an external image URL
+
+With `network: true` in your workspace configuration, supply one direct public HTTPS image URL that you have reviewed. Replace the example URL with the one you want to check.
+
+```powershell
+node src/cli.js verify-photo-source --file .\reference.jpg --image-url https://example.com/images/photo.jpg --approve-source
+```
+
+The command downloads the candidate image and compares it with the reference on your machine. It reports the image URL, retrieval time, both SHA-256 digests, and an exact, perceptual, or crop result. The reference stays local. The command accepts JPEG, PNG, WebP, and TIFF responses up to 2 MiB or your workspace byte limit, whichever is smaller. Use a direct link without redirects, credentials, or query parameters.
+
+An exact match establishes that the supplied URL served identical bytes during the check. A resize or crop is a candidate for review. Page URLs in the offline manifest still carry `supplied_unverified`. The external check handles one image URL per operator-run command.
+
 Results rank exact copies first, then similar images and common crop candidates. The search compares the composition of the images and returns results without network access or database writes. Review perceptual matches as possible copies. They establish neither identity nor who posted an image. Searches run one at a time and time out after 45 seconds.
 
 JPEG, PNG, WebP, and TIFF pixels are decoded by a bounded subprocess. Comparison and OCR accept single-frame images up to 20 million pixels. The decoder uses a fixed loader allowlist and the existing process runner enforces deadlines and output limits. OCR receives a normalized grayscale PNG with a maximum side of 1600 pixels. It returns up to 8000 characters as untrusted text, with redaction of common credential patterns. Review text before sharing. [Sharp input controls](https://sharp.pixelplumbing.com/api-constructor/)
