@@ -135,6 +135,19 @@ test("photo-copy search ranks known copies and isolates unreadable candidates", 
       }),
     /DUPLICATE_IMAGE_CANDIDATE_ID/,
   );
+  assert.throws(
+    () =>
+      searchImageCopies({
+        ...input,
+        candidates: [
+          {
+            ...input.candidates[0],
+            source_url: "https://user:password@example.invalid/image",
+          },
+        ],
+      }),
+    /INVALID_PHOTO_SOURCE_URL/,
+  );
   await assert.rejects(
     searchImageCopies(input, AbortSignal.abort(new Error("test abort"))),
     /test abort/,
@@ -165,6 +178,47 @@ test("CLI photo-copy search accepts a local directory without a workspace", asyn
     result.matches.map(({ id, match }) => [id, match]),
     [["exact.png", "exact"]],
   );
+  const manifest = join(root, "sources.json");
+  const run = () =>
+    JSON.parse(
+      execFileSync(
+        process.execPath,
+        [
+          cli,
+          "search-image-copies",
+          "--file",
+          reference,
+          "--dir",
+          directory,
+          "--manifest",
+          manifest,
+        ],
+        { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+      ),
+    ).result;
+  const source = {
+    file: "exact.png",
+    source_url: "https://example.invalid/reviewed?secret=omit",
+  };
+  writeFileSync(manifest, JSON.stringify([source]));
+  assert.deepEqual(run().matches[0], {
+    ...result.matches[0],
+    source_url: "https://example.invalid/reviewed",
+    source_status: "supplied_unverified",
+  });
+  for (const rows of [
+    [source, source],
+    [{ ...source, file: "../exact.png" }],
+    [{ ...source, source_url: "file:///tmp/image.png" }],
+  ]) {
+    writeFileSync(manifest, JSON.stringify(rows));
+    assert.throws(
+      run,
+      (error) =>
+        error.status === 1 &&
+        JSON.parse(error.stdout).error.code === "INVALID_PHOTO_SOURCE_MANIFEST",
+    );
+  }
 });
 
 test(

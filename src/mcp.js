@@ -158,7 +158,7 @@ export function createServer(engine) {
   );
   register(
     "search_image_copies",
-    "Compare a supplied reference image against up to eight supplied candidate images for exact copies, resized copies, or common crops. Uses local image comparison only.",
+    "Compare a supplied reference image against up to eight supplied candidate images for exact copies, resized copies, or common crops. Optional source URLs are reported as unverified and are never fetched.",
     SearchImageCopiesInput,
     searchImageCopies,
   );

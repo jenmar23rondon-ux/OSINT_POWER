@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { lstat, opendir, realpath } from "node:fs/promises";
+import { lstat, open, opendir, realpath } from "node:fs/promises";
 import { extname, isAbsolute, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
@@ -67,6 +67,18 @@ const maxInlineImages = 8;
 const maxInlineEncoded = Math.ceil((8 * 1024 * 1024) / 3) * 4;
 const imageData = AnalyzeImageInput.shape.data_base64;
 const candidateId = z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,63}$/);
+const sourceUrl = z.url({ protocol: /^https?$/ }).max(2048);
+const sourceManifest = z
+  .array(
+    z
+      .object({
+        file: z.string().min(1).max(255),
+        source_url: sourceUrl,
+      })
+      .strict(),
+  )
+  .min(1)
+  .max(maxSearchFiles);
 const searchMatch = z.enum(["exact", "similar_candidate", "crop_candidate"]);
 const matchRank = { exact: 0, similar_candidate: 1, crop_candidate: 2 };
 const invalidImageCodes = new Set([
@@ -83,7 +95,15 @@ export const SearchImageCopiesInput = z
   .object({
     query_base64: imageData,
     candidates: z
-      .array(z.object({ id: candidateId, data_base64: imageData }).strict())
+      .array(
+        z
+          .object({
+            id: candidateId,
+            data_base64: imageData,
+            source_url: sourceUrl.optional(),
+          })
+          .strict(),
+      )
       .min(1)
       .max(maxInlineImages),
   })
@@ -104,6 +124,8 @@ export const SearchImageCopiesResult = z
             match: searchMatch,
             full_distance: distance.nullable(),
             crop: crop.nullable(),
+            source_url: sourceUrl.optional(),
+            source_status: z.literal("supplied_unverified").optional(),
           })
           .strict(),
       )
@@ -318,7 +340,7 @@ async function searchCopies(query, candidates, signal) {
       const rejected = [];
       let no_match = 0;
       let insufficient_detail = 0;
-      for (const { id, read } of candidates) {
+      for (const { id, read, source_url } of candidates) {
         cancellation.throwIfAborted();
         try {
           const comparison = await compareReference(
@@ -336,6 +358,9 @@ async function searchCopies(query, candidates, signal) {
               match: comparison.match,
               full_distance: comparison.full_distance,
               crop: comparison.crop,
+              ...(source_url
+                ? { source_url, source_status: "supplied_unverified" }
+                : {}),
             });
         } catch (error) {
           cancellation.throwIfAborted();
@@ -386,15 +411,70 @@ export function searchImageCopies(input, signal) {
   if (total > maxInlineEncoded) throw new Error("IMAGE_SEARCH_INPUT_TOO_LARGE");
   return searchCopies(
     () => decodeImageBytes(query_base64),
-    candidates.map(({ id, data_base64 }) => ({
+    candidates.map(({ id, data_base64, source_url }) => ({
       id,
       read: () => decodeImageBytes(data_base64),
+      source_url: source_url ? sanitizedSourceUrl(source_url) : undefined,
     })),
     signal,
   );
 }
 
-export async function searchImageDirectory(queryPath, directory) {
+function sanitizedSourceUrl(value) {
+  const url = new URL(value);
+  if (url.username || url.password) throw new Error("INVALID_PHOTO_SOURCE_URL");
+  url.search = "";
+  url.hash = "";
+  return url.href;
+}
+
+async function readSourceManifest(path, names) {
+  const limit = 64 * 1024;
+  if (/^[\\/]{2}/.test(path) || !(await lstat(path)).isFile())
+    throw new Error("INVALID_PHOTO_SOURCE_MANIFEST");
+  const file = await open(path, "r");
+  try {
+    const size = (await file.stat()).size;
+    if (size > limit) throw new Error("INVALID_PHOTO_SOURCE_MANIFEST");
+    const buffer = Buffer.alloc(size + 1);
+    let length = 0;
+    while (length < buffer.length) {
+      const { bytesRead } = await file.read(
+        buffer,
+        length,
+        buffer.length - length,
+        length,
+      );
+      if (!bytesRead) break;
+      length += bytesRead;
+    }
+    if (length !== size) throw new Error("INVALID_PHOTO_SOURCE_MANIFEST");
+    let rows;
+    try {
+      rows = sourceManifest.parse(
+        JSON.parse(
+          buffer
+            .subarray(0, length)
+            .toString("utf8")
+            .replace(/^\uFEFF/, ""),
+        ),
+      );
+    } catch {
+      throw new Error("INVALID_PHOTO_SOURCE_MANIFEST");
+    }
+    const sources = new Map();
+    for (const { file: name, source_url } of rows) {
+      if (!names.includes(name) || sources.has(name))
+        throw new Error("INVALID_PHOTO_SOURCE_MANIFEST");
+      sources.set(name, sanitizedSourceUrl(source_url));
+    }
+    return sources;
+  } finally {
+    await file.close();
+  }
+}
+
+export async function searchImageDirectory(queryPath, directory, manifestPath) {
   if (
     !directory ||
     /^[\\/]{2}/.test(directory) ||
@@ -418,11 +498,16 @@ export async function searchImageDirectory(queryPath, directory) {
     if (names.length > maxSearchFiles) throw new Error("TOO_MANY_IMAGES");
   }
   if (!names.length) throw new Error("IMAGE_FILE_REQUIRED");
+  const sources = manifestPath
+    ? await readSourceManifest(manifestPath, names)
+    : new Map();
   return searchCopies(
     () => readImageFile(queryPath),
-    names
-      .sort()
-      .map((id) => ({ id, read: () => readImageFile(join(root, id)) })),
+    names.sort().map((id) => ({
+      id,
+      read: () => readImageFile(join(root, id)),
+      source_url: sources.get(id),
+    })),
   );
 }
 

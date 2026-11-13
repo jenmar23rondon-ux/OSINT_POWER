@@ -81,7 +81,20 @@ node src/cli.js search-image-copies --file .\reference.jpg --dir .\reviewed-imag
 
 The CLI compares the reference with up to 24 JPEG, PNG, WebP, or TIFF files in the supplied folder. It scans one folder level, checks at most 256 entries, and returns basenames for matches and rejected candidates. Put the reference outside that folder to avoid a self-match. The per-file limit is 16 MiB.
 
-MCP `search_image_copies` accepts `query_base64` and an array of up to eight `{id, data_base64}` candidates. Pass image bytes and short unique labels. The limit is 2 MiB per image and about 8 MiB before base64 encoding per call. The tool reads no filesystem paths.
+To attach reviewed page links, add `--manifest .\sources.json` to the CLI command. The manifest maps exact basenames in the supplied folder to source pages.
+
+```json
+[
+  {
+    "file": "candidate.jpg",
+    "source_url": "https://example.com/gallery/photo-12"
+  }
+]
+```
+
+MCP `search_image_copies` accepts `query_base64` and an array of up to eight `{id, data_base64, source_url?}` candidates. Pass image bytes and short unique labels. The limit is 2 MiB per image and about 8 MiB before base64 encoding per call. The tool reads no filesystem paths.
+
+Matching images with a link include `source_status: "supplied_unverified"`. HTTP and HTTPS links are treated as labels. The search strips query strings and fragments and rejects embedded credentials. Page addresses are supplied by the operator. Image comparison verifies the supplied bytes and makes no claim about the current page content or account ownership.
 
 Results rank exact copies first, then similar images and common crop candidates. The search compares the composition of the images and returns results without network access or database writes. Review perceptual matches as possible copies. They establish neither identity nor who posted an image. Searches run one at a time and time out after 45 seconds.
 

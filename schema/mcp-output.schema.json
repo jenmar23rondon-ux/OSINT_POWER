@@ -18138,6 +18138,15 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "source_url": {
+                      "type": "string",
+                      "maxLength": 2048,
+                      "format": "uri"
+                    },
+                    "source_status": {
+                      "type": "string",
+                      "const": "supplied_unverified"
                     }
                   },
                   "required": [
