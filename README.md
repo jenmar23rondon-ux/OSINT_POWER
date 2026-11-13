@@ -13,7 +13,7 @@
   <a href="#quick-start">Quick start</a> · <a href="docs/WORKFLOWS.md">Seven workflows</a> · <a href="docs/AI.md">Connect AI</a> · <a href="docs/ADAPTERS.md">Adapters</a> · <a href="docs/ROADMAP.md">Roadmap</a>
 </p>
 
-OSINT POWER is an evidence-focused reconnaissance framework for scoped security assessments and research. It normalizes public-source observations, stores provenance in SQLite, and exposes a CLI and **47 MCP tools**. It works without a model or an AI API key.
+OSINT POWER is an evidence-focused reconnaissance framework for scoped security assessments and research. It normalizes public-source observations, stores provenance in SQLite, and exposes a CLI and **49 MCP tools**. It works without a model or an AI API key.
 
 **Status: v0.4.0, historical discovery and verifiable evidence packages.** Seven workflows include explicit budgets, source status and partial results. External binaries are installed separately. Live connectors and import bridges are distinguished in the matrix below.
 

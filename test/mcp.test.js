@@ -34,7 +34,7 @@ test(
     });
     await client.connect(transport);
     const list = await client.listTools();
-    assert.equal(list.tools.length, 47);
+    assert.equal(list.tools.length, 49);
     for (const tool of list.tools) {
       assert.equal(tool.outputSchema.additionalProperties, false);
       assert.equal(tool.outputSchema.properties.schema_version.const, "0.4");
@@ -42,6 +42,35 @@ test(
     }
     const call = (name, args = {}) =>
       client.callTool({ name, arguments: args });
+    const url = "https://github.com/example-researcher";
+    const imported = (
+      await call("import_external_osint", {
+        adapter: "maigret",
+        observed_at: "2026-11-10T23:00:00Z",
+        data: JSON.stringify({
+          GitHub: {
+            url_user: url,
+            status: {
+              username: "example-researcher",
+              site_name: "GitHub",
+              url,
+              status: "Claimed",
+            },
+          },
+        }),
+      })
+    ).structuredContent;
+    assert.equal(imported.result.inserted, 2);
+    assert.equal(imported.coverage.complete, false);
+    const overlap = (
+      await call("correlate_osint_results", { run_id: imported.result.run_id })
+    ).structuredContent;
+    assert.equal(overlap.result.items.length, 2);
+    assert.ok(
+      overlap.result.items.every(
+        (item) => item.other_observations.length === 0,
+      ),
+    );
     assert.equal(
       (await call("capabilities")).structuredContent.result.network,
       false,
@@ -55,8 +84,8 @@ test(
       ).structuredContent.result.inserted,
       1,
     );
-    const page = (await call("query_findings", { limit: 1 })).structuredContent
-      .result;
+    const page = (await call("query_findings", { type: "domain", limit: 1 }))
+      .structuredContent.result;
     assert.equal(page.items[0].value, "api.example.com");
     assert.equal(
       (await call("doctor", { probe: false })).structuredContent.result
@@ -101,7 +130,7 @@ test(
     assert.equal(workflow.structuredContent.result.status, "planned");
     assert.equal(
       (await call("query_findings", {})).structuredContent.result.total,
-      1,
+      3,
     );
     assert.equal(
       (await call("get_evidence", { entity_id: page.items[0].id }))

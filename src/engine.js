@@ -51,9 +51,11 @@ export class Engine {
     return next;
   }
   import(input) {
-    const { adapter, data } = ImportInput.parse(input);
+    const { adapter, data, observed_at } = ImportInput.parse(input);
     if (Buffer.byteLength(data) > this.config.limits.maxBytes)
       throw new Error("IMPORT_TOO_LARGE");
+    if (adapter === "maigret" && !observed_at)
+      throw new Error("OBSERVED_AT_REQUIRED");
     const id = this.store.start(`import:${adapter}`, hash(data));
     try {
       const result = parse(
@@ -61,6 +63,7 @@ export class Engine {
         data,
         this.scope,
         this.config.limits.maxRecords,
+        { observed_at },
       );
       const { items, discovery, ...stats } = result;
       const summary = {
@@ -75,6 +78,7 @@ export class Engine {
           collector_version: "external_version_unknown",
         }),
         ...stats,
+        ...(adapter === "maigret" ? { coverage_complete: false } : {}),
         ...discoverySummary(discovery),
         input_hash: hash(data),
         next_actions: this.next(),

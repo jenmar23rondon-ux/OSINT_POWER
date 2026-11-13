@@ -58,9 +58,14 @@ export function sourceFamily(source, evidence = {}) {
   )
     return "certificate_transparency";
   if (
-    ["subfinder", "amass", "theharvester", "spiderfoot", "recon-ng"].includes(
-      name,
-    )
+    [
+      "subfinder",
+      "amass",
+      "theharvester",
+      "spiderfoot",
+      "recon-ng",
+      "maigret",
+    ].includes(name)
   )
     return "aggregated_unknown";
   if (["dnsx", "mx"].includes(name)) return "dns";

@@ -4,6 +4,11 @@ import { serveStdio } from "@modelcontextprotocol/server/stdio";
 import { z } from "zod";
 import { openEngine } from "./engine.js";
 import {
+  ExternalOsintImportInput,
+  CorrelateOsintInput,
+  correlateOsintResults,
+} from "./external-osint.js";
+import {
   ImportInput,
   QueryInput,
   RunInput,
@@ -182,6 +187,19 @@ export function createServer(engine) {
     "Read a stable page of entities with provenance counts. Use next_cursor for subsequent pages.",
     QueryInput,
     (input) => engine.store.query(input),
+  );
+  register(
+    "import_external_osint",
+    "Import a reviewed Maigret v0.6.6 simple JSON export for explicitly configured aliases. Supply the observation time. Stores public profile candidates locally.",
+    ExternalOsintImportInput,
+    (input) => engine.import(input),
+    false,
+  );
+  register(
+    "correlate_osint_results",
+    "Compare one native external import against stored evidence by exact entity key. Returns overlap and evidence IDs for review.",
+    CorrelateOsintInput,
+    (input) => correlateOsintResults(engine.store, input),
   );
   register(
     "get_evidence",
