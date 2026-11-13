@@ -194,11 +194,24 @@ test(
     assert.equal(comparison.result.match, "exact");
     const copies = await checked("search_image_copies", {
       query_base64: png,
-      candidates: [{ id: "copy", data_base64: png }],
+      candidates: [
+        { id: "copy", data_base64: png },
+        {
+          id: "sourced",
+          data_base64: png,
+          source_url: "https://example.invalid/post/123?token=omit#photo",
+        },
+      ],
     });
     assert.equal(copies.result.network, false);
     assert.equal(copies.result.matches[0].id, "copy");
     assert.equal(copies.result.matches[0].match, "exact");
+    assert.equal(Object.hasOwn(copies.result.matches[0], "source_url"), false);
+    assert.equal(
+      copies.result.matches[1].source_url,
+      "https://example.invalid/post/123",
+    );
+    assert.equal(copies.result.matches[1].source_status, "supplied_unverified");
     const recorded = await checked("import_findings", {
       adapter: "dnsx",
       data: JSON.stringify({ host: "api.example.com", a: ["192.0.2.10"] }),
