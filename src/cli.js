@@ -50,6 +50,7 @@ import { investigationGraph } from "./graph-export.js";
 import { temporalGraph } from "./temporal-graph.js";
 import { inspectImageFile } from "./image-forensics.js";
 import { privacyCheckCommand } from "./image-privacy.js";
+import { verifyPhotoSource } from "./photo-source.js";
 import {
   compareImageFiles,
   ocrImageFile,
@@ -66,6 +67,8 @@ const HELP = {
     "compare-images": "compare-images --file LEFT --other RIGHT",
     "search-image-copies":
       "search-image-copies --file REFERENCE --dir LOCAL_COLLECTION [--manifest SOURCES_JSON]",
+    "verify-photo-source":
+      "verify-photo-source --file REFERENCE --image-url HTTPS_URL --approve-source",
     "ocr-image": "ocr-image --file PATH [--language eng|spa]",
     bundle:
       "bundle --id SNAPSHOT_UUID --output evidence.json (complete capture, at most 10000 observations/40 MB)",
@@ -164,6 +167,7 @@ try {
       "skip-probes": { type: "boolean", default: false },
       challenge: { type: "boolean", default: false },
       scrub: { type: "boolean", default: false },
+      "approve-source": { type: "boolean", default: false },
       ...Object.fromEntries(
         [
           "config",
@@ -173,6 +177,7 @@ try {
           "file",
           "dir",
           "manifest",
+          "image-url",
           "backend",
           "other",
           "language",
@@ -231,6 +236,11 @@ try {
   if (v.restart && command !== "run")
     throw new Error("RESTART_ONLY_FOR_COLLECTION");
   if (v.manifest !== undefined && command !== "search-image-copies")
+    throw new Error("UNEXPECTED_ARGUMENT");
+  if (
+    (v["approve-source"] || v["image-url"] !== undefined) &&
+    command !== "verify-photo-source"
+  )
     throw new Error("UNEXPECTED_ARGUMENT");
   if (
     ((v.scrub || v.backend) && command !== "privacy-check-image") ||
@@ -353,6 +363,12 @@ try {
       ...(v.cursor ? { cursor: v.cursor } : {}),
     };
     if (command === "capabilities") result = engine.capabilities();
+    else if (command === "verify-photo-source")
+      result = await verifyPhotoSource(engine, {
+        file: v.file,
+        imageUrl: v["image-url"],
+        approved: v["approve-source"],
+      });
     else if (command === "doctor")
       result = await doctor(engine, { probe: !v["skip-probes"] });
     else if (command === "health") result = engine.providers.health();
