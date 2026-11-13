@@ -82,6 +82,7 @@ export const ImportInput = z
       "gitleaks",
       "recon-ng",
       "spiderfoot",
+      "spiderfoot-json",
       "maigret",
       "jsonl",
       "whatsmyname",
@@ -91,6 +92,10 @@ export const ImportInput = z
     ]),
     data: z.string().min(1).max(2_000_000),
     observed_at: z.iso.datetime({ offset: true }).optional(),
+    source_utc_offset: z
+      .string()
+      .regex(/^(?:Z|[+-](?:(?:0\d|1[0-3]):[0-5]\d|14:00))$/)
+      .optional(),
   })
   .strict();
 const ProviderPolicyBase = z

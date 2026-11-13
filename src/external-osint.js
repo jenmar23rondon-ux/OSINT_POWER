@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ImportInput } from "./schema.js";
+import { domain } from "./scope.js";
 
 const hashId = z.string().regex(/^[a-f0-9]{64}$/);
 const username = z.string().regex(/^[A-Za-z0-9_][A-Za-z0-9_.-]{0,63}$/);
@@ -13,11 +14,21 @@ const maigretRow = z.object({
   }),
 });
 const maigretHosts = new Set(["github.com", "gitlab.com", "codeberg.org"]);
-const externalAdapters = ["maigret"];
+const spiderFootRow = z.object({
+  data: z.string().min(1).max(253),
+  event_type: z.string().min(1).max(80),
+  module: z.string().min(1).max(80),
+  false_positive: z.union([z.literal(0), z.literal(1)]),
+  last_seen: z.string().regex(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/),
+  scan_target: z.string().min(1).max(253),
+});
+export const EXTERNAL_OSINT_SOURCES = Object.freeze({
+  maigret: "maigret",
+  "spiderfoot-json": "spiderfoot",
+});
 
 export const ExternalOsintImportInput = ImportInput.extend({
-  adapter: z.enum(externalAdapters),
-  observed_at: z.iso.datetime({ offset: true }),
+  adapter: z.enum(Object.keys(EXTERNAL_OSINT_SOURCES)),
 });
 
 export function readMaigretReport(text, scope, observedAt, emit) {
@@ -83,6 +94,71 @@ export function readMaigretReport(text, scope, observedAt, emit) {
   return stats;
 }
 
+const datedEvent = z.iso.datetime({ offset: true });
+const asciiHostname = /^[a-z0-9.-]+$/i;
+const certificateEvents = new Set([
+  "DOMAIN_NAME",
+  "INTERNET_NAME",
+  "INTERNET_NAME_UNRESOLVED",
+]);
+
+export function readSpiderFootReport(text, scope, sourceUtcOffset, emit) {
+  const rows = JSON.parse(text);
+  if (!Array.isArray(rows)) throw new Error("INVALID_SPIDERFOOT_REPORT");
+  const stats = { skipped: 0, invalid: 0 };
+  for (const raw of rows) {
+    if (raw?.module !== "sfp_crt" || !certificateEvents.has(raw.event_type)) {
+      stats.skipped++;
+      continue;
+    }
+    const parsed = spiderFootRow.safeParse(raw);
+    if (!parsed.success) {
+      stats.invalid++;
+      continue;
+    }
+    const row = parsed.data;
+    if (row.false_positive === 1) {
+      stats.skipped++;
+      continue;
+    }
+    try {
+      if (!asciiHostname.test(row.scan_target) || !asciiHostname.test(row.data))
+        throw new Error("INVALID_DOMAIN");
+      const target = domain(row.scan_target);
+      const hostname = domain(row.data);
+      if (
+        !scope.domains.includes(target) ||
+        !scope.host(target) ||
+        !scope.host(hostname) ||
+        (hostname !== target && !hostname.endsWith("." + target))
+      ) {
+        stats.skipped++;
+        continue;
+      }
+      const time = datedEvent.parse(
+        row.last_seen.replace(" ", "T") + sourceUtcOffset,
+      );
+      emit(
+        "domain",
+        hostname,
+        {
+          upstream: "crt.sh",
+          record: "sfp_crt",
+          historical: true,
+          status: "reported",
+          verification: "certificate_name_only",
+        },
+        0.65,
+        "spiderfoot",
+        new Date(time).toISOString(),
+      );
+    } catch {
+      stats.invalid++;
+    }
+  }
+  return stats;
+}
+
 export const CorrelateOsintInput = z
   .object({
     run_id: z.uuid(),
@@ -100,7 +176,7 @@ export const CorrelateOsintResult = z
         z
           .object({
             entity_id: hashId,
-            type: z.enum(["username", "profile"]),
+            type: z.enum(["username", "profile", "domain"]),
             value: z.string(),
             imported_observation_id: hashId,
             other_observations: z
@@ -120,9 +196,10 @@ export function correlateOsintResults(store, input) {
   const run = store.db
     .prepare("SELECT adapter,status FROM runs WHERE id=?")
     .get(run_id);
+  const adapter =
+    run?.adapter.startsWith("import:") && run.adapter.slice("import:".length);
   if (
-    !run ||
-    !externalAdapters.some((adapter) => run.adapter === "import:" + adapter) ||
+    !Object.hasOwn(EXTERNAL_OSINT_SOURCES, adapter) ||
     !["completed", "partial"].includes(run.status)
   )
     throw new Error("EXTERNAL_IMPORT_NOT_FOUND");
@@ -148,7 +225,7 @@ export function correlateOsintResults(store, input) {
     items: page.slice(0, limit).map((item) => {
       const others = otherObservations.all(
         item.entity_id,
-        run.adapter.slice("import:".length),
+        EXTERNAL_OSINT_SOURCES[adapter],
       );
       return {
         ...item,

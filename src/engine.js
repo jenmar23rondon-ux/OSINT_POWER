@@ -19,6 +19,7 @@ import { ProviderGate } from "./providers.js";
 import { Jobs } from "./jobs.js";
 import { capture, recordSource, mirrorRun } from "./state.js";
 import { HISTORICAL_ADAPTERS } from "./discovery.js";
+import { EXTERNAL_OSINT_SOURCES } from "./external-osint.js";
 
 const discoverySummary = (value) => {
   if (!value) return {};
@@ -51,11 +52,14 @@ export class Engine {
     return next;
   }
   import(input) {
-    const { adapter, data, observed_at } = ImportInput.parse(input);
+    const { adapter, data, observed_at, source_utc_offset } =
+      ImportInput.parse(input);
     if (Buffer.byteLength(data) > this.config.limits.maxBytes)
       throw new Error("IMPORT_TOO_LARGE");
     if (adapter === "maigret" && !observed_at)
       throw new Error("OBSERVED_AT_REQUIRED");
+    if (adapter === "spiderfoot-json" && !source_utc_offset)
+      throw new Error("SOURCE_UTC_OFFSET_REQUIRED");
     const id = this.store.start(`import:${adapter}`, hash(data));
     try {
       const result = parse(
@@ -63,7 +67,7 @@ export class Engine {
         data,
         this.scope,
         this.config.limits.maxRecords,
-        { observed_at },
+        { observed_at, source_utc_offset },
       );
       const { items, discovery, ...stats } = result;
       const summary = {
@@ -78,7 +82,9 @@ export class Engine {
           collector_version: "external_version_unknown",
         }),
         ...stats,
-        ...(adapter === "maigret" ? { coverage_complete: false } : {}),
+        ...(Object.hasOwn(EXTERNAL_OSINT_SOURCES, adapter)
+          ? { coverage_complete: false }
+          : {}),
         ...discoverySummary(discovery),
         input_hash: hash(data),
         next_actions: this.next(),

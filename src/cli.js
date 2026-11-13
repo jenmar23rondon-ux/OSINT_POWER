@@ -127,7 +127,7 @@ const HELP = {
     pipeline:
       "pipeline --target example.com (passive configured collectors only)",
     import:
-      "import --adapter ADAPTER --file PATH [--observed-at ISO for maigret]",
+      "import --adapter ADAPTER --file PATH [--observed-at ISO for maigret | --source-utc-offset OFFSET for spiderfoot-json]",
     "correlate-osint":
       "correlate-osint --id IMPORT_UUID [--limit 20] [--cursor HASH]",
     query: "query [--type domain] [--limit 25] [--cursor HASH]",
@@ -191,6 +191,7 @@ try {
           "until",
           "as-of",
           "observed-at",
+          "source-utc-offset",
           "host",
           "ip",
           "statement",
@@ -651,6 +652,7 @@ try {
         adapter: v.adapter,
         data: readFileSync(v.file, "utf8"),
         observed_at: v["observed-at"],
+        source_utc_offset: v["source-utc-offset"],
       });
     } else if (command === "correlate-osint") {
       result = correlateOsintResults(engine.store, {
