@@ -34,6 +34,8 @@ Credentials stay in native provider files or the documented HIBP/Cert Spotter en
 
 Historical APIs also support imports using their documented projected response formats. Imports never modify live continuation state. Wayback expects timestamp/original/statuscode/digest columns, optionally followed by an empty row and a one-field resume-key row. See [v0.4 formats and recovery](V0.4.md).
 
+crt.sh collection reports eligible DNS names, expected non-DNS values, and out-of-scope names in `crtsh_counts`. The top-level `skipped` count includes non-DNS and out-of-scope names. Malformed rows or DNS-like values still increment `invalid`. Eligible names over the observation cap still set `truncated`.
+
 ## Imports
 
 - subfinder/amass: plain names or JSONL host/name fields, not full Amass graph exports.

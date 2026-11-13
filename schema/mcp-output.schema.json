@@ -636,6 +636,32 @@
                 "minimum": 0,
                 "maximum": 9007199254740991
               },
+              "crtsh_counts": {
+                "type": "object",
+                "properties": {
+                  "dns": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "ignored_non_dns": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "out_of_scope": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "dns",
+                  "ignored_non_dns",
+                  "out_of_scope"
+                ],
+                "additionalProperties": false
+              },
               "truncated": {
                 "type": "boolean"
               },
@@ -954,6 +980,32 @@
                           "type": "integer",
                           "minimum": 0,
                           "maximum": 9007199254740991
+                        },
+                        "crtsh_counts": {
+                          "type": "object",
+                          "properties": {
+                            "dns": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "ignored_non_dns": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "out_of_scope": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "dns",
+                            "ignored_non_dns",
+                            "out_of_scope"
+                          ],
+                          "additionalProperties": false
                         },
                         "truncated": {
                           "type": "boolean"
@@ -1322,6 +1374,32 @@
                 "minimum": 0,
                 "maximum": 9007199254740991
               },
+              "crtsh_counts": {
+                "type": "object",
+                "properties": {
+                  "dns": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "ignored_non_dns": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "out_of_scope": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "dns",
+                  "ignored_non_dns",
+                  "out_of_scope"
+                ],
+                "additionalProperties": false
+              },
               "truncated": {
                 "type": "boolean"
               },
@@ -1630,6 +1708,32 @@
                 "type": "integer",
                 "minimum": 0,
                 "maximum": 9007199254740991
+              },
+              "crtsh_counts": {
+                "type": "object",
+                "properties": {
+                  "dns": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "ignored_non_dns": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "out_of_scope": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "dns",
+                  "ignored_non_dns",
+                  "out_of_scope"
+                ],
+                "additionalProperties": false
               },
               "truncated": {
                 "type": "boolean"

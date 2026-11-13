@@ -128,6 +128,11 @@ const collection = row({
   http_requests: count.optional(),
   skipped: count.optional(),
   invalid: count.optional(),
+  crtsh_counts: row({
+    dns: count,
+    ignored_non_dns: count,
+    out_of_scope: count,
+  }).optional(),
   truncated: z.boolean().optional(),
   collected_at: text.optional(),
   input_hash: id.optional(),
