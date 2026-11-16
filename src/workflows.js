@@ -1,5 +1,6 @@
 import { WorkflowInput, WORKFLOW_NAMES, WORKFLOW_ALIASES } from "./schema.js";
 import { usernameVariants, employeeValue } from "./identity.js";
+import { assertProjectDiscoveryHttpx, probeHosts } from "./http-probe.js";
 import { ADAPTERS } from "./adapters.js";
 import { domain } from "./scope.js";
 import { recordSource } from "./state.js";
@@ -387,9 +388,57 @@ export async function runWorkflow(engine, input, job) {
           status: execute ? "needs_input" : "deferred",
           reason: "Depends on passive domain findings",
         });
-      for (const host of hosts) {
-        await invoke("dns", "dnsx", host);
-        await invoke("http_fingerprint", "httpx", host);
+      for (const host of hosts) await invoke("dns", "dnsx", host);
+      if (request.probeHttp) {
+        const probeList = probeHosts(engine, target, maxTargets);
+        if (!request.authorized)
+          steps.push({
+            stage: "http_fingerprint",
+            adapter: "httpx",
+            status: "authorization_required",
+            targets: probeList,
+            reason:
+              "Active HTTP probing stays off unless --probe-http and --authorized are both set.",
+          });
+        else if (!engine.config.enabledAdapters.includes("httpx"))
+          steps.push({
+            stage: "http_fingerprint",
+            adapter: "httpx",
+            status: "adapter_disabled",
+          });
+        else if (!engine.config.network)
+          steps.push({
+            stage: "http_fingerprint",
+            adapter: "httpx",
+            status: "network_disabled",
+          });
+        else if (!engine.config.active)
+          steps.push({
+            stage: "http_fingerprint",
+            adapter: "httpx",
+            status: "active_disabled",
+          });
+        else {
+          let verified = !execute;
+          if (execute) {
+            try {
+              await assertProjectDiscoveryHttpx(engine);
+              verified = true;
+            } catch (error) {
+              steps.push({
+                stage: "http_fingerprint",
+                adapter: "httpx",
+                status: "failed",
+                code: /^[A-Z][A-Z_0-9]+$/.test(error.message)
+                  ? error.message
+                  : "HTTPX_NOT_PROJECTDISCOVERY",
+              });
+            }
+          }
+          if (verified)
+            for (const host of probeList)
+              await invoke("http_fingerprint", "httpx", host);
+        }
       }
       for (const ip of freeze("ips", () =>
         engine.store.domainIPs(target, maxTargets),

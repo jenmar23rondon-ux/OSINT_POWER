@@ -15,6 +15,10 @@ export function reportHTML(report) {
 <div class="grid" id="metrics"></div>
 <section><h2>Evidence inventory</h2><div class="toolbar"><label for="search">Search</label><input id="search" placeholder="Asset, type or source"><label for="type">Type</label><select id="type"><option value="">All types</option></select><span class="label" id="coverage"></span></div><div class="scroll"><table><thead><tr><th>Type</th><th>Value</th><th>Sources</th><th>Assessment</th><th>Last observed</th></tr></thead><tbody id="inventory"></tbody></table></div><p class="note">Select an entity to inspect its summary. Confidence is a source assessment, not proof of ownership or identity.</p></section>
 <div class="split"><section><h2>Evidence relationships</h2><svg id="graph" viewBox="0 0 800 320" role="img" aria-label="Bounded evidence relationship graph"></svg><p class="note">Select a node to filter the inventory. Relationships describe observations, not verified identity or ownership.</p></section><section><h2>Selected entity</h2><pre id="detail">Select an inventory row.</pre></section></div>
+<section><h2>Correlated by target</h2><div class="scroll"><table><thead><tr><th>Target</th><th>Findings</th><th>Sources</th></tr></thead><tbody id="by-target"></tbody></table></div><p class="note">The same entity is stored once. Each source that observed it stays attached to that row.</p></section>
+<section><h2>HTTP services</h2><div class="scroll"><table><thead><tr><th>URL</th><th>Status</th><th>Title</th><th>Server</th><th>Tech</th><th>IP</th><th>CDN</th><th>Source</th></tr></thead><tbody id="http-services"></tbody></table></div><p class="note">These rows come from ProjectDiscovery httpx. A response is not ownership, and passive collection does not probe HTTP.</p></section>
+<section><h2>Account registrations</h2><div class="scroll"><table><thead><tr><th>Account</th><th>Site</th><th>URL</th><th>Status</th><th>Source</th></tr></thead><tbody id="registrations"></tbody></table></div><p class="note">A reported profile is a candidate. It does not confirm the person behind the account.</p></section>
+<section><h2>Coverage gaps</h2><div class="scroll"><table><thead><tr><th>Source</th><th>Target</th><th>Site</th><th>Reason</th></tr></thead><tbody id="gaps"></tbody></table></div><p class="note">A gap means the check did not finish. It is not evidence that an account or host is absent.</p></section>
 <div class="split"><section><h2>Recent execution history</h2><ol class="timeline" id="timeline"></ol></section><section><h2>Provider health</h2><div class="scroll"><table><thead><tr><th>Provider</th><th>Status</th><th>Quota remaining</th></tr></thead><tbody id="providers"></tbody></table></div><h2 style="margin-top:24px">Suggested next actions</h2><ol id="actions"></ol></section></div>
 <footer id="limitations"></footer></main>
 <script type="application/json" id="report-data">${data}</script>
@@ -36,6 +40,11 @@ for(const run of report.runs.slice(0,12)){const li=create('li');li.append(create
 for(const provider of report.source_health.providers){const tr=create('tr');for(const value of [provider.provider,provider.status,provider.remaining])tr.append(create('td',value));el('providers').append(tr);}
 if(!report.source_health.providers.length){const tr=create('tr');const td=create('td','No provider calls recorded.');td.colSpan=3;tr.append(td);el('providers').append(tr);}
 for(const action of report.next_actions)el('actions').append(create('li',action.action+' — '+action.reason));
+function fill(id, rows, cells){const body=el(id);body.replaceChildren();if(!rows.length){const tr=create('tr');const td=create('td','None in this sample.');td.colSpan=cells;tr.append(td);body.append(tr);return;}for(const row of rows){const tr=create('tr');for(const value of row)tr.append(create('td',value));body.append(tr);}}
+fill('by-target',(report.by_target??[]).map(row=>[row.target,row.findings,row.sources.join(', ')]),3);
+fill('http-services',(report.http_services??[]).map(row=>[row.url,row.status??'',row.title,row.webserver,row.technology.join(', '),row.ip,row.cdn,row.source]),8);
+fill('registrations',(report.registrations??[]).map(row=>[row.account,row.site,row.url,row.status,row.source]),5);
+fill('gaps',(report.coverage_gaps??[]).map(row=>[row.source,row.target,row.site,row.reason]),4);
 el('limitations').textContent=report.limitations.join(' ')+' This offline export performs no network requests and contains a bounded sample. Use CLI/MCP pagination for additional evidence.';
 </script></body></html>`;
 }

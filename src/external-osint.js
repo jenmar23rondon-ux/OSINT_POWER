@@ -13,7 +13,6 @@ const maigretRow = z.object({
     status: z.enum(["Claimed", "Available", "Unknown", "Illegal"]),
   }),
 });
-const maigretHosts = new Set(["github.com", "gitlab.com", "codeberg.org"]);
 const spiderFootRow = z.object({
   data: z.string().min(1).max(253),
   event_type: z.string().min(1).max(80),
@@ -55,28 +54,27 @@ export function readMaigretReport(text, scope, observedAt, emit) {
     let profile;
     try {
       profile = new URL(url_user);
+      const reported = new URL(status.url);
+      profile.search = "";
+      profile.hash = "";
+      reported.search = "";
+      reported.hash = "";
       if (
-        profile.href !== new URL(status.url).href ||
+        profile.href !== reported.href ||
         profile.protocol !== "https:" ||
         profile.username ||
         profile.password ||
         profile.port ||
-        profile.pathname.replace(/\/$/, "") !== "/" + status.username
+        !profile.hostname.includes(".")
       )
         throw new Error("INVALID_PROFILE_URL");
     } catch {
       stats.invalid++;
       continue;
     }
-    if (!maigretHosts.has(profile.hostname)) {
-      stats.skipped++;
-      continue;
-    }
-    profile.pathname = "/" + status.username;
-    profile.search = "";
-    profile.hash = "";
     const evidence = {
-      status: "reported_claimed",
+      status: "Claimed",
+      site_name: status.site_name,
       verification: "candidate",
       inferred: true,
       upstream: profile.hostname,

@@ -379,7 +379,7 @@ test("doctor catches wrong tool dialect, emits no raw probe output, and planner 
     },
   );
   const diagnosed = await doctor(engine);
-  assert.equal(diagnosed.binaries[0].compatibility, "incompatible");
+  assert.equal(diagnosed.binaries[0].compatibility, "not_projectdiscovery");
   assert.equal(
     JSON.stringify(diagnosed).includes("SECRET_DO_NOT_PRINT"),
     false,

@@ -4,23 +4,36 @@ A closed registry defines available collectors. Targets pass scope validation be
 
 ## Execution
 
-| Adapter        | Contract                                                                                                  |
-| -------------- | --------------------------------------------------------------------------------------------------------- |
-| crtsh          | Fixed crt.sh API, name_value array                                                                        |
-| certspotter    | Fixed CT Search v1 issuance API; one page, persistent after cursor, optional environment key              |
-| wayback        | Fixed HTTPS CDX index; four-column JSON, one page, persistent resume key, historical hostname/URL records |
-| subfinder      | Passive domain input, silent output, rate and timeout flags                                               |
-| amass          | Legacy enum -passive -nocolor interface; verify installed compatibility                                   |
-| dnsx           | One host on stdin, JSON A/AAAA, one worker and rate limit                                                 |
-| httpx          | One host on stdin, JSON status/technology/title/TLS, no redirects                                         |
-| naabu          | One host, explicit ports, TCP connect, bounded workers/rate                                               |
-| mx             | Native Node DNS MX resolver; no SMTP validation                                                           |
-| rdap           | IANA bootstrap followed by an allowlisted RIR; no redirects                                               |
-| routing        | Fixed RIPEstat Network Info API                                                                           |
-| github-profile | Fixed public GitHub profile API for a scoped alias                                                        |
-| sherlock       | One alias, local catalog, configured professional sites, temporary CSV                                    |
-| theharvester   | crtsh/certspotter source selection, bounded result request and temporary JSON                             |
-| hibp           | Fixed breachedaccount endpoint, names and dates only                                                      |
+| Adapter           | Contract                                                                                                  |
+| ----------------- | --------------------------------------------------------------------------------------------------------- |
+| crtsh             | Fixed crt.sh API, name_value array                                                                        |
+| certspotter       | Fixed CT Search v1 issuance API; one page, persistent after cursor, optional environment key              |
+| wayback           | Fixed HTTPS CDX index; four-column JSON, one page, persistent resume key, historical hostname/URL records |
+| subfinder         | Passive domain input, silent output, rate and timeout flags                                               |
+| amass             | Legacy enum -passive -nocolor interface; verify installed compatibility                                   |
+| dnsx              | One host on stdin, JSON A/AAAA, one worker and rate limit                                                 |
+| httpx             | One host on stdin, JSON status/technology/title/server/IP/CDN/TLS, no redirects; batch probe is opt-in    |
+| naabu             | One host, explicit ports, TCP connect, bounded workers/rate                                               |
+| mx                | Native Node DNS MX resolver; no SMTP validation                                                           |
+| rdap              | IANA bootstrap followed by an allowlisted RIR; no redirects                                               |
+| routing           | Fixed RIPEstat Network Info API                                                                           |
+| github-profile    | Fixed public GitHub profile API for a scoped alias                                                        |
+| sherlock          | One alias, local catalog, configured professional sites, temporary CSV                                    |
+| theharvester      | crtsh/certspotter source selection, bounded result request and temporary JSON                             |
+| hibp              | Fixed breachedaccount endpoint, names and dates only; `HIBP_API_KEY`                                      |
+| domain-rdap       | IANA DNS bootstrap, then one HTTPS RDAP domain query; registration is not ownership                       |
+| doh               | Cloudflare DNS-over-HTTPS JSON for A, AAAA, MX, TXT, NS and CAA                                           |
+| otx               | AlienVault OTX passive DNS; optional `OTX_API_KEY`                                                        |
+| hackertarget      | hostsearch text for one domain; rate-limit text is a coverage gap                                         |
+| urlscan           | urlscan.io search; optional `URLSCAN_API_KEY`                                                             |
+| shodan-internetdb | InternetDB for one in-scope or discovered IP; no key; CVE identifiers are not confirmed findings          |
+| securitytrails    | Subdomain labels; requires `SECURITYTRAILS_API_KEY`                                                       |
+| virustotal        | Domain DNS records or IP network object; requires `VIRUSTOTAL_API_KEY`; not a verdict                     |
+| github-keys       | Public GitHub key id and SHA-256 fingerprint; optional `GITHUB_TOKEN`; raw key material is not stored     |
+| github-events     | Commit author/committer emails from public GitHub events only; optional `GITHUB_TOKEN`                    |
+| gravatar          | Gravatar JSON for the MD5 of one in-scope email                                                           |
+| keybase           | Public Keybase user lookup for one scoped username                                                        |
+| emailrep          | Profile names for one in-scope email; optional `EMAILREP_API_KEY`                                         |
 
 Arguments are defined in source and verified by contract tests. Native rate behavior depends on the upstream version. Amass/Sherlock/theHarvester do not expose one universal HTTP limit through these wrappers: configure source quotas and check installed behavior. Wrapper timeout/byte limits are not a firewall or a per-request sandbox.
 
@@ -40,14 +53,17 @@ crt.sh collection reports eligible DNS names, expected non-DNS values, and out-o
 
 - subfinder/amass: plain names or JSONL host/name fields, not full Amass graph exports.
 - dnsx: host, a and aaaa.
-- httpx: url, status_code, tech, title and optional TLS subject/issuer.
+- httpx: url, status_code, tech, title, webserver, ip, cdn_name and optional TLS subject/issuer. A batch probe of discovered hosts is `probe-http --probe-http --authorized` and is not part of passive collection.
+- crtsh: the same `name_value` array as live collection. Values that contain whitespace, such as `AS207960 Test Intermediate - example.com`, are ignored non-DNS names.
+- holehe: `holehe --csv` columns `name,domain,rateLimit,exists,error`. Registered rows become profile findings. Rate-limited or errored rows are coverage gaps. A not-registered row is omitted. Pass `--target email` when the file has no email column. Recovery, phone and free-text columns are not stored.
+- social-analyzer: JSON with `detected`/`found`, `unknown` and `failed` arrays. Found profile URLs are findings. Unknown and failed checks are coverage gaps.
 - naabu: host/ip and port.
 - sherlock: native CSV with username, url_user and exists=Claimed. The debug dump-response option is not a JSON export.
 - theharvester: JSON emails/hosts lists.
 - exiftool: JSON array with SourceFile and selected Author/Creator/Producer/Software/Title fields. GPS is dropped. Stripping metadata from your own photo is `privacy-check-image`, not this import.
 - gitleaks/trufflehog: native report locations and detector/rule identifiers; no raw secret values.
 - whatsmyname: bridge objects with username, url and found/not_found/unknown status.
-- maigret: reviewed native `simple` JSON from Maigret v0.6.6 with an explicit observation timestamp. See [external OSINT reports](EXTERNAL-OSINT.md).
+- maigret: reviewed native `simple` JSON from Maigret v0.6.6 with an explicit observation timestamp. Every claimed HTTPS profile for a scoped username is kept, with site name, URL and status. See [external OSINT reports](EXTERNAL-OSINT.md).
 - spiderfoot-json: reviewed native SpiderFoot v4.0 web JSON export. Imports Certificate Transparency domain events with an explicit source UTC offset. See [external OSINT reports](EXTERNAL-OSINT.md#spiderfoot).
 - business-context: strict sourced professional/office assertions.
 - breach-summary: strict provider/email/breach/date metadata.

@@ -1,6 +1,7 @@
 import { fetchText, runProcess, assertSafeTarget } from "./transport.js";
 import { collectExtra } from "./collectors.js";
 import { collectDiscovery, HISTORICAL_ADAPTERS } from "./discovery.js";
+import { collectPassiveApi } from "./passive-sources.js";
 
 const NATIVE_ADAPTERS = new Set([
   "sherlock",
@@ -58,6 +59,77 @@ export const ADAPTERS = {
     kind: "api",
     description:
       "Public GitHub profile for one scoped alias; no employment verification",
+  },
+  "domain-rdap": {
+    mode: "passive",
+    kind: "api",
+    description:
+      "IANA bootstrap and one HTTPS domain RDAP query; registration is not ownership",
+  },
+  doh: {
+    mode: "passive",
+    kind: "api",
+    description:
+      "DNS A/AAAA/MX/TXT/NS/CAA through Cloudflare JSON; no system resolver",
+  },
+  otx: {
+    mode: "passive",
+    kind: "api",
+    description: "AlienVault OTX passive DNS; optional OTX_API_KEY",
+  },
+  hackertarget: {
+    mode: "passive",
+    kind: "api",
+    description: "HackerTarget hostsearch; rate limits are coverage gaps",
+  },
+  urlscan: {
+    mode: "passive",
+    kind: "api",
+    description: "urlscan.io search for one domain; optional URLSCAN_API_KEY",
+  },
+  "shodan-internetdb": {
+    mode: "passive",
+    kind: "api",
+    description:
+      "Shodan InternetDB for one in-scope IP; no key and no exploit detail",
+  },
+  securitytrails: {
+    mode: "passive",
+    kind: "api",
+    description: "SecurityTrails subdomains; requires SECURITYTRAILS_API_KEY",
+  },
+  virustotal: {
+    mode: "passive",
+    kind: "api",
+    description:
+      "VirusTotal domain or IP object; requires VIRUSTOTAL_API_KEY; not a verdict",
+  },
+  "github-keys": {
+    mode: "passive",
+    kind: "api",
+    description:
+      "Public GitHub SSH key ids and fingerprints; raw keys are not stored",
+  },
+  "github-events": {
+    mode: "passive",
+    kind: "api",
+    description: "Commit emails from public GitHub events only",
+  },
+  gravatar: {
+    mode: "passive",
+    kind: "api",
+    description: "Gravatar profile for the MD5 of one in-scope email",
+  },
+  keybase: {
+    mode: "passive",
+    kind: "api",
+    description: "Public Keybase lookup for one scoped username",
+  },
+  emailrep: {
+    mode: "passive",
+    kind: "api",
+    description:
+      "EmailRep profile names for one in-scope email; optional EMAILREP_API_KEY",
   },
   crtsh: {
     mode: "passive",
@@ -139,6 +211,9 @@ export function commandFor(adapter, target, limits) {
         "-status-code",
         "-tech-detect",
         "-title",
+        "-web-server",
+        "-ip",
+        "-cdn",
         "-tls-grab",
         "-rl",
         rate,
@@ -183,6 +258,24 @@ export async function collect(adapter, target, config, dependencies = {}) {
   }
   if (HISTORICAL_ADAPTERS.includes(adapter))
     return collectDiscovery(adapter, target, config, dependencies);
+  if (
+    [
+      "domain-rdap",
+      "doh",
+      "otx",
+      "hackertarget",
+      "urlscan",
+      "shodan-internetdb",
+      "securitytrails",
+      "virustotal",
+      "github-keys",
+      "github-events",
+      "gravatar",
+      "keybase",
+      "emailrep",
+    ].includes(adapter)
+  )
+    return collectPassiveApi(adapter, target, config, dependencies);
   if (
     [
       "sherlock",

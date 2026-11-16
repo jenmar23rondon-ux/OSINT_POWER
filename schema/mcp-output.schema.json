@@ -340,6 +340,50 @@
                           "haveibeenpwned.com": {
                             "maxRequests": 10,
                             "windowMs": 60000
+                          },
+                          "cloudflare-dns.com": {
+                            "maxRequests": 30,
+                            "windowMs": 60000
+                          },
+                          "otx.alienvault.com": {
+                            "maxRequests": 10,
+                            "windowMs": 60000
+                          },
+                          "api.hackertarget.com": {
+                            "maxRequests": 5,
+                            "windowMs": 60000
+                          },
+                          "urlscan.io": {
+                            "maxRequests": 10,
+                            "windowMs": 60000
+                          },
+                          "internetdb.shodan.io": {
+                            "maxRequests": 10,
+                            "windowMs": 60000
+                          },
+                          "api.securitytrails.com": {
+                            "maxRequests": 5,
+                            "windowMs": 60000
+                          },
+                          "www.virustotal.com": {
+                            "maxRequests": 4,
+                            "windowMs": 60000
+                          },
+                          "en.gravatar.com": {
+                            "maxRequests": 20,
+                            "windowMs": 60000
+                          },
+                          "keybase.io": {
+                            "maxRequests": 10,
+                            "windowMs": 60000
+                          },
+                          "emailrep.io": {
+                            "maxRequests": 5,
+                            "windowMs": 60000
+                          },
+                          "data.iana.org": {
+                            "maxRequests": 10,
+                            "windowMs": 60000
                           }
                         },
                         "type": "object",
@@ -743,6 +787,41 @@
                 "minimum": 0,
                 "maximum": 9007199254740991
               },
+              "coverage_gaps": {
+                "maxItems": 200,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "source": {
+                      "type": "string"
+                    },
+                    "target": {
+                      "type": "string"
+                    },
+                    "site": {
+                      "type": "string"
+                    },
+                    "reason": {
+                      "type": "string",
+                      "enum": [
+                        "rate_limited",
+                        "error",
+                        "missing_key",
+                        "unknown",
+                        "failed"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "source",
+                    "target",
+                    "site",
+                    "reason"
+                  ],
+                  "additionalProperties": false
+                }
+              },
               "next_actions": {
                 "type": "array",
                 "items": {
@@ -909,6 +988,9 @@
             "type": "object",
             "properties": {
               "status": {
+                "type": "string"
+              },
+              "target": {
                 "type": "string"
               },
               "results": {
@@ -1088,6 +1170,41 @@
                           "minimum": 0,
                           "maximum": 9007199254740991
                         },
+                        "coverage_gaps": {
+                          "maxItems": 200,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "source": {
+                                "type": "string"
+                              },
+                              "target": {
+                                "type": "string"
+                              },
+                              "site": {
+                                "type": "string"
+                              },
+                              "reason": {
+                                "type": "string",
+                                "enum": [
+                                  "rate_limited",
+                                  "error",
+                                  "missing_key",
+                                  "unknown",
+                                  "failed"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "source",
+                              "target",
+                              "site",
+                              "reason"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
                         "next_actions": {
                           "type": "array",
                           "items": {
@@ -1129,6 +1246,9 @@
                         "adapter": {
                           "type": "string"
                         },
+                        "target": {
+                          "type": "string"
+                        },
                         "status": {
                           "type": "string"
                         },
@@ -1144,6 +1264,536 @@
                       "additionalProperties": false
                     }
                   ]
+                }
+              },
+              "coverage_gaps": {
+                "maxItems": 200,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "source": {
+                      "type": "string"
+                    },
+                    "target": {
+                      "type": "string"
+                    },
+                    "site": {
+                      "type": "string"
+                    },
+                    "reason": {
+                      "type": "string",
+                      "enum": [
+                        "rate_limited",
+                        "error",
+                        "missing_key",
+                        "unknown",
+                        "failed"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "source",
+                    "target",
+                    "site",
+                    "reason"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "correlation": {
+                "type": "object",
+                "properties": {
+                  "target": {
+                    "type": "string"
+                  },
+                  "findings": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "sources": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "target",
+                  "findings",
+                  "sources"
+                ],
+                "additionalProperties": false
+              },
+              "next_actions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "rank": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "action": {
+                      "type": "string"
+                    },
+                    "reason": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "rank",
+                    "action",
+                    "reason"
+                  ],
+                  "additionalProperties": {
+                    "$ref": "#/$defs/__schema0"
+                  }
+                }
+              }
+            },
+            "required": [
+              "status",
+              "target",
+              "results",
+              "coverage_gaps",
+              "correlation",
+              "next_actions"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "required": [
+      "schema_version",
+      "ok",
+      "execution_status",
+      "collection_status",
+      "coverage",
+      "retry",
+      "result"
+    ],
+    "additionalProperties": false,
+    "$defs": {
+      "__schema0": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          },
+          {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/__schema0"
+            }
+          },
+          {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "$ref": "#/$defs/__schema0"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "probe_http": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "schema_version": {
+        "type": "string",
+        "const": "0.4"
+      },
+      "ok": {
+        "type": "boolean"
+      },
+      "execution_status": {
+        "type": "string",
+        "enum": [
+          "succeeded",
+          "failed"
+        ]
+      },
+      "collection_status": {
+        "type": "string",
+        "enum": [
+          "completed",
+          "partial",
+          "failed",
+          "deferred",
+          "cancelled",
+          "not_applicable"
+        ]
+      },
+      "coverage": {
+        "type": "object",
+        "properties": {
+          "complete": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "complete",
+          "truncated"
+        ],
+        "additionalProperties": false
+      },
+      "retry": {
+        "type": "object",
+        "properties": {
+          "retryable": {
+            "type": "boolean"
+          },
+          "retry_after_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "retryable",
+          "retry_after_ms"
+        ],
+        "additionalProperties": false
+      },
+      "result": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string"
+              },
+              "target": {
+                "type": "string"
+              },
+              "probe_http": {
+                "type": "boolean",
+                "const": true
+              },
+              "authorized": {
+                "type": "boolean",
+                "const": true
+              },
+              "hosts": {
+                "maxItems": 10,
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "results": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "run_id": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "completed",
+                        "partial",
+                        "failed",
+                        "deferred",
+                        "cancelled",
+                        "interrupted"
+                      ]
+                    },
+                    "adapter": {
+                      "type": "string"
+                    },
+                    "target": {
+                      "type": "string"
+                    },
+                    "cached": {
+                      "type": "boolean"
+                    },
+                    "attempts": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "observations": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "inserted": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "entities_inserted": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "repeated": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "http_requests": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "skipped": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "invalid": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "crtsh_counts": {
+                      "type": "object",
+                      "properties": {
+                        "dns": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "ignored_non_dns": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "out_of_scope": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "dns",
+                        "ignored_non_dns",
+                        "out_of_scope"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "truncated": {
+                      "type": "boolean"
+                    },
+                    "collected_at": {
+                      "type": "string"
+                    },
+                    "input_hash": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "configuration_digest": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "collector_version": {
+                      "type": "string"
+                    },
+                    "coverage_complete": {
+                      "type": "boolean"
+                    },
+                    "discovery": {
+                      "type": "object",
+                      "properties": {
+                        "next_cursor": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "exhausted": {
+                          "type": "boolean"
+                        },
+                        "records": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "coverage_mode": {
+                          "type": "string",
+                          "const": "incremental_page"
+                        },
+                        "coverage_complete": {
+                          "type": "boolean",
+                          "const": false
+                        },
+                        "has_more": {
+                          "type": "boolean"
+                        },
+                        "cursor_hash": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "cursor_advanced": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "exhausted",
+                        "records",
+                        "coverage_mode",
+                        "coverage_complete",
+                        "has_more",
+                        "cursor_hash"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "retry_after_ms": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "coverage_gaps": {
+                      "maxItems": 200,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "source": {
+                            "type": "string"
+                          },
+                          "target": {
+                            "type": "string"
+                          },
+                          "site": {
+                            "type": "string"
+                          },
+                          "reason": {
+                            "type": "string",
+                            "enum": [
+                              "rate_limited",
+                              "error",
+                              "missing_key",
+                              "unknown",
+                              "failed"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "source",
+                          "target",
+                          "site",
+                          "reason"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "next_actions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "rank": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "action": {
+                            "type": "string"
+                          },
+                          "reason": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "rank",
+                          "action",
+                          "reason"
+                        ],
+                        "additionalProperties": {
+                          "$ref": "#/$defs/__schema0"
+                        }
+                      }
+                    }
+                  },
+                  "required": [
+                    "run_id",
+                    "status",
+                    "next_actions"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "coverage_gaps": {
+                "maxItems": 10,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "source": {
+                      "type": "string"
+                    },
+                    "target": {
+                      "type": "string"
+                    },
+                    "site": {
+                      "type": "string"
+                    },
+                    "reason": {
+                      "type": "string",
+                      "enum": [
+                        "rate_limited",
+                        "error",
+                        "missing_key",
+                        "unknown",
+                        "failed"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "source",
+                    "target",
+                    "site",
+                    "reason"
+                  ],
+                  "additionalProperties": false
                 }
               },
               "next_actions": {
@@ -1176,7 +1826,12 @@
             },
             "required": [
               "status",
+              "target",
+              "probe_http",
+              "authorized",
+              "hosts",
               "results",
+              "coverage_gaps",
               "next_actions"
             ],
             "additionalProperties": false
@@ -1480,6 +2135,41 @@
                 "type": "integer",
                 "minimum": 0,
                 "maximum": 9007199254740991
+              },
+              "coverage_gaps": {
+                "maxItems": 200,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "source": {
+                      "type": "string"
+                    },
+                    "target": {
+                      "type": "string"
+                    },
+                    "site": {
+                      "type": "string"
+                    },
+                    "reason": {
+                      "type": "string",
+                      "enum": [
+                        "rate_limited",
+                        "error",
+                        "missing_key",
+                        "unknown",
+                        "failed"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "source",
+                    "target",
+                    "site",
+                    "reason"
+                  ],
+                  "additionalProperties": false
+                }
               },
               "next_actions": {
                 "type": "array",
@@ -1815,6 +2505,41 @@
                 "type": "integer",
                 "minimum": 0,
                 "maximum": 9007199254740991
+              },
+              "coverage_gaps": {
+                "maxItems": 200,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "source": {
+                      "type": "string"
+                    },
+                    "target": {
+                      "type": "string"
+                    },
+                    "site": {
+                      "type": "string"
+                    },
+                    "reason": {
+                      "type": "string",
+                      "enum": [
+                        "rate_limited",
+                        "error",
+                        "missing_key",
+                        "unknown",
+                        "failed"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "source",
+                    "target",
+                    "site",
+                    "reason"
+                  ],
+                  "additionalProperties": false
+                }
               },
               "next_actions": {
                 "type": "array",
@@ -3471,6 +4196,14 @@
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 30
+                  },
+                  "probeHttp": {
+                    "default": false,
+                    "type": "boolean"
+                  },
+                  "authorized": {
+                    "default": false,
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -3478,7 +4211,9 @@
                   "target",
                   "execute",
                   "maxTargets",
-                  "maxCalls"
+                  "maxCalls",
+                  "probeHttp",
+                  "authorized"
                 ],
                 "additionalProperties": false
               }
@@ -4079,6 +4814,14 @@
                         "type": "integer",
                         "minimum": 1,
                         "maximum": 30
+                      },
+                      "probeHttp": {
+                        "default": false,
+                        "type": "boolean"
+                      },
+                      "authorized": {
+                        "default": false,
+                        "type": "boolean"
                       }
                     },
                     "required": [
@@ -4086,7 +4829,9 @@
                       "target",
                       "execute",
                       "maxTargets",
-                      "maxCalls"
+                      "maxCalls",
+                      "probeHttp",
+                      "authorized"
                     ],
                     "additionalProperties": false
                   },
@@ -4699,6 +5444,14 @@
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 30
+                  },
+                  "probeHttp": {
+                    "default": false,
+                    "type": "boolean"
+                  },
+                  "authorized": {
+                    "default": false,
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -4706,7 +5459,9 @@
                   "target",
                   "execute",
                   "maxTargets",
-                  "maxCalls"
+                  "maxCalls",
+                  "probeHttp",
+                  "authorized"
                 ],
                 "additionalProperties": false
               },
@@ -5534,11 +6289,35 @@
                   },
                   "certspotter_api_key_configured": {
                     "type": "boolean"
+                  },
+                  "securitytrails_api_key_configured": {
+                    "type": "boolean"
+                  },
+                  "virustotal_api_key_configured": {
+                    "type": "boolean"
+                  },
+                  "urlscan_api_key_configured": {
+                    "type": "boolean"
+                  },
+                  "emailrep_api_key_configured": {
+                    "type": "boolean"
+                  },
+                  "otx_api_key_configured": {
+                    "type": "boolean"
+                  },
+                  "github_token_configured": {
+                    "type": "boolean"
                   }
                 },
                 "required": [
                   "hibp_api_key_configured",
-                  "certspotter_api_key_configured"
+                  "certspotter_api_key_configured",
+                  "securitytrails_api_key_configured",
+                  "virustotal_api_key_configured",
+                  "urlscan_api_key_configured",
+                  "emailrep_api_key_configured",
+                  "otx_api_key_configured",
+                  "github_token_configured"
                 ],
                 "additionalProperties": false
               },
@@ -9099,6 +9878,156 @@
                 "items": {
                   "type": "string"
                 }
+              },
+              "by_target": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "target": {
+                      "type": "string"
+                    },
+                    "findings": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "sources": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "target",
+                    "findings",
+                    "sources"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "http_services": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "webserver": {
+                      "type": "string"
+                    },
+                    "technology": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "ip": {
+                      "type": "string"
+                    },
+                    "cdn": {
+                      "type": "string"
+                    },
+                    "source": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "url",
+                    "status",
+                    "title",
+                    "webserver",
+                    "technology",
+                    "ip",
+                    "cdn",
+                    "source"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "coverage_gaps": {
+                "maxItems": 50,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "source": {
+                      "type": "string"
+                    },
+                    "target": {
+                      "type": "string"
+                    },
+                    "site": {
+                      "type": "string"
+                    },
+                    "reason": {
+                      "type": "string",
+                      "enum": [
+                        "rate_limited",
+                        "error",
+                        "missing_key",
+                        "unknown",
+                        "failed"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "source",
+                    "target",
+                    "site",
+                    "reason"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "registrations": {
+                "maxItems": 50,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "account": {
+                      "type": "string"
+                    },
+                    "site": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "source": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "account",
+                    "site",
+                    "url",
+                    "status",
+                    "source"
+                  ],
+                  "additionalProperties": false
+                }
               }
             },
             "required": [
@@ -9111,7 +10040,11 @@
               "jobs",
               "source_health",
               "next_actions",
-              "limitations"
+              "limitations",
+              "by_target",
+              "http_services",
+              "coverage_gaps",
+              "registrations"
             ],
             "additionalProperties": false
           },
