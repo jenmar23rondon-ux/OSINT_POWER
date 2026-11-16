@@ -41,6 +41,14 @@
       "type": "integer",
       "minimum": 1,
       "maximum": 30
+    },
+    "probeHttp": {
+      "default": false,
+      "type": "boolean"
+    },
+    "authorized": {
+      "default": false,
+      "type": "boolean"
     }
   },
   "required": [
@@ -48,7 +56,9 @@
     "target",
     "execute",
     "maxTargets",
-    "maxCalls"
+    "maxCalls",
+    "probeHttp",
+    "authorized"
   ],
   "additionalProperties": false
 }

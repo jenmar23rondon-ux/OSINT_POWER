@@ -770,7 +770,7 @@ test(
     });
     await client.connect(transport);
     const names = (await client.listTools()).tools.map((tool) => tool.name);
-    assert.equal(names.length, 51);
+    assert.equal(names.length, 52);
     for (const name of [
       "create_hypothesis",
       "update_hypothesis",

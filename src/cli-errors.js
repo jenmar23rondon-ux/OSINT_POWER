@@ -37,7 +37,43 @@ const messages = {
   ],
   HIBP_KEY_MISSING: [
     "The HIBP provider key is missing.",
-    "Set the provider key in the environment before using the HIBP adapter.",
+    "Set HIBP_API_KEY in the environment before using the HIBP adapter. The key is not read from the configuration file.",
+  ],
+  NETWORK_DISABLED: [
+    "Network collection is turned off for this workspace.",
+    'Set "network": true in the workspace configuration. Active DNS, HTTP, and port checks also need "active": true and the adapter listed in enabledAdapters.',
+  ],
+  ACTIVE_DISABLED: [
+    "Active collection is turned off for this workspace.",
+    'Set "active": true before DNS, HTTP, or port checks. HTTP probing also needs --probe-http and --authorized.',
+  ],
+  ADAPTER_DISABLED: [
+    "The adapter is not enabled in this workspace.",
+    "Add the adapter to enabledAdapters. ProjectDiscovery httpx also needs active mode plus --probe-http and --authorized.",
+  ],
+  HTTP_PROBE_DISABLED: [
+    "Active HTTP probing is off.",
+    "Pass --probe-http and --authorized. Passive collection never runs httpx.",
+  ],
+  HTTP_PROBE_NOT_AUTHORIZED: [
+    "Active HTTP probing was not authorized.",
+    "Pass --authorized together with --probe-http. Only hosts already inside the workspace scope are contacted.",
+  ],
+  HTTPX_NOT_PROJECTDISCOVERY: [
+    "The httpx program on PATH is not ProjectDiscovery httpx.",
+    "Python's httpx command uses the same name. Install ProjectDiscovery httpx and put that binary first on PATH: https://github.com/projectdiscovery/httpx",
+  ],
+  SECURITYTRAILS_API_KEY_MISSING: [
+    "The SecurityTrails API key is missing.",
+    "Set SECURITYTRAILS_API_KEY in the environment. The source is reported as a coverage gap, not as an empty result.",
+  ],
+  VIRUSTOTAL_API_KEY_MISSING: [
+    "The VirusTotal API key is missing.",
+    "Set VIRUSTOTAL_API_KEY in the environment. The source is reported as a coverage gap, not as an empty result.",
+  ],
+  RATE_LIMITED: [
+    "The source asked the workspace to slow down.",
+    "The unfinished check is a coverage gap. It is not a negative result. Wait for the provider window and try that source again.",
   ],
   OCR_TOOL_NOT_INSTALLED: [
     "Tesseract is unavailable.",
@@ -120,6 +156,12 @@ const scopedMessages = {
     INVALID_INPUT: [
       "The workspace configuration could not be loaded.",
       "Check that the configuration is readable JSON and follows schema/config.schema.json.",
+    ],
+  },
+  httpx: {
+    TOOL_NOT_INSTALLED: [
+      "ProjectDiscovery httpx was not found on PATH.",
+      "Install the ProjectDiscovery httpx binary, not the Python package named httpx. See https://github.com/projectdiscovery/httpx. One installer is: go install github.com/projectdiscovery/httpx/cmd/httpx@latest",
     ],
   },
   import: {

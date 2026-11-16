@@ -4,6 +4,7 @@ import { mkdtemp, readFile, stat, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve, sep } from "node:path";
 import { fetchText, runProcess, assertSafeTarget } from "./transport.js";
+import { githubHeaders } from "./passive-sources.js";
 
 const RIR_HOSTS = new Set([
   "rdap.arin.net",
@@ -112,7 +113,7 @@ export async function collectExtra(adapter, target, config, dependencies = {}) {
     return fetchText(
       `https://api.github.com/users/${encodeURIComponent(target)}`,
       config.limits,
-      { Accept: "application/vnd.github+json" },
+      githubHeaders(),
       fetcher,
     );
   if (!["sherlock", "theharvester"].includes(adapter))

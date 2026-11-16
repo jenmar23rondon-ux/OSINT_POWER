@@ -17,12 +17,14 @@ All example data is synthetic. Imports write local state. Workflow commands with
 ## Execute configured stages
 
 ```bash
+node src/cli.js workflow --workflow people --target "Alex Rivera" --max-targets 5
 node src/cli.js workflow --workflow company --target example.com --execute --max-targets 3 --max-calls 10
+node src/cli.js workflow --workflow company --target example.com --execute --probe-http --authorized --max-targets 3
 ```
 
 Use your configured domain. Execution preserves `network`, `active`, `enabledAdapters` and per-source controls. Later stages are recalculated after earlier discoveries.
 
-`maxTargets` limits candidates per stage to 1–10. `maxCalls` limits logical adapter invocations to 1–30, default 10. An adapter may make multiple underlying requests: RDAP needs bootstrap and registry calls, retries may repeat requests, and external binaries have internal behavior. Cached calls also consume this workflow budget.
+`maxTargets` limits candidates per stage to 1–10, default 3. For the people workflow that budget is the number of generated aliases sent to Sherlock and GitHub. Alias generation can still list up to 20 candidates; only the first `maxTargets` are looked up. Set it with `--max-targets` or the MCP `maxTargets` field. `maxCalls` limits logical adapter invocations to 1–30, default 10. An adapter may make multiple underlying requests: RDAP needs bootstrap and registry calls, retries may repeat requests, and external binaries have internal behavior. Cached calls also consume this workflow budget.
 
 Unavailable sources remain explicit. Partial runs retain completed evidence. No pending stage is automatically scheduled after the workflow finishes.
 
@@ -70,7 +72,7 @@ WhatsMyName is a dataset; upstream removed its bundled checker scripts. Its impo
 
 ## Company
 
-The company workflow coordinates crt.sh/subfinder/Amass, theHarvester, DNS/HTTP checks for the first scoped hosts, RDAP and RIPEstat. HTTP observations retain title, technology and certificate CN/issuer when provided by httpx.
+The company workflow coordinates crt.sh/subfinder/Amass, theHarvester, and DNS checks for the first scoped hosts, plus RDAP and RIPEstat. It does not probe HTTP. ProjectDiscovery httpx runs only when the same command also passes `--probe-http` and `--authorized`, `active` is on, and `httpx` is enabled. Those observations can include status, title, technology, web server, TLS subject/issuer, IP and CDN name.
 
 RDAP uses IANA's HTTPS bootstrap and an exact RIR host allowlist without redirects. RIPEstat reports the prefix and announcing ASN from routing observations. Neither is proof of ownership, corporate location or authority to scan a whole range. Passive enrichment of a discovered IP does not expand active scope.
 

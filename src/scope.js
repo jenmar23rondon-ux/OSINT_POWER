@@ -1,6 +1,7 @@
 import { domainToASCII } from "node:url";
 import { isIP } from "node:net";
 import { nameKey, usernameVariants, employeeValue } from "./identity.js";
+import { PASSIVE_ADAPTERS } from "./adapter-kinds.js";
 
 export function domain(value) {
   const name = domainToASCII(
@@ -137,6 +138,7 @@ export class Scope {
       if (type === "profile")
         return (
           this.username(evidence.username) ||
+          Boolean(evidence.account && this.allows("email", evidence.account)) ||
           Boolean(
             evidence.person &&
             this.person(evidence.person)?.companyDomain === evidence.company,
@@ -154,7 +156,7 @@ export class Scope {
     }
   }
   target(adapter, input) {
-    if (["sherlock", "github-profile"].includes(adapter)) {
+    if (PASSIVE_ADAPTERS.username.includes(adapter)) {
       if (
         !/^[A-Za-z0-9_][A-Za-z0-9_.-]{0,63}$/.test(input) ||
         !this.username(input)
@@ -162,27 +164,32 @@ export class Scope {
         throw new Error("USERNAME_OUT_OF_SCOPE");
       return input;
     }
-    if (adapter === "hibp") {
+    if (PASSIVE_ADAPTERS.email.includes(adapter)) {
       const account = normalized("email", input);
-      // Breach lookups always require an exact configured account.
-      if (!this.emails.includes(account)) throw new Error("OUT_OF_SCOPE");
+      // HIBP always requires an exact configured account.
+      if (adapter === "hibp" && !this.emails.includes(account))
+        throw new Error("OUT_OF_SCOPE");
+      if (!this.allows("email", account)) throw new Error("OUT_OF_SCOPE");
       return account;
+    }
+    if (adapter === "virustotal" && isIP(input)) {
+      const address = normalized("ip", input);
+      if (!this.host(address)) throw new Error("OUT_OF_SCOPE");
+      return address;
     }
     const value = isIP(input) ? normalized("ip", input) : domain(input);
     if (
       [
-        "subfinder",
-        "amass",
-        "crtsh",
-        "certspotter",
-        "wayback",
+        ...PASSIVE_ADAPTERS.domain.filter((name) => name !== "virustotal"),
         "mx",
-        "theharvester",
       ].includes(adapter) &&
       isIP(value)
     )
       throw new Error("DOMAIN_REQUIRED");
-    if (["rdap", "routing"].includes(adapter) && !isIP(value))
+    if (
+      ["rdap", "routing", "shodan-internetdb"].includes(adapter) &&
+      !isIP(value)
+    )
       throw new Error("IP_REQUIRED");
     if (!this.host(value)) throw new Error("OUT_OF_SCOPE");
     return value;

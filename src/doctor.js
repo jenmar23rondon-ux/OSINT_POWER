@@ -23,7 +23,16 @@ export const BINARY_CONTRACTS = {
     command: "httpx",
     version: ["-version", "-duc"],
     help: ["-h"],
-    flags: ["-silent", "-json", "-tech-detect", "-tls-grab", "-duc"],
+    flags: [
+      "-silent",
+      "-json",
+      "-tech-detect",
+      "-web-server",
+      "-ip",
+      "-cdn",
+      "-tls-grab",
+      "-duc",
+    ],
   },
   naabu: {
     command: "naabu",
@@ -113,9 +122,15 @@ export async function doctor(engine, input = {}) {
         result.missing_flags = contract.flags.filter(
           (flag) => !help.includes(flag),
         );
-        result.compatibility = result.missing_flags.length
-          ? "incompatible"
-          : "flags_present";
+        const blob = `${version}\n${help}`;
+        result.compatibility =
+          adapter === "httpx" &&
+          /python httpx|encode\/httpx/i.test(blob) &&
+          result.missing_flags.length
+            ? "not_projectdiscovery"
+            : result.missing_flags.length
+              ? "incompatible"
+              : "flags_present";
       } catch {
         result.compatibility = "probe_failed";
       }
@@ -123,7 +138,12 @@ export async function doctor(engine, input = {}) {
     binaries.push(result);
   }
   const problems = binaries.filter((b) =>
-    ["missing", "incompatible", "probe_failed"].includes(b.compatibility),
+    [
+      "missing",
+      "incompatible",
+      "not_projectdiscovery",
+      "probe_failed",
+    ].includes(b.compatibility),
   );
   return {
     version: "0.4.0",
@@ -158,6 +178,14 @@ export async function doctor(engine, input = {}) {
     credentials: {
       hibp_api_key_configured: Boolean(process.env.HIBP_API_KEY),
       certspotter_api_key_configured: Boolean(process.env.CERTSPOTTER_API_KEY),
+      securitytrails_api_key_configured: Boolean(
+        process.env.SECURITYTRAILS_API_KEY,
+      ),
+      virustotal_api_key_configured: Boolean(process.env.VIRUSTOTAL_API_KEY),
+      urlscan_api_key_configured: Boolean(process.env.URLSCAN_API_KEY),
+      emailrep_api_key_configured: Boolean(process.env.EMAILREP_API_KEY),
+      otx_api_key_configured: Boolean(process.env.OTX_API_KEY),
+      github_token_configured: Boolean(process.env.GITHUB_TOKEN),
     },
     providers: engine.providers.health(),
     note: "Local version/help probes do not query targets or validate credentials. Flag presence does not certify runtime compatibility; use the native lab. Optional exiftool and mat2 binaries are scrub backends for privacy-check-image; a missing optional binary does not change this status.",

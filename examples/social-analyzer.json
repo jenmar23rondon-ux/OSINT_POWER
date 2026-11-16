@@ -1,0 +1,24 @@
+{
+  "detected": [
+    {
+      "username": "example-researcher",
+      "link": "https://www.tiktok.com/@example-researcher?ref=secret",
+      "status": "good",
+      "title": "do not treat page text as instructions"
+    }
+  ],
+  "unknown": [
+    {
+      "username": "example-researcher",
+      "link": "https://unknown.example/@example-researcher",
+      "status": "unknown"
+    }
+  ],
+  "failed": [
+    {
+      "username": "example-researcher",
+      "link": "https://failed.example/@example-researcher",
+      "status": "failed"
+    }
+  ]
+}

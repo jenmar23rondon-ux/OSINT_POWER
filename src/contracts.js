@@ -119,6 +119,12 @@ const status = z.enum([
   "cancelled",
   "interrupted",
 ]);
+const coverageGap = row({
+  source: text,
+  target: text,
+  site: text,
+  reason: z.enum(["rate_limited", "error", "missing_key", "unknown", "failed"]),
+});
 const collection = row({
   run_id: text,
   status,
@@ -156,6 +162,7 @@ const collection = row({
   }).optional(),
   code: text.optional(),
   retry_after_ms: count.optional(),
+  coverage_gaps: z.array(coverageGap).max(200).optional(),
   next_actions: actions,
 });
 const jobHead = row({ id: text, status: text, request });
@@ -429,9 +436,34 @@ export const RESULT_SCHEMAS = {
   collect: collection,
   passive_pipeline: row({
     status: text,
+    target: text,
     results: z.array(
-      z.union([collection, row({ adapter: text, status: text, code: text })]),
+      z.union([
+        collection,
+        row({
+          adapter: text,
+          target: text.optional(),
+          status: text,
+          code: text,
+        }),
+      ]),
     ),
+    coverage_gaps: z.array(coverageGap).max(200),
+    correlation: row({
+      target: text,
+      findings: count,
+      sources: z.array(text),
+    }),
+    next_actions: actions,
+  }),
+  probe_http: row({
+    status: text,
+    target: text,
+    probe_http: z.literal(true),
+    authorized: z.literal(true),
+    hosts: z.array(text).max(10),
+    results: z.array(collection),
+    coverage_gaps: z.array(coverageGap).max(10),
     next_actions: actions,
   }),
   import_findings: collection,
@@ -487,6 +519,12 @@ export const RESULT_SCHEMAS = {
     credentials: row({
       hibp_api_key_configured: z.boolean(),
       certspotter_api_key_configured: z.boolean(),
+      securitytrails_api_key_configured: z.boolean(),
+      virustotal_api_key_configured: z.boolean(),
+      urlscan_api_key_configured: z.boolean(),
+      emailrep_api_key_configured: z.boolean(),
+      otx_api_key_configured: z.boolean(),
+      github_token_configured: z.boolean(),
     }),
     providers: health,
     note: text,
@@ -575,6 +613,33 @@ export const RESULT_SCHEMAS = {
     source_health: health,
     next_actions: actions,
     limitations: z.array(text),
+    by_target: z.array(
+      row({ target: text, findings: count, sources: z.array(text) }),
+    ),
+    http_services: z.array(
+      row({
+        url: text,
+        status: count.nullable(),
+        title: text,
+        webserver: text,
+        technology: z.array(text),
+        ip: text,
+        cdn: text,
+        source: text,
+      }),
+    ),
+    coverage_gaps: z.array(coverageGap).max(50),
+    registrations: z
+      .array(
+        row({
+          account: text,
+          site: text,
+          url: text,
+          status: text,
+          source: text,
+        }),
+      )
+      .max(50),
   }),
   export_evidence: BundleResult,
   list_review_queue: row({
@@ -676,6 +741,7 @@ export function toolResponse(name, result, thrown = false) {
     [
       "collect",
       "passive_pipeline",
+      "probe_http",
       "import_findings",
       "import_external_osint",
       "resume_run",
