@@ -79,6 +79,8 @@ Only configured document basenames are accepted for document/secret imports. Ide
 
 Generic imported confidence is capped at 0.7. Evidence keys and values are bounded. URL query strings/fragments are removed. Secret entity values are reconstructed from location metadata and marked unverified.
 
+`sources` and MCP `list_sources` print this registry with the workspace enablement, the TTL cache behavior, and the names of missing required or optional environment variables. They do not print key values or contact the providers. `investigate` runs the passive subset that matches a domain, email, username, or IP. Active adapters stay out of that command.
+
 ## Add a source
 
 1. Define strict input schemas and a fixed provider or known binary interface.

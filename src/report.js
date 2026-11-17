@@ -1,4 +1,5 @@
 import { gapReason } from "./adapter-kinds.js";
+import { correlateEntities } from "./correlation.js";
 
 const GAP_REASONS = new Set([
   "rate_limited",
@@ -102,15 +103,73 @@ function coverageGaps(runs) {
   return gaps.filter((gap) => GAP_REASONS.has(gap.reason)).slice(0, 50);
 }
 
+export const FINDING_COLUMNS = [
+  "id",
+  "type",
+  "value",
+  "sources",
+  "confidence",
+  "confidence_basis",
+  "evidence_count",
+  "first_seen",
+  "last_seen",
+];
+
+function csvCell(value) {
+  const text = Array.isArray(value) ? value.join("|") : String(value ?? "");
+  const safe = /^[=+\-@]/.test(text) ? `'${text}` : text;
+  if (/[",\n\r]/.test(safe)) return `"${safe.replaceAll('"', '""')}"`;
+  return safe;
+}
+
+export function findingsCsv(body) {
+  const columns = body.export_columns ?? FINDING_COLUMNS;
+  const lines = [columns.join(",")];
+  for (const item of body.findings?.items ?? [])
+    lines.push(columns.map((column) => csvCell(item[column])).join(","));
+  return lines.join("\n") + "\n";
+}
+
+function narrative(summary) {
+  return [
+    `${summary.entities} stored entities, ${summary.displayed_entities} shown in this sample.`,
+    `${summary.coverage_gaps} coverage gaps. A gap means a source did not finish. It is not a negative result.`,
+    `${summary.correlations} candidate links. A shared handle or a published email is not a confirmed identity.`,
+    summary.http_services
+      ? `${summary.http_services} HTTP service rows come from an explicit probe or import.`
+      : "No HTTP service rows in this sample.",
+  ].join(" ");
+}
+
 export function report(engine) {
   const findings = engine.store.query({ limit: 50 });
   const runs = engine.store.runs(20);
+  const graph = engine.store.graph(50);
+  const http_services = httpServices(engine);
+  const registrationRows = registrations(engine);
+  const coverage_gaps = coverageGaps(runs);
+  const correlated = correlateEntities(engine.store, engine.scope);
+  const timeline = engine.store.observationTimeline(30);
+  const sources = new Set(findings.items.flatMap((item) => item.sources));
+  const executive_summary = {
+    entities: findings.total,
+    displayed_entities: findings.returned,
+    relationships: graph.items.length,
+    sources: sources.size,
+    coverage_gaps: coverage_gaps.length,
+    correlations: correlated.items.length,
+    correlations_truncated: correlated.truncated,
+    http_services: http_services.length,
+    registrations: registrationRows.length,
+    narrative: "",
+  };
+  executive_summary.narrative = narrative(executive_summary);
   return {
     project: "OSINT_POWER",
     version: "0.4.0",
     generated_at: new Date().toISOString(),
     findings,
-    graph: engine.store.graph(50),
+    graph,
     runs,
     jobs: engine.jobs.list({ limit: 20 }),
     source_health: engine.providers.health(),
@@ -121,10 +180,16 @@ export function report(engine) {
       "No vulnerability or credential validity is established by a recon observation.",
       "A coverage gap means a source was not fully checked. It is not a negative result.",
       "HTTP service rows come from an explicit ProjectDiscovery httpx probe or import.",
+      "JSON findings and CSV rows use the same columns. STIX keeps the same in-scope entities that have a cyber-observable and does not promote candidate links.",
     ],
     by_target: byTarget(engine),
-    http_services: httpServices(engine),
-    coverage_gaps: coverageGaps(runs),
-    registrations: registrations(engine),
+    http_services,
+    coverage_gaps,
+    registrations: registrationRows,
+    executive_summary,
+    timeline,
+    correlations: correlated.items,
+    correlations_truncated: correlated.truncated,
+    export_columns: FINDING_COLUMNS,
   };
 }

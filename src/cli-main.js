@@ -1,10 +1,11 @@
 import { parseArgs } from "node:util";
 import { readFileSync, writeFileSync, statSync } from "node:fs";
+import { basename } from "node:path";
 import { Engine, openEngine } from "./engine.js";
 import { cliError, cliException } from "./cli-errors.js";
 import { Store } from "./store.js";
 import { correlateOsintResults } from "./external-osint.js";
-import { report } from "./report.js";
+import { findingsCsv, report } from "./report.js";
 import { reportHTML } from "./dashboard.js";
 import { doctor } from "./doctor.js";
 import { planInvestigation } from "./planning.js";
@@ -55,6 +56,7 @@ import {
   searchImageDirectory,
 } from "./visual-evidence.js";
 import { probeDiscoveredHosts } from "./http-probe.js";
+import { persistOcr } from "./ocr-store.js";
 
 const HELP = {
   project: "OSINT_POWER",
@@ -68,7 +70,8 @@ const HELP = {
       "search-image-copies --file REFERENCE --dir LOCAL_COLLECTION",
     "probe-http":
       "probe-http --target example.com --probe-http --authorized [--max-targets 1-10] (ProjectDiscovery httpx; off unless both flags are set)",
-    "ocr-image": "ocr-image --file PATH [--language eng|spa]",
+    "ocr-image":
+      "ocr-image --file PATH [--language eng|spa] [--save] (save stores text when the file basename is in scope.documents)",
     bundle:
       "bundle --id SNAPSHOT_UUID --output evidence.json (complete capture, at most 10000 observations/40 MB)",
     "verify-bundle":
@@ -140,6 +143,10 @@ const HELP = {
       "pipeline --target example.com (every enabled passive adapter for that target; httpx is excluded)",
     passive:
       "passive --target example.com (same passive multi-source collection as pipeline)",
+    investigate:
+      "investigate --target VALUE [--execute] | investigate --resume --id UUID (passive workflow for a domain, email, username, or IP; resume retries unfinished sources and diffs the previous attempt)",
+    sources:
+      "sources (enabled adapters and missing API key names; values are not shown)",
     import:
       "import --adapter ADAPTER --file PATH [--target EMAIL for holehe] [--observed-at ISO for maigret | --source-utc-offset OFFSET for spiderfoot-json]",
     "correlate-osint":
@@ -151,7 +158,7 @@ const HELP = {
     timeline:
       "timeline [--host DOMAIN] [--ip ADDRESS] --since ISO --until ISO --as-of ISO [--limit 25 --cursor CURSOR]",
     report:
-      "report [--format json|html --output PATH]; interactive HTML requires an explicit output path",
+      "report [--format json|html|csv --output PATH]; HTML and CSV require an explicit output path",
   },
   options:
     "--config config.json --db PATH; all CLI responses are JSON; diagnostics use stderr",
@@ -168,6 +175,8 @@ try {
       "skip-probes": { type: "boolean", default: false },
       challenge: { type: "boolean", default: false },
       scrub: { type: "boolean", default: false },
+      save: { type: "boolean", default: false },
+      resume: { type: "boolean", default: false },
       "probe-http": { type: "boolean", default: false },
       authorized: { type: "boolean", default: false },
       ...Object.fromEntries(
@@ -245,6 +254,9 @@ try {
     !["workflow", "probe-http"].includes(command)
   )
     throw new Error("UNEXPECTED_ARGUMENT");
+  if (v.save && command !== "ocr-image") throw new Error("UNEXPECTED_ARGUMENT");
+  if (v.resume && command !== "investigate")
+    throw new Error("UNEXPECTED_ARGUMENT");
   if (command === "monitor") {
     if (
       positionals.length !== 2 ||
@@ -288,9 +300,30 @@ try {
     result = await compareImageFiles(v.file, v.other);
   else if (command === "search-image-copies")
     result = await searchImageDirectory(v.file, v.dir);
-  else if (command === "ocr-image")
-    result = await ocrImageFile(v.file, v.language);
-  else if (command === "init") {
+  else if (command === "ocr-image") {
+    const extracted = await ocrImageFile(v.file, v.language);
+    if (!v.save) result = extracted;
+    else {
+      stage = "config";
+      engine = openEngine(
+        v.config ?? process.env.OSINT_POWER_CONFIG ?? "config.json",
+        v.db ?? process.env.OSINT_POWER_DB,
+      );
+      stage = undefined;
+      const storage = persistOcr(
+        engine.store,
+        engine.scope,
+        extracted,
+        basename(String(v.file ?? "")),
+      );
+      result = {
+        ...extracted,
+        storage,
+        status: storage.saved ? "completed" : "partial",
+        ...(storage.saved ? {} : { code: "DOCUMENT_OUT_OF_SCOPE" }),
+      };
+    }
+  } else if (command === "init") {
     const path = v.config ?? "config.json";
     writeFileSync(
       path,
@@ -692,6 +725,14 @@ try {
       };
     } else if (command === "pipeline" || command === "passive")
       result = await engine.pipeline(v.target);
+    else if (command === "investigate")
+      result = await engine.investigate({
+        ...(v.target ? { target: v.target } : {}),
+        ...(v.id ? { id: v.id } : {}),
+        execute: Boolean(v.execute),
+        resume: Boolean(v.resume),
+      });
+    else if (command === "sources") result = engine.sources();
     else if (command === "probe-http") {
       stage = "httpx";
       if (!v["probe-http"]) throw new Error("HTTP_PROBE_DISABLED");
@@ -796,9 +837,9 @@ try {
       result = engine.store.graph(Number(v.limit ?? 25), Number(v.offset ?? 0));
     else if (command === "report") {
       const format = v.format ?? "json";
-      if (!["json", "html"].includes(format))
+      if (!["json", "html", "csv"].includes(format))
         throw new Error("INVALID_REPORT_FORMAT");
-      if (format === "html" && !v.output)
+      if ((format === "html" || format === "csv") && !v.output)
         throw new Error("OUTPUT_PATH_REQUIRED");
       result = report(engine);
       if (v.output) {
@@ -806,7 +847,9 @@ try {
           v.output,
           format === "html"
             ? reportHTML(result)
-            : JSON.stringify(result, null, 2) + "\n",
+            : format === "csv"
+              ? findingsCsv(result)
+              : JSON.stringify(result, null, 2) + "\n",
           { mode: 0o600 },
         );
         result = {

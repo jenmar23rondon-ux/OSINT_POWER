@@ -68,6 +68,10 @@ Local hypotheses and cases. `evaluate_hypothesis` reads stored evidence and the 
 
 The labeled corpus is 52 synthetic scenarios. The runner reports per-category precision and recall, false attributions, scope-block rate, export reproducibility and secret-leak count. Those figures are regression controls. They were not independently reviewed by humans and are not a production accuracy claim. `investigation_graph` and `graph --case` or `graph --investigation` export a read-only graph as JSON or a self-contained offline HTML file. Candidates stay candidates. Package version remains 0.4.0. Schema remains v7.
 
+## Investigate, candidate links, and source status
+
+`investigate` runs the passive adapters for one domain, email, username, or IP. Resume retries unfinished sources and diffs the previous attempt. `sources` shows enabled adapters and missing key names. Candidate links in the offline HTML report explain why an email, username, GitHub or Keybase profile, and domain were connected. Confidence is the rule score, not a confirmed identity. `report --format csv` matches the JSON finding columns. `ocr-image --save` stores text for a basename listed in `scope.documents`. SQLite schema v8 is additive. Package version remains 0.4.0.
+
 ## Next investigation improvements
 
 The [visual and identity evidence roadmap](VISUAL-IDENTITY.md) tracks image inspection, local image comparison, and account corroboration.

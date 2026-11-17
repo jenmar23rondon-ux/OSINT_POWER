@@ -2,7 +2,7 @@
 
 Package version remains **0.4.0**. This document describes how to run a workspace and how to record a reproducible check of the tree. It does not cut a release: do not bump `package.json`, do not create a git tag, and do not publish a GitHub release from this checklist.
 
-SQLite schema **v7** is unchanged by STIX export. Export only reads stored rows. Hypothesis and case tables are created when the database is opened, not when a bundle is exported.
+SQLite schema **v8** adds the `investigations` table when a database is opened. STIX export does not add a table and only reads stored rows. Hypothesis and case tables are also created on open, not when a bundle is exported.
 
 ## Install
 
@@ -94,7 +94,7 @@ A backup contains the scope, evidence, review history, phishing leads, and monit
 
 ## Schema migration
 
-Opening a database creates any missing v6 and v7 tables with `CREATE TABLE IF NOT EXISTS` and sets `user_version` to 7. Existing evidence, decisions, phishing rows, monitor rows, and jobs are not rewritten. v4, v5 and v6 databases gain the later tables on open. Pre-v0.3 runs still cannot be reconstructed as historical snapshots.
+Opening a database creates any missing v6, v7, and v8 tables with `CREATE TABLE IF NOT EXISTS` and sets `user_version` to 8. The v8 table is `investigations`. Existing evidence, decisions, phishing rows, monitor rows, and jobs are not rewritten. v4, v5, v6, and v7 databases gain the later tables on open. Pre-v0.3 runs still cannot be reconstructed as historical snapshots.
 
 STIX export does not add a table and does not change `user_version`. A failed export leaves the previous rows in place.
 

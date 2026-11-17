@@ -127,6 +127,34 @@ const messages = {
     "The folder contains too many files.",
     "Check at most 64 regular files per call.",
   ],
+  DOCUMENT_OUT_OF_SCOPE: [
+    "The image name is not in the workspace document scope.",
+    "Add the file basename to scope.documents, then run ocr-image --save again. The extracted text is still in this result.",
+  ],
+  DOCUMENT_REQUIRED: [
+    "Saving OCR text needs the document basename.",
+    "Pass document as the basename listed in scope.documents.",
+  ],
+  INVESTIGATION_NOT_FOUND: [
+    "No investigation exists with that id.",
+    "Run investigate --execute --target VALUE, then pass that id to --resume.",
+  ],
+  INVESTIGATION_ID_REQUIRED: [
+    "Resume needs an investigation id.",
+    "Pass --resume --id UUID from a previous investigate --execute result.",
+  ],
+  TARGET_REQUIRED: [
+    "The command needs a target.",
+    "Pass --target with a domain, email, username, or IP that is inside the workspace scope.",
+  ],
+  USERNAME_OUT_OF_SCOPE: [
+    "The username is not in this workspace.",
+    "Add it to scope.usernames or to a configured person's aliases.",
+  ],
+  OUT_OF_SCOPE: [
+    "The target is outside the configured scope.",
+    "Choose a domain, email, or IP the workspace already allows.",
+  ],
   ORIGINAL_MODIFIED: [
     "The original file changed while the privacy check was running.",
     "The command does not write to the original. Run it again on a stable file.",

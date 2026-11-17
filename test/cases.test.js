@@ -110,13 +110,19 @@ test("schema v7 adds hypothesis and case tables without rewriting evidence", (t)
     store.db.prepare("PRAGMA user_version").get().user_version,
     SCHEMA_VERSION,
   );
-  assert.equal(SCHEMA_VERSION, 7);
+  assert.equal(SCHEMA_VERSION, 8);
   const kept = store.db
     .prepare("SELECT value, last_seen FROM entities WHERE id=?")
     .get(id);
   assert.equal(kept.value, "kept.example.com");
   assert.equal(kept.last_seen, "2020-01-01T00:00:00.000Z");
-  for (const name of ["hypotheses", "cases", "case_members", "monitors"])
+  for (const name of [
+    "hypotheses",
+    "cases",
+    "case_members",
+    "monitors",
+    "investigations",
+  ])
     assert.equal(
       store.db
         .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?")
@@ -770,7 +776,7 @@ test(
     });
     await client.connect(transport);
     const names = (await client.listTools()).tools.map((tool) => tool.name);
-    assert.equal(names.length, 52);
+    assert.equal(names.length, 54);
     for (const name of [
       "create_hypothesis",
       "update_hypothesis",
