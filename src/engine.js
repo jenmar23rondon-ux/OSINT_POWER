@@ -22,6 +22,8 @@ import { HISTORICAL_ADAPTERS } from "./discovery.js";
 import { EXTERNAL_OSINT_SOURCES } from "./external-osint.js";
 import { DISCOVERED_IP_ADAPTERS } from "./adapter-kinds.js";
 import { collectPassiveSources } from "./passive-collect.js";
+import { runInvestigation } from "./investigate.js";
+import { listSources } from "./sources.js";
 
 const discoverySummary = (value) => {
   if (!value) return {};
@@ -406,6 +408,12 @@ export class Engine {
   }
   pipeline(target) {
     return collectPassiveSources(this, target);
+  }
+  investigate(input) {
+    return runInvestigation(this, input);
+  }
+  sources() {
+    return listSources(this);
   }
   next() {
     const domains = this.store.query({ type: "domain", limit: 1 }).total;

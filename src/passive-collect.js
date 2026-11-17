@@ -16,32 +16,14 @@ export function passiveAdaptersFor(target, scope) {
   );
 }
 
-export async function collectPassiveSources(engine, target) {
-  const adapters = passiveAdaptersFor(target, engine.scope).filter((name) =>
-    engine.config.enabledAdapters.includes(name),
-  );
-  const results = [];
+export function summarizePassive(engine, target, results) {
   const coverage_gaps = [];
-  for (const adapter of adapters) {
-    let result;
-    try {
-      result = await engine.run({ adapter, target });
-    } catch (error) {
-      result = {
-        adapter,
-        target,
-        status: "failed",
-        code: /^[A-Z][A-Z_0-9]+$/.test(error.message)
-          ? error.message
-          : "ADAPTER_ERROR",
-      };
-    }
-    results.push(result);
+  for (const result of results) {
     if (Array.isArray(result.coverage_gaps))
       coverage_gaps.push(...result.coverage_gaps);
     if (["failed", "deferred"].includes(result.status) && result.code)
       coverage_gaps.push({
-        source: adapter,
+        source: result.adapter,
         target: result.target ?? target,
         site: "",
         reason: gapReason(result.code),
@@ -65,7 +47,6 @@ export async function collectPassiveSources(engine, target) {
         ? "completed"
         : "partial",
     target,
-    results,
     coverage_gaps: coverage_gaps.slice(0, 200),
     correlation: {
       target,
@@ -74,4 +55,30 @@ export async function collectPassiveSources(engine, target) {
     },
     next_actions: engine.next(),
   };
+}
+
+export async function collectPassiveSources(engine, target, options = {}) {
+  const only = options.only ? new Set(options.only) : null;
+  const adapters = passiveAdaptersFor(target, engine.scope).filter(
+    (name) =>
+      engine.config.enabledAdapters.includes(name) && (!only || only.has(name)),
+  );
+  const results = [];
+  for (const adapter of adapters) {
+    let result;
+    try {
+      result = await engine.run({ adapter, target });
+    } catch (error) {
+      result = {
+        adapter,
+        target,
+        status: "failed",
+        code: /^[A-Z][A-Z_0-9]+$/.test(error.message)
+          ? error.message
+          : "ADAPTER_ERROR",
+      };
+    }
+    results.push(result);
+  }
+  return { results, ...summarizePassive(engine, target, results) };
 }

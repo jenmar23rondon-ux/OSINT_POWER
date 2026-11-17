@@ -13,7 +13,7 @@
   <a href="#quick-start">Quick start</a> · <a href="docs/WORKFLOWS.md">Seven workflows</a> · <a href="docs/AI.md">Connect AI</a> · <a href="docs/ADAPTERS.md">Adapters</a> · <a href="docs/ROADMAP.md">Roadmap</a>
 </p>
 
-OSINT POWER is an evidence-focused reconnaissance framework for scoped security assessments and research. It normalizes public-source observations, stores provenance in SQLite, and exposes a CLI and **51 MCP tools**. It works without a model or an AI API key.
+OSINT POWER is an evidence-focused reconnaissance framework for scoped security assessments and research. It normalizes public-source observations, stores provenance in SQLite, and exposes a CLI and **54 MCP tools**. It works without a model or an AI API key.
 
 **Status: v0.4.0, historical discovery and verifiable evidence packages.** Seven workflows include explicit budgets, source status and partial results. External binaries are installed separately. Live connectors and import bridges are distinguished in the matrix below.
 
@@ -204,6 +204,19 @@ node src/cli.js pipeline --target example.com
 
 `pipeline` and `passive` run every enabled passive adapter that matches the target. They deduplicate entities in the workspace, keep the source on each observation, and continue after a source fails. A missing key, rate limit, or source error is a coverage gap in the JSON result and the HTML report. It is not a negative finding. httpx is not part of that collection. A discovered IP or ASN never automatically expands active scope.
 
+`investigate` chooses the passive adapters for a domain, email, username, or IP. Without `--execute` it only plans. `--execute` collects. `--resume --id` retries sources that did not finish and returns a diff against the previous attempt. Absence is not removal. `sources` shows which adapters are enabled and which API key names are missing. It does not print key values.
+
+```bash
+node src/cli.js investigate --target example.com
+node src/cli.js investigate --target example.com --execute
+node src/cli.js investigate --resume --id INVESTIGATION_UUID
+node src/cli.js sources
+node src/cli.js report --format csv --output findings.csv
+node src/cli.js ocr-image --file note.txt --save
+```
+
+`ocr-image --save` stores the extracted text when the file's basename is listed in `scope.documents`. The HTML report adds an executive summary, an observation timeline, coverage gaps, and candidate links between an email, a username, a GitHub or Keybase profile, and a domain. Each link has a confidence score and an explanation. A shared handle is not a confirmed identity. The page is offline and does not use a CDN. CSV export uses the same finding columns as the JSON report.
+
 ## Integrations and actual support
 
 | Source                                                                                                         | Current support                                           | Requirements and limitations                                                                                                                                  |
@@ -289,6 +302,8 @@ Adapt registration to your host's format. See [AI integration](docs/AI.md) and t
 | `capabilities`                                 | Configured scope, adapters, workflows and limits                                                                |
 | `collect`                                      | One validated adapter/target pair                                                                               |
 | `passive_pipeline`                             | Sequential passive discovery with partial results                                                               |
+| `investigate`                                  | Passive plan, execute, or resume for a domain, email, username, or IP, with a diff                              |
+| `list_sources`                                 | Enabled adapters and missing API key names. Values are not shown                                                |
 | `import_findings`                              | Normalize a bounded supplied export                                                                             |
 | `query_findings`                               | Stable entity pages and provenance summary                                                                      |
 | `get_evidence`                                 | Untrusted observations for a specific entity                                                                    |

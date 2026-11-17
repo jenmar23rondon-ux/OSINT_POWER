@@ -27,6 +27,9 @@ import {
   SearchImageCopiesResult,
 } from "./visual-evidence.js";
 import { CorrelateOsintResult } from "./external-osint.js";
+import { CorrelationLink } from "./correlation.js";
+import { InvestigateResult } from "./investigate.js";
+import { SourceListResult } from "./sources.js";
 
 const text = z.string(),
   count = z.number().int().nonnegative(),
@@ -640,6 +643,32 @@ export const RESULT_SCHEMAS = {
         }),
       )
       .max(50),
+    executive_summary: row({
+      entities: count,
+      displayed_entities: count,
+      relationships: count,
+      sources: count,
+      coverage_gaps: count,
+      correlations: count,
+      correlations_truncated: z.boolean(),
+      http_services: count,
+      registrations: count,
+      narrative: text,
+    }),
+    timeline: z
+      .array(
+        row({
+          timestamp: text,
+          type: EntityType,
+          value: text,
+          source: text,
+          confidence: z.number(),
+        }),
+      )
+      .max(30),
+    correlations: z.array(CorrelationLink).max(50),
+    correlations_truncated: z.boolean(),
+    export_columns: z.array(text).length(9),
   }),
   export_evidence: BundleResult,
   list_review_queue: row({
@@ -711,6 +740,8 @@ export const RESULT_SCHEMAS = {
   compare_images: CompareImagesResult,
   search_image_copies: SearchImageCopiesResult,
   ocr_image: OcrImageResult,
+  investigate: InvestigateResult,
+  list_sources: SourceListResult,
 };
 
 const transient =
@@ -748,7 +779,8 @@ export function toolResponse(name, result, thrown = false) {
     ].includes(name) ||
     (name === "workflow" && result.mode === "execute") ||
     (name === "run_phishing_workflow" && result.mode === "execute") ||
-    (name === "run_monitor" && result.mode === "execute");
+    (name === "run_monitor" && result.mode === "execute") ||
+    (name === "investigate" && result.mode === "execute");
   const failed =
     thrown ||
     (collecting &&

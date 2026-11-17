@@ -10028,6 +10028,270 @@
                   ],
                   "additionalProperties": false
                 }
+              },
+              "executive_summary": {
+                "type": "object",
+                "properties": {
+                  "entities": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "displayed_entities": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "relationships": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "sources": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "coverage_gaps": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "correlations": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "correlations_truncated": {
+                    "type": "boolean"
+                  },
+                  "http_services": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "registrations": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "narrative": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "entities",
+                  "displayed_entities",
+                  "relationships",
+                  "sources",
+                  "coverage_gaps",
+                  "correlations",
+                  "correlations_truncated",
+                  "http_services",
+                  "registrations",
+                  "narrative"
+                ],
+                "additionalProperties": false
+              },
+              "timeline": {
+                "maxItems": 30,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "timestamp": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "domain",
+                        "ip",
+                        "url",
+                        "email",
+                        "username",
+                        "profile",
+                        "document",
+                        "metadata",
+                        "breach",
+                        "secret",
+                        "service",
+                        "unresolved",
+                        "company",
+                        "employee",
+                        "role",
+                        "technology",
+                        "place",
+                        "job",
+                        "mail_domain",
+                        "network",
+                        "asn"
+                      ]
+                    },
+                    "value": {
+                      "type": "string"
+                    },
+                    "source": {
+                      "type": "string"
+                    },
+                    "confidence": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "timestamp",
+                    "type",
+                    "value",
+                    "source",
+                    "confidence"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "correlations": {
+                "maxItems": 50,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "from_id": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "to_id": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "from_type": {
+                      "type": "string",
+                      "enum": [
+                        "domain",
+                        "ip",
+                        "url",
+                        "email",
+                        "username",
+                        "profile",
+                        "document",
+                        "metadata",
+                        "breach",
+                        "secret",
+                        "service",
+                        "unresolved",
+                        "company",
+                        "employee",
+                        "role",
+                        "technology",
+                        "place",
+                        "job",
+                        "mail_domain",
+                        "network",
+                        "asn"
+                      ]
+                    },
+                    "from_value": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 2048
+                    },
+                    "to_type": {
+                      "type": "string",
+                      "enum": [
+                        "domain",
+                        "ip",
+                        "url",
+                        "email",
+                        "username",
+                        "profile",
+                        "document",
+                        "metadata",
+                        "breach",
+                        "secret",
+                        "service",
+                        "unresolved",
+                        "company",
+                        "employee",
+                        "role",
+                        "technology",
+                        "place",
+                        "job",
+                        "mail_domain",
+                        "network",
+                        "asn"
+                      ]
+                    },
+                    "to_value": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 2048
+                    },
+                    "relation": {
+                      "type": "string",
+                      "enum": [
+                        "mailbox_on_domain",
+                        "shared_handle",
+                        "github_login",
+                        "github_commit_email",
+                        "github_profile_email",
+                        "gravatar_profile",
+                        "keybase_account"
+                      ]
+                    },
+                    "confidence": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "why": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 500
+                    },
+                    "sources": {
+                      "minItems": 1,
+                      "maxItems": 20,
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 80
+                      }
+                    },
+                    "candidate": {
+                      "type": "boolean",
+                      "const": true
+                    },
+                    "identity": {
+                      "type": "boolean",
+                      "const": false
+                    }
+                  },
+                  "required": [
+                    "from_id",
+                    "to_id",
+                    "from_type",
+                    "from_value",
+                    "to_type",
+                    "to_value",
+                    "relation",
+                    "confidence",
+                    "why",
+                    "sources",
+                    "candidate",
+                    "identity"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "correlations_truncated": {
+                "type": "boolean"
+              },
+              "export_columns": {
+                "minItems": 9,
+                "maxItems": 9,
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
               }
             },
             "required": [
@@ -10044,7 +10308,12 @@
               "by_target",
               "http_services",
               "coverage_gaps",
-              "registrations"
+              "registrations",
+              "executive_summary",
+              "timeline",
+              "correlations",
+              "correlations_truncated",
+              "export_columns"
             ],
             "additionalProperties": false
           },
@@ -19248,6 +19517,51 @@
               "network": {
                 "type": "boolean",
                 "const": false
+              },
+              "storage": {
+                "type": "object",
+                "properties": {
+                  "saved": {
+                    "type": "boolean"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "enum": [
+                      "not_requested",
+                      "stored",
+                      "DOCUMENT_OUT_OF_SCOPE"
+                    ]
+                  },
+                  "entity_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "observation_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "saved",
+                  "reason",
+                  "entity_id",
+                  "observation_id"
+                ],
+                "additionalProperties": false
               }
             },
             "required": [
@@ -19257,7 +19571,1132 @@
               "text",
               "text_truncated",
               "text_trust",
-              "network"
+              "network",
+              "storage"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "required": [
+      "schema_version",
+      "ok",
+      "execution_status",
+      "collection_status",
+      "coverage",
+      "retry",
+      "result"
+    ],
+    "additionalProperties": false
+  },
+  "investigate": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "schema_version": {
+        "type": "string",
+        "const": "0.4"
+      },
+      "ok": {
+        "type": "boolean"
+      },
+      "execution_status": {
+        "type": "string",
+        "enum": [
+          "succeeded",
+          "failed"
+        ]
+      },
+      "collection_status": {
+        "type": "string",
+        "enum": [
+          "completed",
+          "partial",
+          "failed",
+          "deferred",
+          "cancelled",
+          "not_applicable"
+        ]
+      },
+      "coverage": {
+        "type": "object",
+        "properties": {
+          "complete": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "complete",
+          "truncated"
+        ],
+        "additionalProperties": false
+      },
+      "retry": {
+        "type": "object",
+        "properties": {
+          "retryable": {
+            "type": "boolean"
+          },
+          "retry_after_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "retryable",
+          "retry_after_ms"
+        ],
+        "additionalProperties": false
+      },
+      "result": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "planned",
+                  "completed",
+                  "partial",
+                  "failed",
+                  "deferred"
+                ]
+              },
+              "id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "domain",
+                  "email",
+                  "username",
+                  "ip"
+                ]
+              },
+              "target": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 320
+              },
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "plan",
+                  "execute",
+                  "stored"
+                ]
+              },
+              "network": {
+                "type": "boolean"
+              },
+              "mutation": {
+                "type": "boolean"
+              },
+              "resumed": {
+                "type": "boolean"
+              },
+              "active_collection": {
+                "type": "boolean",
+                "const": false
+              },
+              "adapters": {
+                "maxItems": 40,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "mode": {
+                      "type": "string",
+                      "const": "passive"
+                    },
+                    "key_status": {
+                      "type": "string",
+                      "enum": [
+                        "missing",
+                        "present",
+                        "optional_missing",
+                        "optional_present",
+                        "not_required"
+                      ]
+                    },
+                    "missing_required_env": {
+                      "maxItems": 4,
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "missing_optional_env": {
+                      "maxItems": 4,
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "enabled",
+                    "mode",
+                    "key_status",
+                    "missing_required_env",
+                    "missing_optional_env"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "missing_keys": {
+                "maxItems": 20,
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "results": {
+                "maxItems": 40,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "adapter": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 80
+                    },
+                    "status": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 40
+                    },
+                    "target": {
+                      "type": "string",
+                      "maxLength": 320
+                    },
+                    "code": {
+                      "type": "string",
+                      "maxLength": 80
+                    },
+                    "run_id": {
+                      "type": "string",
+                      "maxLength": 80
+                    },
+                    "cached": {
+                      "type": "boolean"
+                    },
+                    "observations": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "inserted": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "repeated": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "truncated": {
+                      "type": "boolean"
+                    },
+                    "attempts": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "retry_after_ms": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "coverage_gaps": {
+                      "maxItems": 200,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "source": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 80
+                          },
+                          "target": {
+                            "type": "string",
+                            "maxLength": 320
+                          },
+                          "site": {
+                            "type": "string",
+                            "maxLength": 200
+                          },
+                          "reason": {
+                            "type": "string",
+                            "enum": [
+                              "rate_limited",
+                              "error",
+                              "missing_key",
+                              "unknown",
+                              "failed"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "source",
+                          "target",
+                          "site",
+                          "reason"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "next_actions": {
+                      "maxItems": 10,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "rank": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "action": {
+                            "type": "string"
+                          },
+                          "reason": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "rank",
+                          "action",
+                          "reason"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "adapter",
+                    "status"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "coverage_gaps": {
+                "maxItems": 200,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "source": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 80
+                    },
+                    "target": {
+                      "type": "string",
+                      "maxLength": 320
+                    },
+                    "site": {
+                      "type": "string",
+                      "maxLength": 200
+                    },
+                    "reason": {
+                      "type": "string",
+                      "enum": [
+                        "rate_limited",
+                        "error",
+                        "missing_key",
+                        "unknown",
+                        "failed"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "source",
+                    "target",
+                    "site",
+                    "reason"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "correlation": {
+                "type": "object",
+                "properties": {
+                  "target": {
+                    "type": "string"
+                  },
+                  "findings": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "sources": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "target",
+                  "findings",
+                  "sources"
+                ],
+                "additionalProperties": false
+              },
+              "links": {
+                "maxItems": 50,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "from_id": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "to_id": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "from_type": {
+                      "type": "string",
+                      "enum": [
+                        "domain",
+                        "ip",
+                        "url",
+                        "email",
+                        "username",
+                        "profile",
+                        "document",
+                        "metadata",
+                        "breach",
+                        "secret",
+                        "service",
+                        "unresolved",
+                        "company",
+                        "employee",
+                        "role",
+                        "technology",
+                        "place",
+                        "job",
+                        "mail_domain",
+                        "network",
+                        "asn"
+                      ]
+                    },
+                    "from_value": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 2048
+                    },
+                    "to_type": {
+                      "type": "string",
+                      "enum": [
+                        "domain",
+                        "ip",
+                        "url",
+                        "email",
+                        "username",
+                        "profile",
+                        "document",
+                        "metadata",
+                        "breach",
+                        "secret",
+                        "service",
+                        "unresolved",
+                        "company",
+                        "employee",
+                        "role",
+                        "technology",
+                        "place",
+                        "job",
+                        "mail_domain",
+                        "network",
+                        "asn"
+                      ]
+                    },
+                    "to_value": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 2048
+                    },
+                    "relation": {
+                      "type": "string",
+                      "enum": [
+                        "mailbox_on_domain",
+                        "shared_handle",
+                        "github_login",
+                        "github_commit_email",
+                        "github_profile_email",
+                        "gravatar_profile",
+                        "keybase_account"
+                      ]
+                    },
+                    "confidence": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "why": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 500
+                    },
+                    "sources": {
+                      "minItems": 1,
+                      "maxItems": 20,
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 80
+                      }
+                    },
+                    "candidate": {
+                      "type": "boolean",
+                      "const": true
+                    },
+                    "identity": {
+                      "type": "boolean",
+                      "const": false
+                    }
+                  },
+                  "required": [
+                    "from_id",
+                    "to_id",
+                    "from_type",
+                    "from_value",
+                    "to_type",
+                    "to_value",
+                    "relation",
+                    "confidence",
+                    "why",
+                    "sources",
+                    "candidate",
+                    "identity"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "links_truncated": {
+                "type": "boolean"
+              },
+              "diff": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "baseline": {
+                        "type": "string",
+                        "enum": [
+                          "none",
+                          "previous_investigation",
+                          "previous_attempt"
+                        ]
+                      },
+                      "baseline_id": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "added": {
+                        "maxItems": 50,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "observation_id": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "entity_id": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "domain",
+                                "ip",
+                                "url",
+                                "email",
+                                "username",
+                                "profile",
+                                "document",
+                                "metadata",
+                                "breach",
+                                "secret",
+                                "service",
+                                "unresolved",
+                                "company",
+                                "employee",
+                                "role",
+                                "technology",
+                                "place",
+                                "job",
+                                "mail_domain",
+                                "network",
+                                "asn"
+                              ]
+                            },
+                            "value": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 2048
+                            },
+                            "source": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80
+                            }
+                          },
+                          "required": [
+                            "observation_id",
+                            "entity_id",
+                            "type",
+                            "value",
+                            "source"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "absent": {
+                        "maxItems": 50,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "observation_id": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "entity_id": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "domain",
+                                "ip",
+                                "url",
+                                "email",
+                                "username",
+                                "profile",
+                                "document",
+                                "metadata",
+                                "breach",
+                                "secret",
+                                "service",
+                                "unresolved",
+                                "company",
+                                "employee",
+                                "role",
+                                "technology",
+                                "place",
+                                "job",
+                                "mail_domain",
+                                "network",
+                                "asn"
+                              ]
+                            },
+                            "value": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 2048
+                            },
+                            "source": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80
+                            }
+                          },
+                          "required": [
+                            "observation_id",
+                            "entity_id",
+                            "type",
+                            "value",
+                            "source"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "unchanged": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "truncated": {
+                        "type": "boolean"
+                      },
+                      "note": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 500
+                      }
+                    },
+                    "required": [
+                      "baseline",
+                      "baseline_id",
+                      "added",
+                      "absent",
+                      "unchanged",
+                      "truncated",
+                      "note"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "code": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "limitations": {
+                "maxItems": 12,
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "next_actions": {
+                "maxItems": 10,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "rank": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "action": {
+                      "type": "string"
+                    },
+                    "reason": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "rank",
+                    "action",
+                    "reason"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "status",
+              "id",
+              "kind",
+              "target",
+              "mode",
+              "network",
+              "mutation",
+              "resumed",
+              "active_collection",
+              "adapters",
+              "missing_keys",
+              "results",
+              "coverage_gaps",
+              "correlation",
+              "links",
+              "links_truncated",
+              "diff",
+              "limitations",
+              "next_actions"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "required": [
+      "schema_version",
+      "ok",
+      "execution_status",
+      "collection_status",
+      "coverage",
+      "retry",
+      "result"
+    ],
+    "additionalProperties": false
+  },
+  "list_sources": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "schema_version": {
+        "type": "string",
+        "const": "0.4"
+      },
+      "ok": {
+        "type": "boolean"
+      },
+      "execution_status": {
+        "type": "string",
+        "enum": [
+          "succeeded",
+          "failed"
+        ]
+      },
+      "collection_status": {
+        "type": "string",
+        "enum": [
+          "completed",
+          "partial",
+          "failed",
+          "deferred",
+          "cancelled",
+          "not_applicable"
+        ]
+      },
+      "coverage": {
+        "type": "object",
+        "properties": {
+          "complete": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "complete",
+          "truncated"
+        ],
+        "additionalProperties": false
+      },
+      "retry": {
+        "type": "object",
+        "properties": {
+          "retryable": {
+            "type": "boolean"
+          },
+          "retry_after_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "retryable",
+          "retry_after_ms"
+        ],
+        "additionalProperties": false
+      },
+      "result": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "const": "completed"
+              },
+              "network": {
+                "type": "boolean",
+                "const": false
+              },
+              "mutation": {
+                "type": "boolean",
+                "const": false
+              },
+              "cache_ttl_seconds": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "native_request_rate": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "retry": {
+                "type": "object",
+                "properties": {
+                  "attempts": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "min_interval_ms": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "backoff": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 300
+                  }
+                },
+                "required": [
+                  "attempts",
+                  "min_interval_ms",
+                  "backoff"
+                ],
+                "additionalProperties": false
+              },
+              "adapters": {
+                "maxItems": 40,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "mode": {
+                      "type": "string",
+                      "enum": [
+                        "passive",
+                        "active"
+                      ]
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "api",
+                        "binary",
+                        "dns"
+                      ]
+                    },
+                    "description": {
+                      "type": "string",
+                      "maxLength": 300
+                    },
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "applies_to": {
+                      "maxItems": 4,
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "domain",
+                          "email",
+                          "username",
+                          "ip"
+                        ]
+                      }
+                    },
+                    "active_only": {
+                      "type": "boolean"
+                    },
+                    "required_env": {
+                      "maxItems": 4,
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "optional_env": {
+                      "maxItems": 4,
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "missing_required_env": {
+                      "maxItems": 4,
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "missing_optional_env": {
+                      "maxItems": 4,
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "key_status": {
+                      "type": "string",
+                      "enum": [
+                        "missing",
+                        "present",
+                        "optional_missing",
+                        "optional_present",
+                        "not_required"
+                      ]
+                    },
+                    "cached_when_completed": {
+                      "type": "boolean"
+                    },
+                    "historical": {
+                      "type": "boolean"
+                    },
+                    "rate_limit": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "host": {
+                              "type": "string"
+                            },
+                            "max_requests": {
+                              "type": "integer",
+                              "exclusiveMinimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "window_ms": {
+                              "type": "integer",
+                              "exclusiveMinimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "min_interval_ms": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "host",
+                            "max_requests",
+                            "window_ms",
+                            "min_interval_ms"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "mode",
+                    "kind",
+                    "description",
+                    "enabled",
+                    "applies_to",
+                    "active_only",
+                    "required_env",
+                    "optional_env",
+                    "missing_required_env",
+                    "missing_optional_env",
+                    "key_status",
+                    "cached_when_completed",
+                    "historical",
+                    "rate_limit"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "missing_keys": {
+                "maxItems": 20,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "adapter": {
+                      "type": "string"
+                    },
+                    "env": {
+                      "minItems": 1,
+                      "maxItems": 4,
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "adapter",
+                    "env"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "limitations": {
+                "maxItems": 8,
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "status",
+              "network",
+              "mutation",
+              "cache_ttl_seconds",
+              "native_request_rate",
+              "retry",
+              "adapters",
+              "missing_keys",
+              "limitations"
             ],
             "additionalProperties": false
           },

@@ -87,6 +87,9 @@ import {
   ocrImage,
 } from "./visual-evidence.js";
 import { ProbeHttpInput, probeDiscoveredHosts } from "./http-probe.js";
+import { InvestigateInput, runInvestigation } from "./investigate.js";
+import { persistOcr } from "./ocr-store.js";
+import { listSources } from "./sources.js";
 
 export function createServer(engine) {
   const server = new McpServer({ name: "osint-power", version: "0.4.0" });
@@ -164,9 +167,17 @@ export function createServer(engine) {
   );
   register(
     "ocr_image",
-    "Extract untrusted text from one supplied image with locally installed Tesseract. Supports installed English or Spanish language data. Reads no file paths and uses no network.",
+    "Extract untrusted text from one supplied image with locally installed Tesseract. Supports installed English or Spanish language data. Reads no file paths and uses no network. save=true stores the text when document is a basename listed in scope.documents.",
     OcrImageInput,
-    ocrImage,
+    async (input, signal) => {
+      if (input.save && !input.document) throw new Error("DOCUMENT_REQUIRED");
+      const result = await ocrImage(input, signal);
+      if (!input.save) return result;
+      return {
+        ...result,
+        storage: persistOcr(engine.store, engine.scope, result, input.document),
+      };
+    },
   );
   register(
     "capabilities",
@@ -506,6 +517,21 @@ export function createServer(engine) {
     "Export one case with the existing read-only STIX 2.1 exporter. Hypothesis text is added as a note, not an indicator or a finding. Suspected leads stay suspected. Does not collect.",
     CaseIdInput,
     (input) => exportCaseStix(engine.store, engine.scope, input),
+  );
+  register(
+    "investigate",
+    "Plan or run the passive adapters for one domain, email, username, or IP. Resume retries sources that did not complete and returns a diff against the previous attempt. Active probes stay off. Absence in a diff is not removal. Candidate links are not confirmed identities.",
+    InvestigateInput,
+    (input) => runInvestigation(engine, input),
+    false,
+    true,
+    false,
+  );
+  register(
+    "list_sources",
+    "List every adapter, whether it is enabled, and which required or optional API keys are missing. Does not print key values, contact a source, or change configuration.",
+    z.object({}).strict(),
+    () => listSources(engine),
   );
   register(
     "show_entity",
