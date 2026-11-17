@@ -356,7 +356,6 @@ test("OCR text is stored only for a scoped document basename", (t) => {
 
 test("schema v8 adds investigations without rewriting evidence", (t) => {
   const directory = mkdtempSync(join(tmpdir(), "osint-investigate-"));
-  t.after(() => rmSync(directory, { recursive: true, force: true }));
   const path = join(directory, "state.sqlite");
   const legacy = new DatabaseSync(path);
   legacy.exec(
@@ -366,7 +365,20 @@ test("schema v8 adds investigations without rewriting evidence", (t) => {
   );
   legacy.close();
   const store = new Store(path);
-  t.after(() => store.close());
+  t.after(() => {
+    try {
+      store.db.exec("PRAGMA wal_checkpoint(TRUNCATE)");
+    } catch {
+      // The handle may already be closed.
+    }
+    store.close();
+    rmSync(directory, {
+      recursive: true,
+      force: true,
+      maxRetries: 5,
+      retryDelay: 200,
+    });
+  });
   assert.equal(
     store.db.prepare("PRAGMA user_version").get().user_version,
     SCHEMA_VERSION,
@@ -388,7 +400,14 @@ test("schema v8 adds investigations without rewriting evidence", (t) => {
 
 test("CLI investigate, sources, and CSV stay local", (t) => {
   const directory = mkdtempSync(join(tmpdir(), "osint-investigate-cli-"));
-  t.after(() => rmSync(directory, { recursive: true, force: true }));
+  t.after(() =>
+    rmSync(directory, {
+      recursive: true,
+      force: true,
+      maxRetries: 5,
+      retryDelay: 200,
+    }),
+  );
   const config = join(directory, "config.json");
   writeFileSync(
     config,
