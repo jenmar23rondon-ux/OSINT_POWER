@@ -22,6 +22,11 @@
             "type": "string",
             "minLength": 4,
             "maxLength": 2796204
+          },
+          "source_url": {
+            "type": "string",
+            "maxLength": 2048,
+            "format": "uri"
           }
         },
         "required": [

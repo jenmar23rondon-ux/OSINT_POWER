@@ -81,7 +81,32 @@ node src/cli.js search-image-copies --file .\reference.jpg --dir .\reviewed-imag
 
 The CLI compares the reference with up to 24 JPEG, PNG, WebP, or TIFF files in the supplied folder. It scans one folder level, checks at most 256 entries, and returns basenames for matches and rejected candidates. Put the reference outside that folder to avoid a self-match. The per-file limit is 16 MiB.
 
-MCP `search_image_copies` accepts `query_base64` and an array of up to eight `{id, data_base64}` candidates. Pass image bytes and short unique labels. The limit is 2 MiB per image and about 8 MiB before base64 encoding per call. The tool reads no filesystem paths.
+To attach reviewed page links, add `--manifest .\sources.json` to the CLI command. The manifest maps exact basenames in the supplied folder to source pages.
+
+```json
+[
+  {
+    "file": "candidate.jpg",
+    "source_url": "https://example.com/gallery/photo-12"
+  }
+]
+```
+
+MCP `search_image_copies` accepts `query_base64` and an array of up to eight `{id, data_base64, source_url?}` candidates. Pass image bytes and short unique labels. The limit is 2 MiB per image and about 8 MiB before base64 encoding per call. The tool reads no filesystem paths.
+
+Matching images with a link include `source_status: "supplied_unverified"`. HTTP and HTTPS links are treated as labels. The search strips query strings and fragments and rejects embedded credentials. Page addresses are supplied by the operator. Image comparison verifies the supplied bytes and makes no claim about the current page content or account ownership.
+
+### Verify a copy at an external image URL
+
+With `network: true` in your workspace configuration, supply one direct public HTTPS image URL that you have reviewed. Replace the example URL with the one you want to check.
+
+```powershell
+node src/cli.js verify-photo-source --file .\reference.jpg --image-url https://example.com/images/photo.jpg --approve-source
+```
+
+The command downloads the candidate image and compares it with the reference on your machine. It reports the image URL, retrieval time, both SHA-256 digests, and an exact, perceptual, or crop result. The reference stays local. The command accepts JPEG, PNG, WebP, and TIFF responses up to 2 MiB or your workspace byte limit, whichever is smaller. Use a direct link without redirects, credentials, or query parameters.
+
+An exact match establishes that the supplied URL served identical bytes during the check. A resize or crop is a candidate for review. Page URLs in the offline manifest still carry `supplied_unverified`. The external check handles one image URL per operator-run command.
 
 Results rank exact copies first, then similar images and common crop candidates. The search compares the composition of the images and returns results without network access or database writes. Review perceptual matches as possible copies. They establish neither identity nor who posted an image. Searches run one at a time and time out after 45 seconds.
 

@@ -1,4 +1,24 @@
 const messages = {
+  PHOTO_SOURCE_APPROVAL_REQUIRED: [
+    "This command needs explicit approval to fetch the supplied image.",
+    "Review the direct image URL and rerun with --approve-source.",
+  ],
+  INVALID_REMOTE_PHOTO_URL: [
+    "The supplied image URL is invalid.",
+    "Use a direct public HTTPS image URL without credentials, a query string, or a fragment.",
+  ],
+  PHOTO_SOURCE_HTTP_REJECTED: [
+    "The image URL did not return HTTP 200.",
+    "Use a direct public image URL that works without redirects or login.",
+  ],
+  PHOTO_SOURCE_NOT_IMAGE: [
+    "The URL did not return a supported image response.",
+    "Use a direct JPEG, PNG, WebP, or TIFF URL.",
+  ],
+  PHOTO_SOURCE_TOO_LARGE: [
+    "The remote image exceeds the download limit.",
+    "Compare a smaller reviewed copy or use the local file comparison.",
+  ],
   INVALID_INPUT: [
     "An argument is missing or invalid.",
     "Run node src/cli.js help and check the command arguments.",

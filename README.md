@@ -38,7 +38,7 @@ node src/cli.js privacy-check-image --file my-photo.jpg --scrub --output my-phot
 
 Use `compare-images` for local perceptual comparison and `ocr-image` for text extraction with installed Tesseract language data. [Commands and limits](docs/VISUAL-IDENTITY.md#compare-images-and-extract-text)
 
-Use `search-image-copies` to look for exact, resized, or cropped copies in a local image folder. AI clients can compare supplied images with `search_image_copies` over MCP. [Photo-copy search](docs/VISUAL-IDENTITY.md#find-copies-in-a-collection)
+Use `search-image-copies` to look for exact, resized, or cropped copies in a local image folder. An optional `--manifest` records supplied page links as unverified labels and does not fetch them. AI clients can pass the same optional `source_url` to `search_image_copies`. With network enabled, `verify-photo-source --approve-source` downloads one reviewed direct HTTPS image and compares it locally. The reference stays on disk. [Photo-copy search](docs/VISUAL-IDENTITY.md#find-copies-in-a-collection)
 
 Use `timeline` or MCP `temporal_graph` to read stored DNS, HTTP, and Wayback relationships for a host or reverse DNS history for an IP. Set the observation window and a knowledge cutoff to reconstruct what the workspace knew at that time. [Temporal graph commands and examples](docs/OPERATIONS.md#temporal-network-graph)
 

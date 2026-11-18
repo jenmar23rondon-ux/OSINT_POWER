@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+`search-image-copies --manifest` and MCP `search_image_copies` can attach a supplied page link to a local image copy. Matching images report `source_status: "supplied_unverified"`. Query strings and fragments are removed, and embedded credentials are rejected. The link is a label. The command does not fetch it and does not add an MCP tool. The tool count stays 54.
+
+`verify-photo-source` compares the local reference with one direct public HTTPS image. The operator must pass `--approve-source`, and `network` must be enabled. The download checks both DNS families, pins the address, rejects redirects and credentials, and stops at the provider quota or the byte limit. A retrieved image is `source_status: "image_retrieved"`. A manifest page link stays `supplied_unverified`. This is whole-image comparison. It does not recognize faces or search for people.
+
 `investigate` plans or runs the passive adapters for one domain, email, username, or IP. `--resume --id` retries sources that did not complete and diffs that attempt against the previous snapshot. Absence in the diff is not removal. Active probes stay off. `sources` lists every adapter, whether it is enabled, and which required or optional API key names are missing. Key values are not printed. Completed collections still use the workspace TTL cache. HTTP 429 and 5xx still retry with backoff and Retry-After. Historical certificate and archive cursors are not served from that cache.
 
 Candidate links connect an email to its domain, a mailbox local part to a username, and a username to a public GitHub or Keybase profile. Each link has a confidence score and a sentence that explains the rule. A shared handle stays a candidate. The offline HTML report adds an executive summary, an observation timeline, and that candidate graph. The page does not load a script, font, or data from a CDN. `report --format csv` uses the same finding columns as the JSON report. STIX export still uses the stored in-scope entities and does not promote candidate links.

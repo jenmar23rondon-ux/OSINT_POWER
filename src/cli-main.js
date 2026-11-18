@@ -50,6 +50,7 @@ import { investigationGraph } from "./graph-export.js";
 import { temporalGraph } from "./temporal-graph.js";
 import { inspectImageFile } from "./image-forensics.js";
 import { privacyCheckCommand } from "./image-privacy.js";
+import { verifyPhotoSource } from "./photo-source.js";
 import {
   compareImageFiles,
   ocrImageFile,
@@ -67,7 +68,9 @@ const HELP = {
       "privacy-check-image --file PATH | --dir PATH [--scrub --output PATH] [--backend builtin|exiftool|mat2] (own photos; coordinates are not stored)",
     "compare-images": "compare-images --file LEFT --other RIGHT",
     "search-image-copies":
-      "search-image-copies --file REFERENCE --dir LOCAL_COLLECTION",
+      "search-image-copies --file REFERENCE --dir LOCAL_COLLECTION [--manifest SOURCES_JSON]",
+    "verify-photo-source":
+      "verify-photo-source --file REFERENCE --image-url HTTPS_URL --approve-source",
     "probe-http":
       "probe-http --target example.com --probe-http --authorized [--max-targets 1-10] (ProjectDiscovery httpx; off unless both flags are set)",
     "ocr-image":
@@ -179,6 +182,7 @@ try {
       resume: { type: "boolean", default: false },
       "probe-http": { type: "boolean", default: false },
       authorized: { type: "boolean", default: false },
+      "approve-source": { type: "boolean", default: false },
       ...Object.fromEntries(
         [
           "config",
@@ -187,6 +191,8 @@ try {
           "target",
           "file",
           "dir",
+          "manifest",
+          "image-url",
           "backend",
           "other",
           "language",
@@ -244,6 +250,13 @@ try {
     throw new Error("CHALLENGE_REQUIRES_ASSET_ID");
   if (v.restart && command !== "run")
     throw new Error("RESTART_ONLY_FOR_COLLECTION");
+  if (v.manifest !== undefined && command !== "search-image-copies")
+    throw new Error("UNEXPECTED_ARGUMENT");
+  if (
+    (v["approve-source"] || v["image-url"] !== undefined) &&
+    command !== "verify-photo-source"
+  )
+    throw new Error("UNEXPECTED_ARGUMENT");
   if (
     ((v.scrub || v.backend) && command !== "privacy-check-image") ||
     (v.dir && !["privacy-check-image", "search-image-copies"].includes(command))
@@ -299,7 +312,7 @@ try {
   } else if (command === "compare-images")
     result = await compareImageFiles(v.file, v.other);
   else if (command === "search-image-copies")
-    result = await searchImageDirectory(v.file, v.dir);
+    result = await searchImageDirectory(v.file, v.dir, v.manifest);
   else if (command === "ocr-image") {
     const extracted = await ocrImageFile(v.file, v.language);
     if (!v.save) result = extracted;
@@ -394,6 +407,12 @@ try {
       ...(v.cursor ? { cursor: v.cursor } : {}),
     };
     if (command === "capabilities") result = engine.capabilities();
+    else if (command === "verify-photo-source")
+      result = await verifyPhotoSource(engine, {
+        file: v.file,
+        imageUrl: v["image-url"],
+        approved: v["approve-source"],
+      });
     else if (command === "doctor")
       result = await doctor(engine, { probe: !v["skip-probes"] });
     else if (command === "health") result = engine.providers.health();
