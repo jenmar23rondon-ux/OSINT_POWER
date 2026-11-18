@@ -68,7 +68,15 @@ export function sourceFamily(source, evidence = {}) {
     ].includes(name)
   )
     return "aggregated_unknown";
-  if (["dnsx", "mx"].includes(name)) return "dns";
+  if (["dnsx", "mx", "doh"].includes(name)) return "dns";
+  if (["otx", "hackertarget", "securitytrails", "urlscan"].includes(name))
+    return "passive_dns";
+  if (["virustotal", "shodan-internetdb", "emailrep"].includes(name))
+    return "vendor_report";
+  if (["gravatar", "keybase", "holehe", "social-analyzer"].includes(name))
+    return "account_enumeration";
+  if (name === "domain-rdap") return "registry_or_routing";
+  if (["github-keys", "github-events"].includes(name)) return "public_profile";
   if (name === "httpx" || name === "naabu") return "direct_observation";
   if (["hibp", "dehashed", "leakcheck"].includes(name)) return "breach_catalog";
   if (["rdap", "routing"].includes(name)) return "registry_or_routing";

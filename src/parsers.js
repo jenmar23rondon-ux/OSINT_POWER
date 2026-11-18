@@ -5,6 +5,11 @@ import { domain, normalized } from "./scope.js";
 import { parseBusiness, BreachSummary } from "./context.js";
 import { readMaigretReport, readSpiderFootReport } from "./external-osint.js";
 import {
+  readHoleheReport,
+  readSocialAnalyzerReport,
+} from "./account-imports.js";
+import { PASSIVE_API_ADAPTERS, parsePassiveApi } from "./passive-sources.js";
+import {
   decodeDiscovery,
   archiveTimestamp,
   HISTORICAL_ADAPTERS,
@@ -46,6 +51,13 @@ const evidenceKeys = new Set([
   "title",
   "certificate_cn",
   "certificate_issuer",
+  "webserver",
+  "cdn",
+  "site_name",
+  "key_id",
+  "dns_type",
+  "cves",
+  "profiles",
   "credential_kind",
   "provider",
   "public_company",
@@ -155,6 +167,7 @@ export function parse(adapter, text, scope, maxRecords = 2000, context = {}) {
   let truncated = false;
   let discovery;
   let crtsh_counts;
+  const coverage_gaps = [];
   const emit = (
     type,
     value,
@@ -294,6 +307,7 @@ export function parse(adapter, text, scope, maxRecords = 2000, context = {}) {
         const name = value.trim();
         if (
           !name ||
+          /\s/u.test(name) ||
           isIP(name) ||
           /^[^\s@]+@[^\s@]+$/.test(name) ||
           /^[a-z][a-z\d+.-]*:\/\/\S+$/i.test(name) ||
@@ -356,6 +370,17 @@ export function parse(adapter, text, scope, maxRecords = 2000, context = {}) {
         invalid++;
         continue;
       }
+      const ipValue = [
+        r.ip,
+        r.host_ip,
+        ...(Array.isArray(r.a) ? r.a : []),
+      ].find((value) => typeof value === "string" && isIP(value));
+      const cdn =
+        typeof r.cdn_name === "string" && r.cdn_name
+          ? r.cdn_name
+          : r.cdn === true
+            ? "cdn"
+            : "";
       emit(
         "url",
         url,
@@ -365,9 +390,22 @@ export function parse(adapter, text, scope, maxRecords = 2000, context = {}) {
           title: String(r.title ?? "").slice(0, 200),
           certificate_cn: String(r.tls?.subject_cn ?? "").slice(0, 200),
           certificate_issuer: String(r.tls?.issuer_cn ?? "").slice(0, 200),
+          ...(typeof r.webserver === "string" && r.webserver
+            ? { webserver: r.webserver.slice(0, 200) }
+            : {}),
+          ...(ipValue ? { ip: ipValue } : {}),
+          ...(cdn ? { cdn: String(cdn).slice(0, 80) } : {}),
         },
         0.8,
       );
+      if (ipValue) {
+        try {
+          const host = new URL(normalized("url", url)).hostname;
+          emit("ip", ipValue, { host }, 0.7);
+        } catch {
+          /* The URL row was already counted as invalid. */
+        }
+      }
     }
   } else if (adapter === "naabu") {
     for (const r of records(text)) {
@@ -413,6 +451,21 @@ export function parse(adapter, text, scope, maxRecords = 2000, context = {}) {
     );
     skipped += stats.skipped;
     invalid += stats.invalid;
+  } else if (adapter === "holehe") {
+    const stats = readHoleheReport(text, scope, context.target, emit);
+    skipped += stats.skipped;
+    invalid += stats.invalid;
+    coverage_gaps.push(...stats.coverage_gaps);
+  } else if (adapter === "social-analyzer") {
+    const stats = readSocialAnalyzerReport(text, scope, emit);
+    skipped += stats.skipped;
+    invalid += stats.invalid;
+    coverage_gaps.push(...stats.coverage_gaps);
+  } else if (PASSIVE_API_ADAPTERS.has(adapter)) {
+    const stats = parsePassiveApi(adapter, text, scope, context, emit);
+    skipped += stats.skipped;
+    invalid += stats.invalid;
+    coverage_gaps.push(...stats.coverage_gaps);
   } else if (adapter === "whatsmyname") {
     for (const r of records(text)) {
       if (
@@ -656,6 +709,7 @@ export function parse(adapter, text, scope, maxRecords = 2000, context = {}) {
     skipped,
     invalid,
     truncated,
+    coverage_gaps,
     ...(crtsh_counts ? { crtsh_counts } : {}),
     ...(discovery ? { discovery } : {}),
   };

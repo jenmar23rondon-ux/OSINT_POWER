@@ -1,6 +1,7 @@
 import { WorkflowInput } from "./schema.js";
 import { runWorkflow } from "./workflows.js";
 import { ADAPTERS } from "./adapters.js";
+import { DISCOVERED_IP_ADAPTERS } from "./adapter-kinds.js";
 import { hash } from "./store.js";
 import { sourceMetrics } from "./quality.js";
 import { z } from "zod";
@@ -150,7 +151,7 @@ export async function planInvestigation(engine, input) {
     let eligibility = step.status;
     try {
       if (!(
-        ["rdap", "routing"].includes(step.adapter) &&
+        DISCOVERED_IP_ADAPTERS.includes(step.adapter) &&
         engine.store.ipHost(step.target, engine.scope)
       ))
         engine.scope.target(step.adapter, step.target);

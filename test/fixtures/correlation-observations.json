@@ -1,0 +1,63 @@
+[
+  {
+    "type": "email",
+    "value": "dev@example.com",
+    "source": "github-events",
+    "confidence": 0.55,
+    "evidence": {
+      "username": "example-researcher",
+      "provider": "github",
+      "verification": "public_event_email_mailbox_unknown"
+    }
+  },
+  {
+    "type": "username",
+    "value": "example-researcher",
+    "source": "github-profile",
+    "confidence": 0.6,
+    "evidence": {}
+  },
+  {
+    "type": "profile",
+    "value": "https://github.com/example-researcher",
+    "source": "github-profile",
+    "confidence": 0.6,
+    "evidence": {
+      "username": "example-researcher",
+      "provider": "github",
+      "verification": "account_exists_identity_unverified"
+    }
+  },
+  {
+    "type": "email",
+    "value": "alex@example.com",
+    "source": "manual",
+    "confidence": 0.4,
+    "evidence": {}
+  },
+  {
+    "type": "username",
+    "value": "alex",
+    "source": "manual",
+    "confidence": 0.25,
+    "evidence": {}
+  },
+  {
+    "type": "profile",
+    "value": "https://gravatar.com/alex",
+    "source": "gravatar",
+    "confidence": 0.45,
+    "evidence": {
+      "account": "alex@example.com",
+      "provider": "gravatar",
+      "verification": "profile_claim_identity_unverified"
+    }
+  },
+  {
+    "type": "domain",
+    "value": "example.com",
+    "source": "crtsh",
+    "confidence": 0.7,
+    "evidence": {}
+  }
+]

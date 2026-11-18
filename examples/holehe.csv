@@ -1,0 +1,5 @@
+name,domain,rateLimit,exists,emailrecovery,phoneNumber,others,error,email
+twitter,twitter.com,False,True,secret-recovery,secret-phone,secret-other,False,alex@example.com
+instagram,instagram.com,True,False,,,,False,alex@example.com
+spotify,spotify.com,False,False,,,,Request failed,alex@example.com
+github,github.com,False,False,,,,False,alex@example.com

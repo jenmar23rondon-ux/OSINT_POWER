@@ -14,11 +14,21 @@
         "eng",
         "spa"
       ]
+    },
+    "save": {
+      "default": false,
+      "type": "boolean"
+    },
+    "document": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 240
     }
   },
   "required": [
     "data_base64",
-    "language"
+    "language",
+    "save"
   ],
   "additionalProperties": false
 }

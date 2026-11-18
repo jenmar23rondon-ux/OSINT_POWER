@@ -50,10 +50,18 @@ const PRODUCERS = {
     "theharvester",
     "wayback",
     "dnsx",
+    "domain-rdap",
+    "doh",
+    "otx",
+    "hackertarget",
+    "urlscan",
+    "securitytrails",
+    "virustotal",
+    "shodan-internetdb",
   ],
-  host: ["dnsx"],
+  host: ["dnsx", "doh"],
   certificate: ["crtsh", "certspotter", "httpx"],
-  dns: ["dnsx", "mx"],
+  dns: ["dnsx", "mx", "doh"],
   lookalike: ["phishing"],
   exposure: ["naabu", "httpx", "hibp"],
 };
@@ -463,7 +471,7 @@ export function assetsFromObservations(
         entity_ids: [obs.entity_id],
       });
     }
-    if (obs.source === "dnsx" && obs.type === "ip") {
+    if (["dnsx", "doh"].includes(obs.source) && obs.type === "ip") {
       const family = isIP(obs.value) === 6 ? "AAAA" : "A";
       const host = String(evidence.host ?? "");
       pushAsset(map, {
@@ -484,7 +492,10 @@ export function assetsFromObservations(
           entity_ids: [obs.entity_id],
         });
     }
-    if (obs.source === "mx" && obs.type === "mail_domain") {
+    if (
+      (obs.source === "mx" || obs.source === "doh") &&
+      obs.type === "mail_domain"
+    ) {
       for (const record of evidence.mx ?? []) {
         const [priority, exchange] = String(record).split(" ");
         if (!exchange) continue;
@@ -527,6 +538,12 @@ export function assetsFromObservations(
           url: obs.value,
           status: Number(evidence.status ?? 0),
           technology: [...(evidence.technology ?? [])].map(String).sort(),
+          ...(evidence.title ? { title: String(evidence.title) } : {}),
+          ...(evidence.webserver
+            ? { webserver: String(evidence.webserver) }
+            : {}),
+          ...(evidence.ip ? { ip: String(evidence.ip) } : {}),
+          ...(evidence.cdn ? { cdn: String(evidence.cdn) } : {}),
         },
         observation_ids: [obs.observation_id],
         entity_ids: [obs.entity_id],

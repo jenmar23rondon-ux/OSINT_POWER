@@ -20,6 +20,10 @@ import { Jobs } from "./jobs.js";
 import { capture, recordSource, mirrorRun } from "./state.js";
 import { HISTORICAL_ADAPTERS } from "./discovery.js";
 import { EXTERNAL_OSINT_SOURCES } from "./external-osint.js";
+import { DISCOVERED_IP_ADAPTERS } from "./adapter-kinds.js";
+import { collectPassiveSources } from "./passive-collect.js";
+import { runInvestigation } from "./investigate.js";
+import { listSources } from "./sources.js";
 
 const discoverySummary = (value) => {
   if (!value) return {};
@@ -52,7 +56,7 @@ export class Engine {
     return next;
   }
   import(input) {
-    const { adapter, data, observed_at, source_utc_offset } =
+    const { adapter, data, observed_at, source_utc_offset, target } =
       ImportInput.parse(input);
     if (Buffer.byteLength(data) > this.config.limits.maxBytes)
       throw new Error("IMPORT_TOO_LARGE");
@@ -67,9 +71,9 @@ export class Engine {
         data,
         this.scope,
         this.config.limits.maxRecords,
-        { observed_at, source_utc_offset },
+        { observed_at, source_utc_offset, target },
       );
-      const { items, discovery, ...stats } = result;
+      const { items, discovery, coverage_gaps = [], ...stats } = result;
       const summary = {
         run_id: id,
         status: stats.invalid || stats.truncated ? "partial" : "completed",
@@ -82,6 +86,9 @@ export class Engine {
           collector_version: "external_version_unknown",
         }),
         ...stats,
+        ...(coverage_gaps.length
+          ? { coverage_gaps, coverage_complete: false }
+          : {}),
         ...(Object.hasOwn(EXTERNAL_OSINT_SOURCES, adapter)
           ? { coverage_complete: false }
           : {}),
@@ -122,7 +129,7 @@ export class Engine {
     if (restart && !historical)
       throw new Error("RESTART_REQUIRES_DISCOVERY_ADAPTER");
     const relatedHost =
-      ["rdap", "routing"].includes(adapter) && isIP(raw)
+      DISCOVERED_IP_ADAPTERS.includes(adapter) && isIP(raw)
         ? this.store.ipHost(raw, this.scope)
         : null;
     const target = relatedHost ? raw : this.scope.target(adapter, raw);
@@ -304,7 +311,7 @@ export class Engine {
           this.config.limits.maxRecords,
           { target, relatedHost },
         );
-      const { items, discovery, ...stats } = parsed;
+      const { items, discovery, coverage_gaps = [], ...stats } = parsed;
       const advanceCursor = historical && !stats.invalid && !stats.truncated;
       const nextCursor =
         discovery?.next_cursor ??
@@ -356,6 +363,9 @@ export class Engine {
             : {}),
         }),
         ...stats,
+        ...(coverage_gaps.length
+          ? { coverage_gaps, coverage_complete: false }
+          : {}),
         ...discoverySummary(discovery),
         ...(discovery
           ? {
@@ -396,26 +406,14 @@ export class Engine {
       return finish(summary);
     }
   }
-  async pipeline(target) {
-    const results = [];
-    for (const adapter of ["crtsh", "subfinder", "amass"].filter((a) =>
-      this.config.enabledAdapters.includes(a),
-    )) {
-      try {
-        results.push(await this.run({ adapter, target }));
-      } catch (error) {
-        results.push({ adapter, status: "failed", code: error.message });
-      }
-    }
-    return {
-      status:
-        results.length &&
-        results.every((r) => ["completed", "cached"].includes(r.status))
-          ? "completed"
-          : "partial",
-      results,
-      next_actions: this.next(),
-    };
+  pipeline(target) {
+    return collectPassiveSources(this, target);
+  }
+  investigate(input) {
+    return runInvestigation(this, input);
+  }
+  sources() {
+    return listSources(this);
   }
   next() {
     const domains = this.store.query({ type: "domain", limit: 1 }).total;

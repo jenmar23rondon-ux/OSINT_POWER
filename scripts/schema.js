@@ -16,6 +16,8 @@ import {
   OcrImageInput,
   SearchImageCopiesInput,
 } from "../src/visual-evidence.js";
+import { ProbeHttpInput } from "../src/http-probe.js";
+import { InvestigateInput } from "../src/investigate.js";
 
 mkdirSync(new URL("../schema/", import.meta.url), { recursive: true });
 for (const [name, schema] of Object.entries({
@@ -36,6 +38,8 @@ for (const [name, schema] of Object.entries({
   "compare-images": CompareImagesInput,
   "search-image-copies": SearchImageCopiesInput,
   "ocr-image": OcrImageInput,
+  "probe-http": ProbeHttpInput,
+  investigate: InvestigateInput,
 }))
   writeFileSync(
     new URL(`../schema/${name}.schema.json`, import.meta.url),

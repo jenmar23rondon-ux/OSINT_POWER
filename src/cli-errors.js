@@ -37,7 +37,43 @@ const messages = {
   ],
   HIBP_KEY_MISSING: [
     "The HIBP provider key is missing.",
-    "Set the provider key in the environment before using the HIBP adapter.",
+    "Set HIBP_API_KEY in the environment before using the HIBP adapter. The key is not read from the configuration file.",
+  ],
+  NETWORK_DISABLED: [
+    "Network collection is turned off for this workspace.",
+    'Set "network": true in the workspace configuration. Active DNS, HTTP, and port checks also need "active": true and the adapter listed in enabledAdapters.',
+  ],
+  ACTIVE_DISABLED: [
+    "Active collection is turned off for this workspace.",
+    'Set "active": true before DNS, HTTP, or port checks. HTTP probing also needs --probe-http and --authorized.',
+  ],
+  ADAPTER_DISABLED: [
+    "The adapter is not enabled in this workspace.",
+    "Add the adapter to enabledAdapters. ProjectDiscovery httpx also needs active mode plus --probe-http and --authorized.",
+  ],
+  HTTP_PROBE_DISABLED: [
+    "Active HTTP probing is off.",
+    "Pass --probe-http and --authorized. Passive collection never runs httpx.",
+  ],
+  HTTP_PROBE_NOT_AUTHORIZED: [
+    "Active HTTP probing was not authorized.",
+    "Pass --authorized together with --probe-http. Only hosts already inside the workspace scope are contacted.",
+  ],
+  HTTPX_NOT_PROJECTDISCOVERY: [
+    "The httpx program on PATH is not ProjectDiscovery httpx.",
+    "Python's httpx command uses the same name. Install ProjectDiscovery httpx and put that binary first on PATH: https://github.com/projectdiscovery/httpx",
+  ],
+  SECURITYTRAILS_API_KEY_MISSING: [
+    "The SecurityTrails API key is missing.",
+    "Set SECURITYTRAILS_API_KEY in the environment. The source is reported as a coverage gap, not as an empty result.",
+  ],
+  VIRUSTOTAL_API_KEY_MISSING: [
+    "The VirusTotal API key is missing.",
+    "Set VIRUSTOTAL_API_KEY in the environment. The source is reported as a coverage gap, not as an empty result.",
+  ],
+  RATE_LIMITED: [
+    "The source asked the workspace to slow down.",
+    "The unfinished check is a coverage gap. It is not a negative result. Wait for the provider window and try that source again.",
   ],
   OCR_TOOL_NOT_INSTALLED: [
     "Tesseract is unavailable.",
@@ -91,6 +127,34 @@ const messages = {
     "The folder contains too many files.",
     "Check at most 64 regular files per call.",
   ],
+  DOCUMENT_OUT_OF_SCOPE: [
+    "The image name is not in the workspace document scope.",
+    "Add the file basename to scope.documents, then run ocr-image --save again. The extracted text is still in this result.",
+  ],
+  DOCUMENT_REQUIRED: [
+    "Saving OCR text needs the document basename.",
+    "Pass document as the basename listed in scope.documents.",
+  ],
+  INVESTIGATION_NOT_FOUND: [
+    "No investigation exists with that id.",
+    "Run investigate --execute --target VALUE, then pass that id to --resume.",
+  ],
+  INVESTIGATION_ID_REQUIRED: [
+    "Resume needs an investigation id.",
+    "Pass --resume --id UUID from a previous investigate --execute result.",
+  ],
+  TARGET_REQUIRED: [
+    "The command needs a target.",
+    "Pass --target with a domain, email, username, or IP that is inside the workspace scope.",
+  ],
+  USERNAME_OUT_OF_SCOPE: [
+    "The username is not in this workspace.",
+    "Add it to scope.usernames or to a configured person's aliases.",
+  ],
+  OUT_OF_SCOPE: [
+    "The target is outside the configured scope.",
+    "Choose a domain, email, or IP the workspace already allows.",
+  ],
   ORIGINAL_MODIFIED: [
     "The original file changed while the privacy check was running.",
     "The command does not write to the original. Run it again on a stable file.",
@@ -120,6 +184,12 @@ const scopedMessages = {
     INVALID_INPUT: [
       "The workspace configuration could not be loaded.",
       "Check that the configuration is readable JSON and follows schema/config.schema.json.",
+    ],
+  },
+  httpx: {
+    TOOL_NOT_INSTALLED: [
+      "ProjectDiscovery httpx was not found on PATH.",
+      "Install the ProjectDiscovery httpx binary, not the Python package named httpx. See https://github.com/projectdiscovery/httpx. One installer is: go install github.com/projectdiscovery/httpx/cmd/httpx@latest",
     ],
   },
   import: {

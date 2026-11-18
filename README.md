@@ -13,7 +13,7 @@
   <a href="#quick-start">Quick start</a> · <a href="docs/WORKFLOWS.md">Seven workflows</a> · <a href="docs/AI.md">Connect AI</a> · <a href="docs/ADAPTERS.md">Adapters</a> · <a href="docs/ROADMAP.md">Roadmap</a>
 </p>
 
-OSINT POWER is an evidence-focused reconnaissance framework for scoped security assessments and research. It normalizes public-source observations, stores provenance in SQLite, and exposes a CLI and **51 MCP tools**. It works without a model or an AI API key.
+OSINT POWER is an evidence-focused reconnaissance framework for scoped security assessments and research. It normalizes public-source observations, stores provenance in SQLite, and exposes a CLI and **54 MCP tools**. It works without a model or an AI API key.
 
 **Status: v0.4.0, historical discovery and verifiable evidence packages.** Seven workflows include explicit budgets, source status and partial results. External binaries are installed separately. Live connectors and import bridges are distinguished in the matrix below.
 
@@ -38,7 +38,7 @@ node src/cli.js privacy-check-image --file my-photo.jpg --scrub --output my-phot
 
 Use `compare-images` for local perceptual comparison and `ocr-image` for text extraction with installed Tesseract language data. [Commands and limits](docs/VISUAL-IDENTITY.md#compare-images-and-extract-text)
 
-Use `search-image-copies` to look for exact, resized, or cropped copies in a local image folder. AI clients can compare supplied images with `search_image_copies` over MCP. [Photo-copy search](docs/VISUAL-IDENTITY.md#find-copies-in-a-collection)
+Use `search-image-copies` to look for exact, resized, or cropped copies in a local image folder. An optional `--manifest` records supplied page links as unverified labels and does not fetch them. AI clients can pass the same optional `source_url` to `search_image_copies`. [Photo-copy search](docs/VISUAL-IDENTITY.md#find-copies-in-a-collection)
 
 Use `timeline` or MCP `temporal_graph` to read stored DNS, HTTP, and Wayback relationships for a host or reverse DNS history for an IP. Set the observation window and a knowledge cutoff to reconstruct what the workspace knew at that time. [Temporal graph commands and examples](docs/OPERATIONS.md#temporal-network-graph)
 
@@ -90,7 +90,7 @@ npm ci --ignore-scripts
 node src/cli.js demo --format html --output investigation.html
 ```
 
-Open `investigation.html` in your browser. The demo imports the bundled subfinder, dnsx, and httpx fixtures into a temporary in-memory workspace. It uses only synthetic example.com names and documentation IPs and returns **4 entities and 2 relationships**. Node may print a SQLite warning on stderr. Stdout stays JSON.
+Open `investigation.html` in your browser. The demo imports the bundled subfinder, dnsx, and httpx fixtures into a temporary in-memory workspace. It uses only synthetic example.com names and documentation IPs and returns **4 entities and 2 relationships**. Database commands may print Node's SQLite experimental warning on stderr. Commands that do not open the database, such as `privacy-check-image` and `search-image-copies`, do not. Stdout stays JSON. Node older than 24.14 exits with `NODE_VERSION` instead of crashing.
 
 ![Synthetic OSINT POWER report showing four entities and two relationships](assets/quickstart-report.png)
 
@@ -144,19 +144,21 @@ Archived records preserve capture dates and never establish live availability. I
 
 ## Seven workflows
 
-| Workflow      | What it does                                                                                                        |
-| ------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `people`      | Generate candidate aliases for a declared professional subject; bounded Sherlock/GitHub lookups and sourced context |
-| `company`     | Passive discovery, configured DNS/HTTP checks, registry/routing context and public business evidence                |
-| `places`      | Link reviewed public corporate office evidence to the company                                                       |
-| `users`       | Derive candidate aliases from corporate emails without treating matches as identity confirmation                    |
-| `emails`      | Collect/import addresses, check syntax and DNS MX, then query configured HIBP accounts                              |
-| `exposures`   | Summarize breach associations and imported secret locations without retaining secret values                         |
-| `correlation` | Review provenance, uncertainty and defensive priorities for the company                                             |
+| Workflow      | What it does                                                                                                                                    |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `people`      | Generate candidate aliases for a declared professional subject; Sherlock/GitHub lookups for the first `--max-targets` aliases (1–10, default 3) |
+| `company`     | Passive discovery, configured DNS/HTTP checks, registry/routing context and public business evidence                                            |
+| `places`      | Link reviewed public corporate office evidence to the company                                                                                   |
+| `users`       | Derive candidate aliases from corporate emails without treating matches as identity confirmation                                                |
+| `emails`      | Collect/import addresses, check syntax and DNS MX, then query configured HIBP accounts                                                          |
+| `exposures`   | Summarize breach associations and imported secret locations without retaining secret values                                                     |
+| `correlation` | Review provenance, uncertainty and defensive priorities for the company                                                                         |
 
 ```bash
+node src/cli.js workflow --workflow people --target "Alex Rivera" --max-targets 5
 node src/cli.js workflow --workflow company --target example.com
 node src/cli.js workflow --workflow company --target example.com --execute --max-targets 3 --max-calls 10
+node src/cli.js probe-http --target example.com --probe-http --authorized --max-targets 3
 ```
 
 Replace the example with your configured scope. Without `--execute`, workflows only plan and read local state. Execution respects the existing configuration, quotas and cache. Missing connectors, inputs and dependencies remain visible in the result.
@@ -200,36 +202,82 @@ node src/cli.js run --adapter crtsh --target example.com
 node src/cli.js pipeline --target example.com
 ```
 
-The legacy pipeline runs configured crt.sh/subfinder/Amass collectors only. Workflows organize additional stages. A discovered IP or ASN never automatically expands active scope.
+`pipeline` and `passive` run every enabled passive adapter that matches the target. They deduplicate entities in the workspace, keep the source on each observation, and continue after a source fails. A missing key, rate limit, or source error is a coverage gap in the JSON result and the HTML report. It is not a negative finding. httpx is not part of that collection. A discovered IP or ASN never automatically expands active scope.
+
+`investigate` chooses the passive adapters for a domain, email, username, or IP. Without `--execute` it only plans. `--execute` collects. `--resume --id` retries sources that did not finish and returns a diff against the previous attempt. Absence is not removal. `sources` shows which adapters are enabled and which API key names are missing. It does not print key values.
+
+```bash
+node src/cli.js investigate --target example.com
+node src/cli.js investigate --target example.com --execute
+node src/cli.js investigate --resume --id INVESTIGATION_UUID
+node src/cli.js sources
+node src/cli.js report --format csv --output findings.csv
+node src/cli.js ocr-image --file note.txt --save
+```
+
+`ocr-image --save` stores the extracted text when the file's basename is listed in `scope.documents`. The HTML report adds an executive summary, an observation timeline, coverage gaps, and candidate links between an email, a username, a GitHub or Keybase profile, and a domain. Each link has a confidence score and an explanation. A shared handle is not a confirmed identity. The page is offline and does not use a CDN. CSV export uses the same finding columns as the JSON report.
 
 ## Integrations and actual support
 
-| Source                                                                                                         | Current support                                           | Requirements and limitations                                                                                                             |
-| -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| [crt.sh](https://crt.sh/)                                                                                      | Certificate API                                           | Certificate names are not proof of ownership                                                                                             |
-| [Cert Spotter](https://sslmate.com/help/reference/ct_search_api_v1)                                            | Direct CT API and imports                                 | Persistent `after` cursor; one page per call; optional environment key; searches unexpired issuances                                     |
-| [Wayback CDX](https://github.com/internetarchive/wayback/blob/master/wayback-cdx-server/README.md)             | Direct historical URL index and imports                   | Persistent resume key; dates retained; no archived content downloads or live checks                                                      |
-| [subfinder](https://github.com/projectdiscovery/subfinder)                                                     | Execute and import TXT/JSONL                              | Binary on PATH; native upstream provider configuration                                                                                   |
-| [Amass](https://github.com/owasp-amass/amass)                                                                  | Legacy enum -passive interface and name imports           | Verify flags in your installed version; disabled by default                                                                              |
-| [dnsx](https://github.com/projectdiscovery/dnsx)                                                               | Execute/import A/AAAA JSONL                               | Active mode; one host per collection call                                                                                                |
-| [httpx](https://github.com/projectdiscovery/httpx)                                                             | Execute/import JSONL                                      | ProjectDiscovery binary; status, tech, title and TLS CN/issuer; no redirect following                                                    |
-| [naabu](https://github.com/projectdiscovery/naabu)                                                             | TCP connect and JSONL imports                             | Active mode; at most 20 configured ports                                                                                                 |
-| DNS MX                                                                                                         | Native Node resolver                                      | Mailbox validity and catch-all remain unknown                                                                                            |
-| RDAP / [IANA](https://data.iana.org/rdap/ipv4.json)                                                            | Bootstrap and allowlisted RIR queries                     | Registered networks are not office locations or scope grants                                                                             |
-| [RIPEstat](https://stat.ripe.net/docs/data-api/api-endpoints/network-info)                                     | Prefix and origin ASN API                                 | Routing information is not ownership                                                                                                     |
-| [GitHub profiles](https://docs.github.com/en/rest/users/users#get-a-user)                                      | Public API by scoped alias                                | Public company/email claims are unverified source assertions                                                                             |
-| [Sherlock](https://github.com/sherlock-project/sherlock)                                                       | Bounded execution and CSV import                          | One alias, 1–3 configured professional sites, binary on PATH                                                                             |
-| [theHarvester](https://github.com/laramies/theHarvester)                                                       | Bounded execution and JSON import                         | Configured crtsh/certspotter sources; field coverage depends on source                                                                   |
-| [WhatsMyName](https://github.com/WebBreacher/WhatsMyName)                                                      | Import bridge                                             | Dataset, not an invented executable; username/url/status contract                                                                        |
-| [ExifTool](https://exiftool.org/)                                                                              | JSON metadata import; optional local scrub backend        | Import keeps selected fields and drops GPS. `privacy-check-image --backend exiftool` can strip your own photo when the binary is on PATH |
-| [Gitleaks](https://github.com/gitleaks/gitleaks) / [TruffleHog](https://github.com/trufflesecurity/trufflehog) | Report imports                                            | File/rule/line only; raw values and scanner verification claims discarded                                                                |
-| [HIBP](https://haveibeenpwned.com/API/v3)                                                                      | Breach name/date API                                      | Exact scoped account and HIBP_API_KEY; no passwords                                                                                      |
-| DeHashed / LeakCheck                                                                                           | Strict breach-summary imports                             | Metadata only; no password retrieval or live connectors                                                                                  |
-| [recon-ng](https://github.com/lanmaster53/recon-ng) / [SpiderFoot](https://github.com/smicallef/spiderfoot)    | Common-schema JSONL bridge                                | Native export conversion required; no module execution                                                                                   |
-| LinkedIn / X / job listings / public office records                                                            | Search-query handoff and sourced business-context imports | No automated scraping or fabricated search results                                                                                       |
-| Phishing lookalikes                                                                                            | Offline variants plus passive enrichment of those names   | In-scope apex only. Suspected, never auto-confirmed. No kit download, form submit, or credential use                                     |
+| Source                                                                                                         | Current support                                           | Requirements and limitations                                                                                                                                  |
+| -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [crt.sh](https://crt.sh/)                                                                                      | Certificate API                                           | Certificate names are not proof of ownership                                                                                                                  |
+| [Cert Spotter](https://sslmate.com/help/reference/ct_search_api_v1)                                            | Direct CT API and imports                                 | Persistent `after` cursor; one page per call; optional environment key; searches unexpired issuances                                                          |
+| [Wayback CDX](https://github.com/internetarchive/wayback/blob/master/wayback-cdx-server/README.md)             | Direct historical URL index and imports                   | Persistent resume key; dates retained; no archived content downloads or live checks                                                                           |
+| [subfinder](https://github.com/projectdiscovery/subfinder)                                                     | Execute and import TXT/JSONL                              | Binary on PATH; native upstream provider configuration                                                                                                        |
+| [Amass](https://github.com/owasp-amass/amass)                                                                  | Legacy enum -passive interface and name imports           | Verify flags in your installed version; disabled by default                                                                                                   |
+| [dnsx](https://github.com/projectdiscovery/dnsx)                                                               | Execute/import A/AAAA JSONL                               | Active mode; one host per collection call                                                                                                                     |
+| [httpx](https://github.com/projectdiscovery/httpx)                                                             | Opt-in active probe and JSONL import                      | ProjectDiscovery binary, not Python httpx. Requires `--probe-http` and `--authorized`. Status, title, tech, server, TLS, IP and CDN. No redirects or crawling |
+| [naabu](https://github.com/projectdiscovery/naabu)                                                             | TCP connect and JSONL imports                             | Active mode; at most 20 configured ports                                                                                                                      |
+| DNS MX                                                                                                         | Native Node resolver                                      | Mailbox validity and catch-all remain unknown                                                                                                                 |
+| RDAP / [IANA](https://data.iana.org/rdap/ipv4.json)                                                            | Bootstrap and allowlisted RIR queries                     | Registered networks are not office locations or scope grants                                                                                                  |
+| [RIPEstat](https://stat.ripe.net/docs/data-api/api-endpoints/network-info)                                     | Prefix and origin ASN API                                 | Routing information is not ownership                                                                                                                          |
+| [GitHub profiles](https://docs.github.com/en/rest/users/users#get-a-user)                                      | Public API by scoped alias                                | Public company/email claims are unverified source assertions                                                                                                  |
+| [Sherlock](https://github.com/sherlock-project/sherlock)                                                       | Bounded execution and CSV import                          | One alias, 1–3 configured professional sites, binary on PATH                                                                                                  |
+| [theHarvester](https://github.com/laramies/theHarvester)                                                       | Bounded execution and JSON import                         | Configured crtsh/certspotter sources; field coverage depends on source                                                                                        |
+| [WhatsMyName](https://github.com/WebBreacher/WhatsMyName)                                                      | Import bridge                                             | Dataset, not an invented executable; username/url/status contract                                                                                             |
+| [ExifTool](https://exiftool.org/)                                                                              | JSON metadata import; optional local scrub backend        | Import keeps selected fields and drops GPS. `privacy-check-image --backend exiftool` can strip your own photo when the binary is on PATH                      |
+| [Gitleaks](https://github.com/gitleaks/gitleaks) / [TruffleHog](https://github.com/trufflesecurity/trufflehog) | Report imports                                            | File/rule/line only; raw values and scanner verification claims discarded                                                                                     |
+| [HIBP](https://haveibeenpwned.com/API/v3)                                                                      | Breach name/date API                                      | Exact scoped account and `HIBP_API_KEY`; no passwords                                                                                                         |
+| DeHashed / LeakCheck                                                                                           | Strict breach-summary imports                             | Metadata only; no password retrieval or live connectors                                                                                                       |
+| [recon-ng](https://github.com/lanmaster53/recon-ng) / [SpiderFoot](https://github.com/smicallef/spiderfoot)    | Common-schema JSONL bridge                                | Native export conversion required; no module execution                                                                                                        |
+| LinkedIn / X / job listings / public office records                                                            | Search-query handoff and sourced business-context imports | No automated scraping or fabricated search results                                                                                                            |
+| Phishing lookalikes                                                                                            | Offline variants plus passive enrichment of those names   | In-scope apex only. Suspected, never auto-confirmed. No kit download, form submit, or credential use                                                          |
 
-External projects are not bundled or relicensed. Their versions and API availability affect compatibility. OCR, historical DNS, global code/paste search, geocoding and Nuclei execution remain outside this release.
+## Passive sources and required environment variables
+
+These adapters are passive. Enable each one in `enabledAdapters` and set `network` to true. `node src/cli.js passive --target example.com` runs the enabled ones that match a domain, IP, email, or scoped username. Tests use recorded fixtures and do not contact the providers.
+
+| Source                                                              | Target                             | Environment variable              |
+| ------------------------------------------------------------------- | ---------------------------------- | --------------------------------- |
+| Domain RDAP                                                         | domain                             | none                              |
+| DNS-over-HTTPS (Cloudflare JSON)                                    | domain                             | none                              |
+| [AlienVault OTX](https://otx.alienvault.com/) passive DNS           | domain                             | optional `OTX_API_KEY`            |
+| [HackerTarget](https://hackertarget.com/) hostsearch                | domain                             | none                              |
+| [urlscan.io](https://urlscan.io/) search                            | domain                             | optional `URLSCAN_API_KEY`        |
+| [SecurityTrails](https://securitytrails.com/) subdomains            | domain                             | required `SECURITYTRAILS_API_KEY` |
+| [VirusTotal](https://www.virustotal.com/) domain or IP object       | domain or configured/discovered IP | required `VIRUSTOTAL_API_KEY`     |
+| [Shodan InternetDB](https://internetdb.shodan.io/)                  | configured or discovered IP        | none                              |
+| GitHub profile, public key fingerprints, public-event commit emails | scoped username                    | optional `GITHUB_TOKEN`           |
+| [Gravatar](https://gravatar.com/)                                   | in-scope email                     | none                              |
+| [Keybase](https://keybase.io/)                                      | scoped username                    | none                              |
+| [EmailRep](https://emailrep.io/)                                    | in-scope email                     | optional `EMAILREP_API_KEY`       |
+| HIBP                                                                | exact configured email             | required `HIBP_API_KEY`           |
+
+A missing required key, an HTTP 429, or a provider error is stored as a coverage gap. The HTML report groups findings by target and lists the sources on each entity. CVE identifiers from InternetDB are stored as identifiers only. They are not confirmed vulnerabilities and this project does not provide exploit instructions.
+
+File imports for [Maigret](docs/EXTERNAL-OSINT.md), [Holehe](docs/EXTERNAL-OSINT.md#holehe) and [Social Analyzer](docs/EXTERNAL-OSINT.md#social-analyzer) read a local file. They do not launch those tools.
+
+```bash
+node src/cli.js import --adapter crtsh --file examples/crtsh.json
+node src/cli.js import --adapter holehe --file examples/holehe.csv --target alex@example.com
+node src/cli.js import --adapter social-analyzer --file examples/social-analyzer.json
+node src/cli.js passive --target example.com
+```
+
+ProjectDiscovery httpx is the only active HTTP probe added here. Install the Go binary, not the Python package named `httpx`, and confirm `httpx -version` identifies ProjectDiscovery. `probe-http` refuses to run until `--probe-http` and `--authorized` are both present. It probes only hosts already in scope, one at a time, with one thread and the workspace rate limit and timeout.
+
+External projects are not bundled or relicensed. Their versions and API availability affect compatibility. OCR, historical DNS beyond the DNS-over-HTTPS adapter, global code/paste search, geocoding and Nuclei execution remain outside this release. There is no face recognition or reverse-image people search.
 
 ## Connect an AI host
 
@@ -254,6 +302,8 @@ Adapt registration to your host's format. See [AI integration](docs/AI.md) and t
 | `capabilities`                                 | Configured scope, adapters, workflows and limits                                                                |
 | `collect`                                      | One validated adapter/target pair                                                                               |
 | `passive_pipeline`                             | Sequential passive discovery with partial results                                                               |
+| `investigate`                                  | Passive plan, execute, or resume for a domain, email, username, or IP, with a diff                              |
+| `list_sources`                                 | Enabled adapters and missing API key names. Values are not shown                                                |
 | `import_findings`                              | Normalize a bounded supplied export                                                                             |
 | `query_findings`                               | Stable entity pages and provenance summary                                                                      |
 | `get_evidence`                                 | Untrusted observations for a specific entity                                                                    |
