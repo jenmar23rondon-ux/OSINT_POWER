@@ -146,7 +146,20 @@
           "mx",
           "rdap",
           "routing",
-          "github-profile"
+          "github-profile",
+          "domain-rdap",
+          "doh",
+          "otx",
+          "hackertarget",
+          "urlscan",
+          "shodan-internetdb",
+          "securitytrails",
+          "virustotal",
+          "github-keys",
+          "github-events",
+          "gravatar",
+          "keybase",
+          "emailrep"
         ]
       }
     },
@@ -311,6 +324,50 @@
                   "windowMs": 3600000
                 },
                 "haveibeenpwned.com": {
+                  "maxRequests": 10,
+                  "windowMs": 60000
+                },
+                "cloudflare-dns.com": {
+                  "maxRequests": 30,
+                  "windowMs": 60000
+                },
+                "otx.alienvault.com": {
+                  "maxRequests": 10,
+                  "windowMs": 60000
+                },
+                "api.hackertarget.com": {
+                  "maxRequests": 5,
+                  "windowMs": 60000
+                },
+                "urlscan.io": {
+                  "maxRequests": 10,
+                  "windowMs": 60000
+                },
+                "internetdb.shodan.io": {
+                  "maxRequests": 10,
+                  "windowMs": 60000
+                },
+                "api.securitytrails.com": {
+                  "maxRequests": 5,
+                  "windowMs": 60000
+                },
+                "www.virustotal.com": {
+                  "maxRequests": 4,
+                  "windowMs": 60000
+                },
+                "en.gravatar.com": {
+                  "maxRequests": 20,
+                  "windowMs": 60000
+                },
+                "keybase.io": {
+                  "maxRequests": 10,
+                  "windowMs": 60000
+                },
+                "emailrep.io": {
+                  "maxRequests": 5,
+                  "windowMs": 60000
+                },
+                "data.iana.org": {
                   "maxRequests": 10,
                   "windowMs": 60000
                 }

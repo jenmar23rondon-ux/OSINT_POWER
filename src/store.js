@@ -10,6 +10,7 @@ import { SCHEMA_VERSION, initializeReview } from "./review.js";
 import { initializePhishing } from "./phishing.js";
 import { initializeMonitor } from "./monitor.js";
 import { initializeCases } from "./cases.js";
+import { initializeInvestigations } from "./investigate.js";
 
 function canonical(value) {
   if (Array.isArray(value)) return value.map(canonical);
@@ -20,6 +21,9 @@ function canonical(value) {
         .map((k) => [k, canonical(value[k])]),
     );
   return value;
+}
+export function likeLiteral(value) {
+  return String(value).replace(/[\\%_]/g, (character) => `\\${character}`);
 }
 export const hash = (value) =>
   createHash("sha256")
@@ -49,6 +53,7 @@ export class Store {
     initializePhishing(this.db);
     initializeMonitor(this.db);
     initializeCases(this.db);
+    initializeInvestigations(this.db);
   }
   bindScope(scope) {
     const fingerprint = hash(scope);
@@ -296,9 +301,15 @@ export class Store {
   domainEntities(type, target, limit = 10) {
     return this.db
       .prepare(
-        "SELECT * FROM entities WHERE type=? AND (value=? OR value LIKE ? OR value LIKE ?) ORDER BY id LIMIT ?",
+        "SELECT * FROM entities WHERE type=? AND (value=? OR value LIKE ? ESCAPE '\\' OR value LIKE ? ESCAPE '\\') ORDER BY id LIMIT ?",
       )
-      .all(type, target, "%." + target, "%@" + target, Math.min(100, limit));
+      .all(
+        type,
+        target,
+        "%." + likeLiteral(target),
+        "%@" + likeLiteral(target),
+        Math.min(100, limit),
+      );
   }
   ipHost(value, scope) {
     const rows = this.db
@@ -315,9 +326,9 @@ export class Store {
   domainIPs(target, limit = 10) {
     return this.db
       .prepare(
-        "SELECT DISTINCT ip.* FROM entities ip JOIN edges edge ON edge.to_id=ip.id AND edge.relation='resolves_to' JOIN entities host ON host.id=edge.from_id WHERE ip.type='ip' AND (host.value=? OR host.value LIKE ?) ORDER BY ip.id LIMIT ?",
+        "SELECT DISTINCT ip.* FROM entities ip JOIN edges edge ON edge.to_id=ip.id AND edge.relation='resolves_to' JOIN entities host ON host.id=edge.from_id WHERE ip.type='ip' AND (host.value=? OR host.value LIKE ? ESCAPE '\\') ORDER BY ip.id LIMIT ?",
       )
-      .all(target, "%." + target, Math.min(100, limit));
+      .all(target, "%." + likeLiteral(target), Math.min(100, limit));
   }
   contextEntities(type, target, limit = 25) {
     return this.db
@@ -329,16 +340,16 @@ export class Store {
   findings(target, limit = 25) {
     const rows = this.db
       .prepare(
-        "SELECT e.id,e.type,e.value,o.source,o.confidence,o.timestamp,o.evidence FROM entities e JOIN observations o ON o.entity_id=e.id WHERE e.value=? OR (e.type='domain' AND e.value LIKE ?) OR json_extract(o.evidence,'$.company')=? OR json_extract(o.evidence,'$.host')=? OR json_extract(o.evidence,'$.host') LIKE ? OR (e.type='email' AND e.value LIKE ?) OR json_extract(o.evidence,'$.account') LIKE ? ORDER BY o.last_seen DESC,o.id LIMIT ?",
+        "SELECT e.id,e.type,e.value,o.source,o.confidence,o.timestamp,o.evidence FROM entities e JOIN observations o ON o.entity_id=e.id WHERE e.value=? OR (e.type='domain' AND e.value LIKE ? ESCAPE '\\') OR json_extract(o.evidence,'$.company')=? OR json_extract(o.evidence,'$.host')=? OR json_extract(o.evidence,'$.host') LIKE ? ESCAPE '\\' OR (e.type='email' AND e.value LIKE ? ESCAPE '\\') OR json_extract(o.evidence,'$.account') LIKE ? ESCAPE '\\' ORDER BY o.last_seen DESC,o.id LIMIT ?",
       )
       .all(
         target,
-        "%." + target,
+        "%." + likeLiteral(target),
         target,
         target,
-        "%." + target,
-        "%@" + target,
-        "%@" + target,
+        "%." + likeLiteral(target),
+        "%@" + likeLiteral(target),
+        "%@" + likeLiteral(target),
         Math.min(100, limit),
       );
     return {
@@ -394,6 +405,24 @@ export class Store {
       next_offset: rows.length > limit ? offset + limit : null,
       note: "Relations describe evidence, not ownership or identity.",
     };
+  }
+  observationTimeline(limit = 30) {
+    const cap = Math.min(30, Math.max(1, limit));
+    return this.db
+      .prepare(
+        `SELECT o.timestamp AS timestamp, e.type AS type, e.value AS value,
+                o.source AS source, o.confidence AS confidence
+         FROM observations o JOIN entities e ON e.id=o.entity_id
+         ORDER BY o.timestamp DESC, o.id LIMIT ?`,
+      )
+      .all(cap)
+      .map((row) => ({
+        timestamp: row.timestamp,
+        type: row.type,
+        value: row.value,
+        source: row.source,
+        confidence: row.confidence,
+      }));
   }
   cached(key) {
     const row = this.db

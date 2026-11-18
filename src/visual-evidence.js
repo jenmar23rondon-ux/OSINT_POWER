@@ -11,6 +11,7 @@ import {
 } from "./image-forensics.js";
 import { PNG_SIGNATURE } from "./image-format.js";
 import { runProcess } from "./transport.js";
+import { OCR_NOT_STORED, OcrStorage } from "./ocr-store.js";
 
 const SIDE = 128;
 const SAMPLE = 32;
@@ -140,7 +141,9 @@ export const SearchImageCopiesResult = z
   .strict();
 export const OcrImageInput = AnalyzeImageInput.extend({
   language: language.default("eng"),
-});
+  save: z.boolean().default(false),
+  document: z.string().min(1).max(240).optional(),
+}).strict();
 export const OcrImageResult = z
   .object({
     sha256: sha,
@@ -150,6 +153,7 @@ export const OcrImageResult = z
     text_truncated: z.boolean(),
     text_trust: z.literal("untrusted"),
     network: z.literal(false),
+    storage: OcrStorage,
   })
   .strict();
 
@@ -557,14 +561,16 @@ async function ocrBytes(bytes, lang, signal) {
 
 export async function ocrImage(input, signal) {
   const { data_base64, language: lang } = OcrImageInput.parse(input);
-  return withMediaSlot(() =>
+  const result = await withMediaSlot(() =>
     ocrBytes(decodeImageBytes(data_base64), lang, signal),
   );
+  return { ...result, storage: OCR_NOT_STORED };
 }
 
 export async function ocrImageFile(path, lang = "eng") {
   const checked = language.parse(lang);
-  return withMediaSlot(async () =>
+  const result = await withMediaSlot(async () =>
     ocrBytes(await readImageFile(path), checked),
   );
+  return { ...result, storage: OCR_NOT_STORED };
 }

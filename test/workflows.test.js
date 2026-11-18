@@ -68,6 +68,29 @@ test("seven workflow plans are offline, bounded, and do not write state", async 
     /OUT_OF_SCOPE/,
   );
 });
+test("people workflow maxTargets is the alias lookup budget", async (t) => {
+  const engine = setup(t);
+  const planned = await engine.workflow({
+    workflow: "people",
+    target: "Ana Pérez",
+    maxTargets: 1,
+  });
+  assert.equal(planned.maxTargets, 1);
+  assert.equal(
+    planned.steps.filter((step) => step.stage === "username_lookup").length,
+    1,
+  );
+  assert.equal(planned.username_candidates.length > 1, true);
+  const wider = await engine.workflow({
+    workflow: "people",
+    target: "Ana Pérez",
+    maxTargets: 4,
+  });
+  assert.equal(
+    wider.steps.filter((step) => step.stage === "username_lookup").length,
+    4,
+  );
+});
 test("username variants normalize accents, preserve aliases and reject command flags", (t) => {
   const values = usernameVariants("Ana Pérez", ["aperez"]);
   assert.equal(values.includes("ana.perez"), true);
